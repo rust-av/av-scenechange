@@ -1,0 +1,18 @@
+[package]
+name = "av-scenechange"
+version = "0.1.0"
+authors = ["Josh Holmer <jholmer.in@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+y4m = "0.4.0"
+num-traits = "0.2.9"
+clap = { version = "2.33.0", optional = true }
+serde = { version = "1.0.102", optional = true }
+serde_json = { version = "1.0.41", optional = true }
+
+[features]
+default = ["binary"]
+binary = ["clap", "serde", "serde_json"]
