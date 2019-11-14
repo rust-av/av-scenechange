@@ -2,7 +2,7 @@ mod pixel;
 mod y4m;
 
 use self::pixel::*;
-use ::y4m::Decoder;
+use ::y4m::{Colorspace, Decoder};
 use std::cmp;
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
@@ -54,7 +54,8 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     assert!(opts.lookahead_distance >= 1);
 
     let bit_depth = dec.get_bit_depth() as u8;
-    let mut detector = SceneChangeDetector::new(bit_depth, opts);
+    let chroma_sampling = ChromaSampling::from(dec.get_colorspace());
+    let mut detector = SceneChangeDetector::new(bit_depth, chroma_sampling, opts);
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     let mut frameno = 0;
@@ -97,6 +98,49 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
 
 type PlaneData<T> = [Vec<T>; 3];
 
+/// Available chroma sampling formats.
+#[derive(Copy, Clone, Debug, PartialEq)]
+enum ChromaSampling {
+    /// Both vertically and horizontally subsampled.
+    Cs420,
+    /// Horizontally subsampled.
+    Cs422,
+    /// Not subsampled.
+    Cs444,
+    /// Monochrome.
+    Cs400,
+}
+
+impl From<Colorspace> for ChromaSampling {
+    fn from(other: Colorspace) -> Self {
+        use Colorspace::*;
+        match other {
+            Cmono => ChromaSampling::Cs400,
+            C420 | C420p10 | C420p12 | C420jpeg | C420paldv | C420mpeg2 => ChromaSampling::Cs420,
+            C422 | C422p10 | C422p12 => ChromaSampling::Cs422,
+            C444 | C444p10 | C444p12 => ChromaSampling::Cs444,
+        }
+    }
+}
+
+impl ChromaSampling {
+    /// Provides the amount to right shift the luma plane dimensions to get the
+    ///  chroma plane dimensions.
+    /// Only values 0 or 1 are ever returned.
+    /// The plane dimensions must also be rounded up to accommodate odd luma plane
+    ///  sizes.
+    /// Cs400 returns None, as there are no chroma planes.
+    pub fn get_decimation(self) -> Option<(usize, usize)> {
+        use self::ChromaSampling::*;
+        match self {
+            Cs420 => Some((1, 1)),
+            Cs422 => Some((1, 0)),
+            Cs444 => Some((0, 0)),
+            Cs400 => None,
+        }
+    }
+}
+
 /// Runs keyframe detection on frames from the lookahead queue.
 struct SceneChangeDetector {
     /// Minimum average difference between YUV deltas that will trigger a scene change.
@@ -105,10 +149,11 @@ struct SceneChangeDetector {
     /// Frames that cannot be marked as keyframes due to the algorithm excluding them.
     /// Storing the frame numbers allows us to avoid looking back more than one frame.
     excluded_frames: BTreeSet<usize>,
+    chroma_sampling: ChromaSampling,
 }
 
 impl SceneChangeDetector {
-    pub fn new(bit_depth: u8, opts: DetectionOptions) -> Self {
+    pub fn new(bit_depth: u8, chroma_sampling: ChromaSampling, opts: DetectionOptions) -> Self {
         // This implementation is based on a Python implementation at
         // https://pyscenedetect.readthedocs.io/en/latest/reference/detection-methods/.
         // The Python implementation uses HSV values and a threshold of 30. Comparing the
@@ -123,6 +168,7 @@ impl SceneChangeDetector {
             threshold: BASE_THRESHOLD * bit_depth / 8,
             opts,
             excluded_frames: BTreeSet::new(),
+            chroma_sampling,
         }
     }
     /// Runs keyframe detection on the next frame in the lookahead queue.
@@ -232,13 +278,18 @@ impl SceneChangeDetector {
     /// with this method. This is intended to change via https://github.com/xiph/rav1e/issues/794.
     fn has_scenecut<T: Pixel>(&self, frame1: &PlaneData<T>, frame2: &PlaneData<T>) -> bool {
         let mut delta = Self::get_plane_sad(&frame1[0], &frame2[0]);
+        let mut len = frame1[0].len() as u64;
 
-        if self.opts.use_chroma {
-            delta += Self::get_plane_sad(&frame1[1], &frame2[1]);
-            delta += Self::get_plane_sad(&frame1[2], &frame2[2]);
+        if self.opts.use_chroma && self.chroma_sampling != ChromaSampling::Cs400 {
+            let (x_dec, y_dec) = self.chroma_sampling.get_decimation().unwrap();
+            let dec = x_dec + y_dec;
+            delta += Self::get_plane_sad(&frame1[1], &frame2[1]) << dec;
+            len += (frame1[1].len() as u64) << dec;
+            delta += Self::get_plane_sad(&frame1[2], &frame2[2]) << dec;
+            len += (frame1[2].len() as u64) << dec;
         }
 
-        delta >= self.threshold as u64 * frame1[0].len() as u64
+        delta >= self.threshold as u64 * len
     }
 
     #[inline(always)]
