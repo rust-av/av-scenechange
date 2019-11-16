@@ -12,22 +12,22 @@ use std::io::Read;
 pub struct DetectionOptions {
     /// Whether or not to analyze the chroma planes.
     /// Enabling this is slower, but may be more accurate.
-    use_chroma: bool,
+    pub use_chroma: bool,
     /// Enabling this will utilize heuristics to avoid scenecuts
     /// that are too close to each other.
     /// This is generally useful if you want scenecut detection
     /// for use in an encoder.
     /// If you want a raw list of scene changes, you should disable this.
-    ignore_flashes: bool,
+    pub ignore_flashes: bool,
     /// The minimum distane between two scene changes.
-    min_scenecut_distance: Option<usize>,
+    pub min_scenecut_distance: Option<usize>,
     /// The maximum distance between two scene changes.
-    max_scenecut_distance: Option<usize>,
+    pub max_scenecut_distance: Option<usize>,
     /// The distance to look ahead in the video
     /// for scene flash detection.
     ///
     /// Not used if `ignore_flashes` is `true`.
-    lookahead_distance: usize,
+    pub lookahead_distance: usize,
 }
 
 impl Default for DetectionOptions {

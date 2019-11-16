@@ -11,9 +11,43 @@ fn main() {
                 .required(true)
                 .index(1),
         )
+        .arg(
+            Arg::with_name("FAST_MODE")
+                .help("Uses faster but less accurate analysis")
+                .long("fast"),
+        )
+        .arg(
+            Arg::with_name("DETECT_FLASHES")
+                .help("Detect short scene flashes and exclude them as scene cuts")
+                .long("flashes"),
+        )
+        .arg(
+            Arg::with_name("MIN_KEYINT")
+                .help("Sets a minimum interval between two consecutive scenecuts")
+                .long("min-scenecut")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("MAX_KEYINT")
+                .help("Sets a maximum interval between two consecutive scenecuts, after which a scenecut will be forced")
+                .long("max-scenecut")
+                .takes_value(true),
+        )
         .get_matches();
     let filename = matches.value_of("INPUT").unwrap();
-    let opts = DetectionOptions::default();
+    let opts = DetectionOptions {
+        use_chroma: !matches.is_present("FAST_MODE"),
+        ignore_flashes: !matches.is_present("DETECT_FLASHES"),
+        min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
+            val.parse()
+                .expect("Min-scenecut must be a positive integer")
+        }),
+        max_scenecut_distance: matches.value_of("MAX_KEYINT").map(|val| {
+            val.parse()
+                .expect("Max-scenecut must be a positive integer")
+        }),
+        ..Default::default()
+    };
     let file = File::open(filename).expect("Failed to read input file");
     let mut reader = BufReader::new(file);
     let mut dec = y4m::Decoder::new(&mut reader).unwrap();
