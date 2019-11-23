@@ -16,3 +16,8 @@ serde_json = { version = "1.0.41", optional = true }
 [features]
 default = ["binary"]
 binary = ["clap", "serde", "serde_json"]
+
+[[bin]]
+name = "av-scenechange"
+path = "src/main.rs"
+required-features = ["binary"]
