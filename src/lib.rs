@@ -244,14 +244,12 @@ impl SceneChangeDetector {
         // Where A and B are scenes: AAAAAABBBAAAAAA
         // If BBB is shorter than lookahead_distance, it is detected as a flash
         // and not considered a scenecut.
-        if lookahead_distance > 1 {
-            for j in 1..=lookahead_distance {
-                if !self.has_scenecut(&frame_subset[0], &frame_subset[j]) {
-                    // Any frame in between `0` and `j` cannot be a real scenecut.
-                    for i in 0..=j {
-                        let frameno = frameno + i - 1;
-                        self.excluded_frames.insert(frameno);
-                    }
+        for j in 1..=lookahead_distance {
+            if !self.has_scenecut(&frame_subset[0], &frame_subset[j]) {
+                // Any frame in between `0` and `j` cannot be a real scenecut.
+                for i in 0..=j {
+                    let frameno = frameno + i - 1;
+                    self.excluded_frames.insert(frameno);
                 }
             }
         }
@@ -261,10 +259,8 @@ impl SceneChangeDetector {
         // detected as flashes and not considered scenecuts.
         // Instead, the first F frame becomes a scenecut.
         // If the video ends before F, no frame becomes a scenecut.
-        for i in 1..=lookahead_distance {
-            if i < lookahead_distance
-                && self.has_scenecut(&frame_subset[i], &frame_subset[lookahead_distance])
-            {
+        for i in 1..lookahead_distance {
+            if self.has_scenecut(&frame_subset[i], &frame_subset[lookahead_distance]) {
                 // If the current frame is the frame before a scenecut, it cannot also be the frame of a scenecut.
                 let frameno = frameno + i - 1;
                 self.excluded_frames.insert(frameno);
