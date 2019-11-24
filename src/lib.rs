@@ -73,8 +73,9 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         }
 
         let frame_set = frame_queue
-            .values()
-            .skip(frameno)
+            .iter()
+            .skip_while(|&(&key, _)| key < frameno)
+            .map(|(_, value)| value)
             .take(opts.lookahead_distance)
             .collect::<Vec<_>>();
         if frame_set.is_empty() {
@@ -91,6 +92,11 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             frameno,
             &mut keyframes,
         );
+
+        if frameno > 0 {
+            frame_queue.remove(&(frameno - 1));
+        }
+
         frameno += 1;
     }
     keyframes.into_iter().collect()
