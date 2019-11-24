@@ -1,7 +1,7 @@
 use av_scenechange::*;
 use clap::{App, Arg};
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{self, BufReader, Read};
 
 fn main() {
     let matches = App::new("av-scenechange")
@@ -34,7 +34,11 @@ fn main() {
                 .takes_value(true),
         )
         .get_matches();
-    let filename = matches.value_of("INPUT").unwrap();
+    let input = match matches.value_of("INPUT").unwrap() {
+        "-" => Box::new(io::stdin()) as Box<dyn Read>,
+        f => Box::new(File::open(&f).unwrap()) as Box<dyn Read>,
+    };
+    let mut reader = BufReader::new(input);
     let opts = DetectionOptions {
         use_chroma: !matches.is_present("FAST_MODE"),
         ignore_flashes: !matches.is_present("DETECT_FLASHES"),
@@ -48,8 +52,6 @@ fn main() {
         }),
         ..Default::default()
     };
-    let file = File::open(filename).expect("Failed to read input file");
-    let mut reader = BufReader::new(file);
     let mut dec = y4m::Decoder::new(&mut reader).unwrap();
     let bit_depth = dec.get_bit_depth();
     let results = if bit_depth == 8 {
