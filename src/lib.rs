@@ -60,7 +60,12 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     let mut keyframes = BTreeSet::new();
     let mut frameno = 0;
     loop {
-        let mut next_input_frameno = frame_queue.keys().last().copied().unwrap_or(0);
+        let mut next_input_frameno = frame_queue
+            .keys()
+            .last()
+            .copied()
+            .map(|key| key + 1)
+            .unwrap_or(0);
         while next_input_frameno < frameno + opts.lookahead_distance {
             let frame = y4m::read_video_frame::<R, T>(dec);
             if let Ok(frame) = frame {
