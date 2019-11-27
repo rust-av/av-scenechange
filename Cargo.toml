@@ -3,6 +3,9 @@ name = "av-scenechange"
 version = "0.1.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
 edition = "2018"
+description = "Estimates frames in a video where a scenecut would be ideal"
+license = "MIT"
+repository = "https://github.com/rust-av/av-scenechange"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
