@@ -10,7 +10,7 @@ repository = "https://github.com/rust-av/av-scenechange"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-y4m = "0.4.0"
+y4m = "0.5.0"
 num-traits = "0.2.9"
 clap = { version = "2.33.0", optional = true }
 serde = { version = "1.0.102", optional = true }
