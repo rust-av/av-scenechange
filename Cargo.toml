@@ -1,6 +1,6 @@
 [package]
 name = "av-scenechange"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
 edition = "2018"
 description = "Estimates frames in a video where a scenecut would be ideal"
