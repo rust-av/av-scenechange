@@ -8,7 +8,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 
 /// Options determining how to run scene change detection.
-#[derive(Debug, Clone, Copy)]
 pub struct DetectionOptions {
     /// Whether or not to analyze the chroma planes.
     /// Enabling this is slower, but may be more accurate.
@@ -28,6 +27,12 @@ pub struct DetectionOptions {
     ///
     /// Not used if `ignore_flashes` is `true`.
     pub lookahead_distance: usize,
+    /// An optional callback that will fire after each frame is analyzed.
+    /// Arguments passed in will be, in order,
+    /// the number of frames analyzed, and the number of keyframes detected.
+    ///
+    /// This is generally useful for displaying progress, etc.
+    pub progress_callback: Option<Box<dyn Fn(usize, usize)>>,
 }
 
 impl Default for DetectionOptions {
@@ -38,6 +43,7 @@ impl Default for DetectionOptions {
             lookahead_distance: 5,
             min_scenecut_distance: None,
             max_scenecut_distance: None,
+            progress_callback: None,
         }
     }
 }
@@ -55,7 +61,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
 
     let bit_depth = dec.get_bit_depth() as u8;
     let chroma_sampling = ChromaSampling::from(dec.get_colorspace());
-    let mut detector = SceneChangeDetector::new(bit_depth, chroma_sampling, opts);
+    let mut detector = SceneChangeDetector::new(bit_depth, chroma_sampling, &opts);
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     let mut frameno = 0;
@@ -103,6 +109,9 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         }
 
         frameno += 1;
+        if let Some(ref progress_fn) = opts.progress_callback {
+            progress_fn(frameno, keyframes.len());
+        }
     }
     keyframes.into_iter().collect()
 }
@@ -153,18 +162,18 @@ impl ChromaSampling {
 }
 
 /// Runs keyframe detection on frames from the lookahead queue.
-struct SceneChangeDetector {
+struct SceneChangeDetector<'a> {
     /// Minimum average difference between YUV deltas that will trigger a scene change.
     threshold: u8,
-    opts: DetectionOptions,
+    opts: &'a DetectionOptions,
     /// Frames that cannot be marked as keyframes due to the algorithm excluding them.
     /// Storing the frame numbers allows us to avoid looking back more than one frame.
     excluded_frames: BTreeSet<usize>,
     chroma_sampling: ChromaSampling,
 }
 
-impl SceneChangeDetector {
-    pub fn new(bit_depth: u8, chroma_sampling: ChromaSampling, opts: DetectionOptions) -> Self {
+impl<'a> SceneChangeDetector<'a> {
+    pub fn new(bit_depth: u8, chroma_sampling: ChromaSampling, opts: &'a DetectionOptions) -> Self {
         // This implementation is based on a Python implementation at
         // https://pyscenedetect.readthedocs.io/en/latest/reference/detection-methods/.
         // The Python implementation uses HSV values and a threshold of 30. Comparing the
