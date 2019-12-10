@@ -1,3 +1,8 @@
+## Version 0.4.0 (unreleased)
+- [Breaking, New Feature] Now returns a `DetectionOptions` struct,
+which includes the list of scenecut frames, and the total count
+of frames in the video. The CLI output will reflect this as well.
+
 ## Version 0.3.0
 - [Breaking, New Feature] Add the ability to pass a `progress_callback` function
   to the `DetectionOptions`.

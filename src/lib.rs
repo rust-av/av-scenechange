@@ -48,15 +48,23 @@ impl Default for DetectionOptions {
     }
 }
 
+/// Results from a scene change detection pass.
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize))]
+pub struct DetectionResults {
+    /// The 0-indexed frame numbers where scene changes were detected.
+    pub scene_changes: Vec<usize>,
+    /// The total number of frames read.
+    pub frame_count: usize,
+}
+
 /// Runs through a y4m video clip,
 /// detecting where scene changes occur.
 /// This is adjustable based on the `opts` parameters.
-///
-/// Returns a `Vec` containing the frame numbers where the scene changes occur.
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
-) -> Vec<usize> {
+) -> DetectionResults {
     assert!(opts.lookahead_distance >= 1);
 
     let bit_depth = dec.get_bit_depth() as u8;
@@ -113,7 +121,10 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             progress_fn(frameno, keyframes.len());
         }
     }
-    keyframes.into_iter().collect()
+    DetectionResults {
+        scene_changes: keyframes.into_iter().collect(),
+        frame_count: frameno,
+    }
 }
 
 type PlaneData<T> = [Vec<T>; 3];
