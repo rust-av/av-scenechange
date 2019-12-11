@@ -91,26 +91,16 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             }
         }
 
+        // The frame_queue should start at whatever the previous frame was
         let frame_set = frame_queue
-            .iter()
-            .skip_while(|&(&key, _)| key < frameno)
-            .map(|(_, value)| value)
-            .take(opts.lookahead_distance)
+            .values()
+            .take(opts.lookahead_distance + 1)
             .collect::<Vec<_>>();
-        if frame_set.is_empty() {
+        if frame_set.len() < 2 {
             // End of video
             break;
         }
-        detector.analyze_next_frame(
-            if frameno == 0 {
-                None
-            } else {
-                frame_queue.get(&(frameno - 1))
-            },
-            &frame_set,
-            frameno,
-            &mut keyframes,
-        );
+        detector.analyze_next_frame(&frame_set, frameno, &mut keyframes);
 
         if frameno > 0 {
             frame_queue.remove(&(frameno - 1));
@@ -207,50 +197,27 @@ impl<'a> SceneChangeDetector<'a> {
     /// This function requires that a subset of input frames
     /// is passed to it in order, and that `keyframes` is only
     /// updated from this method. `input_frameno` should correspond
-    /// to the first frame in `frame_set`.
+    /// to the second frame in `frame_set`.
     ///
     /// This will gracefully handle the first frame in the video as well.
     pub fn analyze_next_frame<T: Pixel>(
         &mut self,
-        previous_frame: Option<&PlaneData<T>>,
         frame_set: &[&PlaneData<T>],
         input_frameno: usize,
         keyframes: &mut BTreeSet<usize>,
     ) {
-        let frame_set = match previous_frame {
-            Some(frame) => [frame]
-                .iter()
-                .chain(frame_set.iter())
-                .cloned()
-                .collect::<Vec<_>>(),
-            None => {
-                // The first frame is always a keyframe.
-                keyframes.insert(0);
-                return;
-            }
-        };
-
-        self.exclude_scene_flashes(&frame_set, input_frameno);
-
-        if self.is_key_frame(&frame_set[0], &frame_set[1], input_frameno, keyframes) {
+        if input_frameno == 0 {
             keyframes.insert(input_frameno);
+            return;
         }
-    }
-    /// Determines if `current_frame` should be a keyframe.
-    fn is_key_frame<T: Pixel>(
-        &self,
-        previous_frame: &PlaneData<T>,
-        current_frame: &PlaneData<T>,
-        current_frameno: usize,
-        keyframes: &mut BTreeSet<usize>,
-    ) -> bool {
+
         // Find the distance to the previous keyframe.
         let previous_keyframe = keyframes.iter().last().unwrap();
-        let distance = current_frameno - previous_keyframe;
+        let distance = input_frameno - previous_keyframe;
 
         // Handle minimum and maximum key frame intervals.
         if distance < self.opts.min_scenecut_distance.unwrap_or(0) {
-            return false;
+            return;
         }
         if distance
             >= self
@@ -258,9 +225,24 @@ impl<'a> SceneChangeDetector<'a> {
                 .max_scenecut_distance
                 .unwrap_or(usize::max_value())
         {
-            return true;
+            keyframes.insert(input_frameno);
+            return;
         }
 
+        self.exclude_scene_flashes(&frame_set, input_frameno);
+
+        if self.is_key_frame(&frame_set[0], &frame_set[1], input_frameno) {
+            keyframes.insert(input_frameno);
+        }
+    }
+
+    /// Determines if `current_frame` should be a keyframe.
+    fn is_key_frame<T: Pixel>(
+        &self,
+        previous_frame: &PlaneData<T>,
+        current_frame: &PlaneData<T>,
+        current_frameno: usize,
+    ) -> bool {
         if self.excluded_frames.contains(&current_frameno) {
             return false;
         }
