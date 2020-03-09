@@ -9,14 +9,14 @@ mod refs;
 mod util;
 mod y4m;
 
-use self::frame::Frame;
-use self::util::*;
 use crate::cost::{estimate_inter_costs, estimate_intra_costs};
-use crate::frame::Plane;
 use ::y4m::Decoder;
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::sync::Arc;
+use v_frame::frame::Frame;
+use v_frame::pixel::{CastFromPrimitive, ChromaSampling, Pixel};
+use v_frame::plane::Plane;
 
 /// Options determining how to run scene change detection.
 pub struct DetectionOptions {

@@ -1,8 +1,9 @@
-use crate::frame::{Frame, Plane};
-use crate::util::Pixel;
 use std::ops;
 use std::ops::{Index, IndexMut};
 use std::sync::Arc;
+use v_frame::frame::Frame;
+use v_frame::pixel::Pixel;
+use v_frame::plane::Plane;
 
 pub const PRIMARY_REF_NONE: u32 = 7;
 pub const INTER_REFS_PER_FRAME: usize = 7;

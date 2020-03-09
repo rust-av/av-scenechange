@@ -116,11 +116,13 @@ const SUBPEL_FILTERS: [[[i32; SUBPEL_FILTER_SIZE]; 16]; 6] = [
 ];
 
 mod native {
-    use crate::frame::{PlaneRegionMut, PlaneSlice};
+    use crate::frame::PlaneRegionMut;
     use crate::mc::{SUBPEL_FILTERS, SUBPEL_FILTER_SIZE};
     use crate::pred::FilterMode;
-    use crate::util::{round_shift, CastFromPrimitive, Pixel};
     use num_traits::AsPrimitive;
+    use v_frame::math::round_shift;
+    use v_frame::pixel::{CastFromPrimitive, Pixel};
+    use v_frame::plane::PlaneSlice;
 
     pub fn put_8tap<T: Pixel>(
         dst: &mut PlaneRegionMut<'_, T>,
@@ -353,11 +355,12 @@ mod native {
 }
 
 mod x86 {
-    use crate::frame::{PlaneRegionMut, PlaneSlice};
+    use crate::frame::PlaneRegionMut;
     use crate::mc::native;
     use crate::pred::FilterMode;
     use crate::pred::FilterMode::*;
-    use crate::util::{Pixel, PixelType};
+    use v_frame::pixel::{Pixel, PixelType};
+    use v_frame::plane::PlaneSlice;
 
     pub fn put_8tap<T: Pixel>(
         dst: &mut PlaneRegionMut<'_, T>,

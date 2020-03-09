@@ -17,6 +17,7 @@ serde_json = { version = "1.0.41", optional = true }
 libc = "0.2.66"
 paste = "0.1.6"
 arrayvec = "0.5"
+v_frame = "0.1"
 
 [build-dependencies]
 nasm-rs = "0.1.5"

@@ -31,14 +31,16 @@ fn build_nasm_files() {
         let dest_path = Path::new(&out_dir).join("config.asm");
         let mut config_file = File::create(dest_path).unwrap();
         config_file
-            .write(b"	%define private_prefix scenechangeasm\n")
+            .write_all(b"	%define private_prefix scenechangeasm\n")
             .unwrap();
-        config_file.write(b"	%define ARCH_X86_32 0\n").unwrap();
-        config_file.write(b" %define ARCH_X86_64 1\n").unwrap();
-        config_file.write(b"	%define PIC 1\n").unwrap();
-        config_file.write(b" %define STACK_ALIGNMENT 16\n").unwrap();
+        config_file.write_all(b"	%define ARCH_X86_32 0\n").unwrap();
+        config_file.write_all(b" %define ARCH_X86_64 1\n").unwrap();
+        config_file.write_all(b"	%define PIC 1\n").unwrap();
+        config_file
+            .write_all(b" %define STACK_ALIGNMENT 16\n")
+            .unwrap();
         if cfg!(target_os = "macos") {
-            config_file.write(b" %define PREFIX 1\n").unwrap();
+            config_file.write_all(b" %define PREFIX 1\n").unwrap();
         }
     }
     let mut config_include_arg = String::from("-I");
@@ -68,7 +70,7 @@ fn build_nasm_files() {
 fn main() {
     #[cfg(target_arch = "x86_64")]
     {
-        println!("cargo:rustc-cfg={}", "nasm_x86_64");
+        println!("cargo:rustc-cfg=nasm_x86_64");
         build_nasm_files()
     }
 }

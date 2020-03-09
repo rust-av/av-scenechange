@@ -5,10 +5,11 @@ use crate::refs::RefType::NONE_FRAME;
 use crate::refs::{
     FrameMotionVectors, MotionVector, RefType, ReferenceFrame, ALL_INTER_REFS, REF_FRAMES,
 };
-use crate::util::Pixel;
 use arrayvec::ArrayVec;
 use std::convert::identity;
 use std::sync::Arc;
+use v_frame::pixel::Pixel;
+use v_frame::plane::{Plane, PlaneConfig, PlaneOffset};
 
 #[inline(always)]
 pub(crate) fn build_coarse_pmvs<T: Pixel>(

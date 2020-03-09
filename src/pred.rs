@@ -9,8 +9,10 @@ use crate::frame::BlockSize::*;
 use crate::frame::*;
 use crate::mc::*;
 use crate::refs::{MotionVector, RefType};
-use crate::util::{AlignedArray, Pixel};
+use crate::util::AlignedArray;
 use std::mem::size_of;
+use v_frame::pixel::Pixel;
+use v_frame::plane::{Plane, PlaneOffset, PlaneSlice};
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]

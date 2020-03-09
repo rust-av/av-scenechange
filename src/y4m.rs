@@ -1,6 +1,8 @@
-use crate::frame::Frame;
 use crate::util::*;
 use std::io::Read;
+use v_frame::frame::Frame;
+use v_frame::pixel::ChromaSampling;
+use v_frame::pixel::Pixel;
 
 pub(crate) fn get_video_details<R: Read>(dec: &y4m::Decoder<R>) -> VideoDetails {
     let width = dec.get_width();
@@ -22,9 +24,9 @@ pub(crate) fn get_video_details<R: Read>(dec: &y4m::Decoder<R>) -> VideoDetails 
 }
 
 fn map_y4m_color_space(color_space: y4m::Colorspace) -> (ChromaSampling, ChromaSamplePosition) {
-    use crate::ChromaSamplePosition::*;
-    use crate::ChromaSampling::*;
     use y4m::Colorspace::*;
+    use ChromaSamplePosition::*;
+    use ChromaSampling::*;
     match color_space {
         Cmono => (Cs400, Unknown),
         C420jpeg | C420paldv => (Cs420, Unknown),
@@ -42,7 +44,8 @@ pub(crate) fn read_video_frame<R: Read, T: Pixel>(
     let bytes = dec.get_bytes_per_sample();
     dec.read_frame()
         .map(|frame| {
-            let mut f: Frame<T> = Frame::new(cfg.width, cfg.height, cfg.chroma_sampling);
+            let mut f: Frame<T> =
+                Frame::new_with_padding(cfg.width, cfg.height, cfg.chroma_sampling, 0);
 
             let (chroma_width, _) = cfg
                 .chroma_sampling
