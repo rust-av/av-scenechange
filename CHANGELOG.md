@@ -1,14 +1,21 @@
-## Version 0.4.0 (unreleased)
-- [Breaking, New Feature] Now returns a `DetectionOptions` struct,
+## Version 0.4.0
+- [Breaking, New Feature] `detect_scene_changes` returns a `DetectionOptions` struct,
   which includes the list of scenecut frames, and the total count
   of frames in the video. The CLI output will reflect this as well.
 - [Breaking] Replace the default algorithm with an 8x8-block cost-based algorithm.
   This is more accurate in many cases.
-- [Breaking] The interface for inputting frame data has been replaced
-  with one that matches rav1e.
+- [Breaking] As a result of the above change, now requires nasm for compilation.
+  No action is needed if you use a prebuilt binary.
 - [Breaking] Replace the `use_chroma` option with a `fast_analysis` option.
   The new name is more accurate, as the updated algorithm will always analyze
   only the luma plane.
+- [Breaking] Move the `progress_callback` parameter from `DetectionOptions`
+  to `detect_scene_changes`, since it only applies to that interface.
+- [New Feature] Expose the `SceneChangeDetector` struct, which allows
+  going frame-by-frame to analyze a clip. Needed for some use cases.
+  `detect_scene_changes` is the simpler, preferred interface.
+- The library for inputting frame data has been replaced
+  with one that matches rav1e.
 - Simplify/optimize some internal code.
 
 ## Version 0.3.0

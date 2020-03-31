@@ -13,10 +13,11 @@ use crate::cost::{estimate_inter_costs, estimate_intra_costs};
 use ::y4m::Decoder;
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
-use std::sync::Arc;
 use v_frame::frame::Frame;
 use v_frame::pixel::{CastFromPrimitive, ChromaSampling, Pixel};
 use v_frame::plane::Plane;
+
+pub use v_frame;
 
 /// Options determining how to run scene change detection.
 pub struct DetectionOptions {
@@ -43,12 +44,6 @@ pub struct DetectionOptions {
     ///
     /// Not used if `ignore_flashes` is `true`.
     pub lookahead_distance: usize,
-    /// An optional callback that will fire after each frame is analyzed.
-    /// Arguments passed in will be, in order,
-    /// the number of frames analyzed, and the number of keyframes detected.
-    ///
-    /// This is generally useful for displaying progress, etc.
-    pub progress_callback: Option<Box<dyn Fn(usize, usize)>>,
 }
 
 impl Default for DetectionOptions {
@@ -59,7 +54,6 @@ impl Default for DetectionOptions {
             lookahead_distance: 5,
             min_scenecut_distance: None,
             max_scenecut_distance: None,
-            progress_callback: None,
         }
     }
 }
@@ -74,12 +68,23 @@ pub struct DetectionResults {
     pub frame_count: usize,
 }
 
+/// An optional callback that will fire after each frame is analyzed.
+/// Arguments passed in will be, in order,
+/// the number of frames analyzed, and the number of keyframes detected.
+///
+/// This is generally useful for displaying progress, etc.
+pub type ProgressCallback = Box<dyn Fn(usize, usize)>;
+
 /// Runs through a y4m video clip,
 /// detecting where scene changes occur.
 /// This is adjustable based on the `opts` parameters.
+///
+/// This is the preferred, simplified interface
+/// for analyzing a whole clip for scene changes.
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
+    progress_callback: Option<ProgressCallback>,
 ) -> DetectionResults {
     assert!(opts.lookahead_distance >= 1);
 
@@ -102,7 +107,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         while next_input_frameno < frameno + opts.lookahead_distance {
             let frame = y4m::read_video_frame::<R, T>(dec, &video_details);
             if let Ok(frame) = frame {
-                frame_queue.insert(next_input_frameno, Arc::new(frame));
+                frame_queue.insert(next_input_frameno, frame);
                 next_input_frameno += 1;
             } else {
                 // End of input
@@ -113,7 +118,6 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         // The frame_queue should start at whatever the previous frame was
         let frame_set = frame_queue
             .values()
-            .cloned()
             .take(opts.lookahead_distance + 1)
             .collect::<Vec<_>>();
         if frame_set.len() < 2 {
@@ -127,7 +131,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         }
 
         frameno += 1;
-        if let Some(ref progress_fn) = opts.progress_callback {
+        if let Some(ref progress_fn) = progress_callback {
             progress_fn(frameno, keyframes.len());
         }
     }
@@ -138,7 +142,12 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
 }
 
 /// Runs keyframe detection on frames from the lookahead queue.
-struct SceneChangeDetector<'a> {
+///
+/// This is a lower-level interface which allows going frame-by-frame.
+/// It is recommended to use `detect_scene_changes` instead.
+/// This interface is a fallback if analyzing the whole video in one pass
+/// does not meet your use case.
+pub struct SceneChangeDetector<'a> {
     /// Minimum average difference between YUV deltas that will trigger a scene change.
     threshold: usize,
     opts: &'a DetectionOptions,
@@ -184,7 +193,7 @@ impl<'a> SceneChangeDetector<'a> {
     /// This will gracefully handle the first frame in the video as well.
     pub fn analyze_next_frame<T: Pixel>(
         &mut self,
-        frame_set: &[Arc<Frame<T>>],
+        frame_set: &[&Frame<T>],
         input_frameno: usize,
         keyframes: &mut BTreeSet<usize>,
     ) {
@@ -213,12 +222,7 @@ impl<'a> SceneChangeDetector<'a> {
 
         self.exclude_scene_flashes(&frame_set, input_frameno, previous_keyframe);
 
-        if self.is_key_frame(
-            frame_set[0].clone(),
-            frame_set[1].clone(),
-            input_frameno,
-            previous_keyframe,
-        ) {
+        if self.is_key_frame(frame_set[0], frame_set[1], input_frameno, previous_keyframe) {
             keyframes.insert(input_frameno);
         }
     }
@@ -226,8 +230,8 @@ impl<'a> SceneChangeDetector<'a> {
     /// Determines if `current_frame` should be a keyframe.
     fn is_key_frame<T: Pixel>(
         &self,
-        previous_frame: Arc<Frame<T>>,
-        current_frame: Arc<Frame<T>>,
+        previous_frame: &Frame<T>,
+        current_frame: &Frame<T>,
         current_frameno: usize,
         previous_keyframe: usize,
     ) -> bool {
@@ -246,7 +250,7 @@ impl<'a> SceneChangeDetector<'a> {
     /// Saves excluded frame numbers in `self.excluded_frames`.
     fn exclude_scene_flashes<T: Pixel>(
         &mut self,
-        frame_subset: &[Arc<Frame<T>>],
+        frame_subset: &[&Frame<T>],
         frameno: usize,
         previous_keyframe: usize,
     ) {
@@ -270,8 +274,8 @@ impl<'a> SceneChangeDetector<'a> {
         // to enable early loop exit if we find a scene flash.
         for j in (1..=lookahead_distance).rev() {
             if !self.has_scenecut(
-                frame_subset[0].clone(),
-                frame_subset[j].clone(),
+                frame_subset[0],
+                frame_subset[j],
                 frameno - 1 + j,
                 previous_keyframe,
             ) {
@@ -293,8 +297,8 @@ impl<'a> SceneChangeDetector<'a> {
         // If the video ends before F, no frame becomes a scenecut.
         for i in 1..lookahead_distance {
             if self.has_scenecut(
-                frame_subset[i].clone(),
-                frame_subset[lookahead_distance].clone(),
+                frame_subset[i],
+                frame_subset[lookahead_distance],
                 frameno - 1 + lookahead_distance,
                 previous_keyframe,
             ) {
@@ -311,8 +315,8 @@ impl<'a> SceneChangeDetector<'a> {
     /// with this method. This is intended to change via https://github.com/xiph/rav1e/issues/794.
     fn has_scenecut<T: Pixel>(
         &self,
-        frame1: Arc<Frame<T>>,
-        frame2: Arc<Frame<T>>,
+        frame1: &Frame<T>,
+        frame2: &Frame<T>,
         frameno: usize,
         previous_keyframe: usize,
     ) -> bool {
@@ -321,7 +325,7 @@ impl<'a> SceneChangeDetector<'a> {
             let delta = self.delta_in_planes(&frame1.planes[0], &frame2.planes[0]);
             delta >= self.threshold as u64 * len as u64
         } else {
-            let intra_costs = estimate_intra_costs(&*frame2, self.bit_depth);
+            let intra_costs = estimate_intra_costs(frame2, self.bit_depth);
             let intra_cost = intra_costs.iter().map(|&cost| cost as u64).sum::<u64>() as f64
                 / intra_costs.len() as f64;
 

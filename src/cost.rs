@@ -1,7 +1,6 @@
 use crate::frame::*;
 use crate::me::*;
 use crate::pred::{get_intra_edges, PredictionMode};
-use std::sync::Arc;
 use v_frame::frame::Frame;
 use v_frame::math::msb;
 use v_frame::pixel::{CastFromPrimitive, ChromaSampling, Pixel, PixelType};
@@ -90,8 +89,8 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(frame: &Frame<T>, bit_depth: usize)
 }
 
 pub(crate) fn estimate_inter_costs<T: Pixel>(
-    frame: Arc<Frame<T>>,
-    ref_frame: Arc<Frame<T>>,
+    frame: &Frame<T>,
+    ref_frame: &Frame<T>,
     bit_depth: usize,
     chroma_sampling: ChromaSampling,
 ) -> Box<[u32]> {
@@ -106,7 +105,7 @@ pub(crate) fn estimate_inter_costs<T: Pixel>(
     let mut fi = FrameInvariants::new_inter_frame(&last_fi);
 
     // Compute the motion vectors.
-    let mut fs = FrameState::new_with_frame(&fi, frame.clone());
+    let mut fs = FrameState::new_with_frame(&fi, frame);
     compute_motion_vectors(&mut fi, &mut fs);
 
     // Estimate inter costs

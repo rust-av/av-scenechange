@@ -177,17 +177,17 @@ impl<T: Pixel> FrameInvariants<T> {
 }
 
 #[derive(Debug, Clone)]
-pub struct FrameState<T: Pixel> {
+pub struct FrameState<'a, T: Pixel> {
     pub sb_size_log2: usize,
-    pub input: Arc<Frame<T>>,
-    pub input_hres: Arc<Plane<T>>, // half-resolution version of input luma
-    pub input_qres: Arc<Plane<T>>, // quarter-resolution version of input luma
-    pub rec: Arc<Frame<T>>,
+    pub input: &'a Frame<T>,
+    pub input_hres: Plane<T>, // half-resolution version of input luma
+    pub input_qres: Plane<T>, // quarter-resolution version of input luma
+    pub rec: Frame<T>,
     pub frame_mvs: Arc<Vec<FrameMotionVectors>>,
 }
 
-impl<T: Pixel> FrameState<T> {
-    pub fn new_with_frame(fi: &FrameInvariants<T>, frame: Arc<Frame<T>>) -> Self {
+impl<'a, T: Pixel> FrameState<'a, T> {
+    pub fn new_with_frame(fi: &FrameInvariants<T>, frame: &'a Frame<T>) -> Self {
         let luma_width = frame.planes[0].cfg.width;
         let luma_height = frame.planes[0].cfg.height;
         let luma_padding_x = frame.planes[0].cfg.xpad;
@@ -199,14 +199,14 @@ impl<T: Pixel> FrameState<T> {
         Self {
             sb_size_log2: fi.sb_size_log2(),
             input: frame,
-            input_hres: Arc::new(hres),
-            input_qres: Arc::new(qres),
-            rec: Arc::new(Frame::new_with_padding(
+            input_hres: hres,
+            input_qres: qres,
+            rec: Frame::new_with_padding(
                 luma_width,
                 luma_height,
                 fi.chroma_sampling,
                 cmp::max(luma_padding_x, luma_padding_y),
-            )),
+            ),
             frame_mvs: {
                 let mut vec = Vec::with_capacity(REF_FRAMES);
                 for _ in 0..REF_FRAMES {
@@ -668,6 +668,7 @@ impl<'a, T: Pixel> Iterator for VertWindows<'a, T> {
     type Item = PlaneRegion<'a, T>;
 
     #[inline(always)]
+    #[allow(clippy::iter_nth_zero)]
     fn next(&mut self) -> Option<Self::Item> {
         self.nth(0)
     }
@@ -702,6 +703,7 @@ impl<'a, T: Pixel> Iterator for HorzWindows<'a, T> {
     type Item = PlaneRegion<'a, T>;
 
     #[inline(always)]
+    #[allow(clippy::iter_nth_zero)]
     fn next(&mut self) -> Option<Self::Item> {
         self.nth(0)
     }

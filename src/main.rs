@@ -40,7 +40,7 @@ fn main() {
     };
     let mut reader = BufReader::new(input);
     let opts = DetectionOptions {
-        fast_analysis: !matches.is_present("FAST_MODE"),
+        fast_analysis: matches.is_present("FAST_MODE"),
         ignore_flashes: !matches.is_present("DETECT_FLASHES"),
         min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
             val.parse()
@@ -55,9 +55,9 @@ fn main() {
     let mut dec = y4m::Decoder::new(&mut reader).unwrap();
     let bit_depth = dec.get_bit_depth();
     let results = if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(&mut dec, opts)
+        detect_scene_changes::<_, u8>(&mut dec, opts, None)
     } else {
-        detect_scene_changes::<_, u16>(&mut dec, opts)
+        detect_scene_changes::<_, u16>(&mut dec, opts, None)
     };
     print!("{}", serde_json::to_string(&results).unwrap());
 }
