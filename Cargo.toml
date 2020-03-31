@@ -6,8 +6,7 @@ edition = "2018"
 description = "Estimates frames in a video where a scenecut would be ideal"
 license = "MIT"
 repository = "https://github.com/rust-av/av-scenechange"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+build = "build.rs"
 
 [dependencies]
 y4m = "0.5.0"
@@ -15,6 +14,13 @@ num-traits = "0.2.9"
 clap = { version = "2.33.0", optional = true }
 serde = { version = "1.0.102", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.41", optional = true }
+libc = "0.2.66"
+paste = "0.1.6"
+arrayvec = "0.5"
+v_frame = "0.1"
+
+[build-dependencies]
+nasm-rs = "0.1.5"
 
 [features]
 default = ["binary"]

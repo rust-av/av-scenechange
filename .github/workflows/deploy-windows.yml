@@ -20,6 +20,11 @@ jobs:
         profile: minimal
         toolchain: stable
         target: x86_64-pc-windows-gnu
+    - name: Install nasm
+      run: |
+        $NASM_VERSION="nasm-2.14.02"
+        curl -LO "https://people.xiph.org/~tdaede/$NASM_VERSION-win64.zip"
+        7z e -y "$NASM_VERSION-win64.zip" -o"C:\nasm"
     - name: Set rust for cross-compilation
       env:
           TARGET: rustlib/x86_64-pc-windows-gnu/lib/

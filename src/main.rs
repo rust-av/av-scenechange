@@ -40,7 +40,7 @@ fn main() {
     };
     let mut reader = BufReader::new(input);
     let opts = DetectionOptions {
-        use_chroma: !matches.is_present("FAST_MODE"),
+        fast_analysis: !matches.is_present("FAST_MODE"),
         ignore_flashes: !matches.is_present("DETECT_FLASHES"),
         min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
             val.parse()
