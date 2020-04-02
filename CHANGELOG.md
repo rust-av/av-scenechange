@@ -1,3 +1,6 @@
+## Version 0.4.1 (unreleased)
+- Improve performance and memory usage
+
 ## Version 0.4.0
 - [Breaking, New Feature] `detect_scene_changes` returns a `DetectionOptions` struct,
   which includes the list of scenecut frames, and the total count

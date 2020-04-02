@@ -1,6 +1,5 @@
 use crate::pred::{FilterMode, PredictionMode};
 use crate::refs::*;
-use std::cmp;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
@@ -182,7 +181,6 @@ pub struct FrameState<'a, T: Pixel> {
     pub input: &'a Frame<T>,
     pub input_hres: Plane<T>, // half-resolution version of input luma
     pub input_qres: Plane<T>, // quarter-resolution version of input luma
-    pub rec: Frame<T>,
     pub frame_mvs: Arc<Vec<FrameMotionVectors>>,
 }
 
@@ -190,8 +188,6 @@ impl<'a, T: Pixel> FrameState<'a, T> {
     pub fn new_with_frame(fi: &FrameInvariants<T>, frame: &'a Frame<T>) -> Self {
         let luma_width = frame.planes[0].cfg.width;
         let luma_height = frame.planes[0].cfg.height;
-        let luma_padding_x = frame.planes[0].cfg.xpad;
-        let luma_padding_y = frame.planes[0].cfg.ypad;
 
         let hres = frame.planes[0].downsampled(luma_width / 2, luma_height / 2);
         let qres = hres.downsampled(luma_width / 4, luma_height / 4);
@@ -201,12 +197,6 @@ impl<'a, T: Pixel> FrameState<'a, T> {
             input: frame,
             input_hres: hres,
             input_qres: qres,
-            rec: Frame::new_with_padding(
-                luma_width,
-                luma_height,
-                fi.chroma_sampling,
-                cmp::max(luma_padding_x, luma_padding_y),
-            ),
             frame_mvs: {
                 let mut vec = Vec::with_capacity(REF_FRAMES);
                 for _ in 0..REF_FRAMES {
