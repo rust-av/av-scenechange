@@ -1,4 +1,4 @@
-## Version 0.4.1 (unreleased)
+## Version 0.4.1
 - Improve performance and memory usage
 
 ## Version 0.4.0
