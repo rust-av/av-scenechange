@@ -16,9 +16,10 @@ jobs:
 
     - name: Install nasm
       run: |
-        $NASM_VERSION="nasm-2.14.02"
-        curl -LO "https://people.xiph.org/~tdaede/$NASM_VERSION-win64.zip"
-        7z e -y "$NASM_VERSION-win64.zip" -o"C:\nasm"
+        $NASM_VERSION="2.14.02"
+        $LINK="https://www.nasm.us/pub/nasm/releasebuilds/$NASM_VERSION/win64"
+        curl -LO "$LINK/nasm-$NASM_VERSION-win64.zip"
+        7z e -y "nasm-$NASM_VERSION-win64.zip" -o"C:\nasm"
         echo "::add-path::C:\nasm"
 
     - name: Install Rust
@@ -47,7 +48,7 @@ jobs:
             "$METRICS_PATH\av-scenechange.exe" "C:\usr\local"
 
     - name: Upload binaries
-      uses: actions/upload-artifact@v1
+      uses: actions/upload-artifact@v2
       with:
         name: av-scenechange-bins
         path: av-scenechange.zip
@@ -62,9 +63,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Download the zip
-      uses: actions/download-artifact@v1
-      with:
-        name: av-scenechange-bins
+      uses: actions/download-artifact@v2
 
     - name: Unzip av-scenechange Windows binaries
       run: |
