@@ -37,7 +37,7 @@ dependencies = [
  "libc 0.2.70 (registry+https://github.com/rust-lang/crates.io-index)",
  "nasm-rs 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "paste 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "paste 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.53 (registry+https://github.com/rust-lang/crates.io-index)",
  "v_frame 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -116,16 +116,16 @@ dependencies = [
 
 [[package]]
 name = "paste"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "paste-impl 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)",
+ "paste-impl 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro-hack 0.5.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "paste-impl"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro-hack 0.5.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -276,8 +276,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum noop_proc_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5ff36f3ca83b4b06a6080c42f67d97a8b0f009224d7db3a87744ff2e33a0c146"
 "checksum num-derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0c8b15b261814f992e33760b1fca9fe8b693d8a65299f20c9901688636cfb746"
 "checksum num-traits 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
-"checksum paste 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "0a229b1c58c692edcaa5b9b0948084f130f55d2dcc15b02fcc5340b2b4521476"
-"checksum paste-impl 0.1.12 (registry+https://github.com/rust-lang/crates.io-index)" = "2e0bf239e447e67ff6d16a8bb5e4d4bd2343acf5066061c0e8e06ac5ba8ca68c"
+"checksum paste 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "678f27e19361472a23717f11d229a7522ef64605baf0715c896a94b8b6b13a06"
+"checksum paste-impl 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)" = "149089128a45d8e377677b08873b4bad2a56618f80e4f28a83862ba250994a30"
 "checksum proc-macro-hack 0.5.15 (registry+https://github.com/rust-lang/crates.io-index)" = "0d659fe7c6d27f25e9d80a1a094c223f5246f6a6596453e09d7229bf42750b63"
 "checksum proc-macro2 1.0.10 (registry+https://github.com/rust-lang/crates.io-index)" = "df246d292ff63439fea9bc8c0a270bed0e390d5ebd4db4ba15aba81111b5abe3"
 "checksum quote 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2bdc6c187c65bca4260c9011c9e3132efe4909da44726bad24cf7572ae338d7f"

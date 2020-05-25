@@ -15,7 +15,7 @@ clap = { version = "2.33.1", optional = true }
 serde = { version = "1.0.110", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.53", optional = true }
 libc = "0.2.70"
-paste = "0.1.12"
+paste = "0.1.13"
 arrayvec = "0.5"
 v_frame = "0.1"
 
