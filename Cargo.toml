@@ -20,7 +20,7 @@ arrayvec = "0.5"
 v_frame = "0.1"
 
 [build-dependencies]
-nasm-rs = "0.1.5"
+nasm-rs = "0.1.8"
 
 [features]
 default = ["binary"]
