@@ -14,7 +14,7 @@ num-traits = "0.2.12"
 clap = { version = "2.33.1", optional = true }
 serde = { version = "1.0.114", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.56", optional = true }
-libc = "0.2.71"
+libc = "0.2.72"
 paste = "0.1.18"
 arrayvec = "0.5"
 v_frame = "0.1"
