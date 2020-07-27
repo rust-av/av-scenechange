@@ -41,7 +41,7 @@ dependencies = [
  "serde 1.0.114 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.57 (registry+https://github.com/rust-lang/crates.io-index)",
  "v_frame 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "y4m 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "y4m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -255,7 +255,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "y4m"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [metadata]
@@ -292,4 +292,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum winapi 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "5c839a674fcd7a98952e593242ea400abe93992746761e38641405d28b00f419"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-"checksum y4m 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e5dbad859ce2d3ef045f80c0e55653d6ab8bdc4f3705bbb0a69c3282316697c5"
+"checksum y4m 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ab81337824b9776970061619ee7266b2331af3f3d06e454dae383b1a55eaa17f"
