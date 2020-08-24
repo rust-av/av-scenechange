@@ -9,7 +9,7 @@ repository = "https://github.com/rust-av/av-scenechange"
 build = "build.rs"
 
 [dependencies]
-y4m = "0.6.1"
+y4m = "0.7.0"
 num-traits = "0.2.12"
 clap = { version = "2.33.3", optional = true }
 serde = { version = "1.0.115", optional = true, features = ["derive"] }
