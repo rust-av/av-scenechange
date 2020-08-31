@@ -98,7 +98,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "num-derive"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 1.0.19 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -208,7 +208,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "noop_proc_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-derive 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "num-derive 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -254,7 +254,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum libc 0.2.76 (registry+https://github.com/rust-lang/crates.io-index)" = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
 "checksum nasm-rs 0.1.7 (registry+https://github.com/rust-lang/crates.io-index)" = "fea4fa2ba8f650120445ddcf137d8a6370ff01d55f00e6b29e0ab01b7c846464"
 "checksum noop_proc_macro 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "5ff36f3ca83b4b06a6080c42f67d97a8b0f009224d7db3a87744ff2e33a0c146"
-"checksum num-derive 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e0396233fb2d5b0ae3f05ff6aba9a09185f7f6e70f87fb01147d545f85364665"
+"checksum num-derive 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6f09b9841adb6b5e1f89ef7087ea636e0fd94b2851f887c1e3eb5d5f8228fab3"
 "checksum num-traits 0.2.12 (registry+https://github.com/rust-lang/crates.io-index)" = "ac267bcc07f48ee5f8935ab0d24f316fb722d7a1292e2913f0cc196b29ffd611"
 "checksum paste 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f6ddc8e145de01d9180ac7b78b9676f95a9c2447f6a88b2c2a04702211bc5d71"
 "checksum proc-macro2 1.0.19 (registry+https://github.com/rust-lang/crates.io-index)" = "04f5f085b5d71e2188cb8271e5da0161ad52c3f227a661a3c135fdf28e258b12"
