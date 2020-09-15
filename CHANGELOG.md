@@ -1,3 +1,7 @@
+## Version 0.4.2
+- Fix compilation on non-x86 targets
+- Bump various dependencies
+
 ## Version 0.4.1
 - Improve performance and memory usage
 
