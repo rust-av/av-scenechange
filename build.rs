@@ -23,7 +23,7 @@ fn rerun_dir<P: AsRef<Path>>(dir: P) {
     }
 }
 
-fn build_nasm_files() {
+fn build_nasm_files(os: &str) {
     use std::fs::File;
     use std::io::Write;
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -39,7 +39,7 @@ fn build_nasm_files() {
         config_file
             .write_all(b" %define STACK_ALIGNMENT 16\n")
             .unwrap();
-        if cfg!(target_os = "macos") {
+        if os == "macos" {
             config_file.write_all(b" %define PREFIX 1\n").unwrap();
         }
     }
@@ -68,9 +68,10 @@ fn build_nasm_files() {
 
 #[allow(unused_variables)]
 fn main() {
-    #[cfg(target_arch = "x86_64")]
-    {
+    let arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    let os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if arch == "x86_64" {
         println!("cargo:rustc-cfg=nasm_x86_64");
-        build_nasm_files()
+        build_nasm_files(&os)
     }
 }
