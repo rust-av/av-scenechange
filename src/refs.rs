@@ -62,7 +62,7 @@ pub struct ReferenceFrame<T: Pixel> {
 
 #[derive(Debug, Clone, Default)]
 pub struct ReferenceFramesSet<T: Pixel> {
-    pub frames: [Option<Arc<ReferenceFrame<T>>>; (REF_FRAMES as usize)],
+    pub frames: [Option<Arc<ReferenceFrame<T>>>; REF_FRAMES as usize],
 }
 
 impl<T: Pixel> ReferenceFramesSet<T> {

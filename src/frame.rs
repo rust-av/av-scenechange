@@ -12,10 +12,10 @@ use v_frame::plane::{Plane, PlaneConfig, PlaneOffset};
 
 pub const SB_SIZE_LOG2: usize = 6;
 pub const MI_SIZE_LOG2: usize = 2;
-pub const MIB_SIZE_LOG2: usize = (SB_SIZE_LOG2 - MI_SIZE_LOG2);
-pub const MI_SIZE: usize = (1 << MI_SIZE_LOG2);
+pub const MIB_SIZE_LOG2: usize = SB_SIZE_LOG2 - MI_SIZE_LOG2;
+pub const MI_SIZE: usize = 1 << MI_SIZE_LOG2;
 pub const MAX_SB_SIZE_LOG2: usize = 7;
-pub const MAX_MIB_SIZE_LOG2: usize = (MAX_SB_SIZE_LOG2 - MI_SIZE_LOG2);
+pub const MAX_MIB_SIZE_LOG2: usize = MAX_SB_SIZE_LOG2 - MI_SIZE_LOG2;
 
 pub const BLOCK_TO_PLANE_SHIFT: usize = MI_SIZE_LOG2;
 pub const SUPERBLOCK_TO_BLOCK_SHIFT: usize = MIB_SIZE_LOG2;
