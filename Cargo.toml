@@ -10,7 +10,7 @@ build = "build.rs"
 
 [dependencies]
 y4m = "0.7.0"
-num-traits = "0.2.12"
+num-traits = "0.2.14"
 clap = { version = "2.33.3", optional = true }
 serde = { version = "1.0.117", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.59", optional = true }
