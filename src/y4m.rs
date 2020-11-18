@@ -1,8 +1,5 @@
-use crate::util::*;
+use rav1e::prelude::{ChromaSamplePosition, ChromaSampling, Frame, Pixel, Rational};
 use std::io::Read;
-use v_frame::frame::Frame;
-use v_frame::pixel::ChromaSampling;
-use v_frame::pixel::Pixel;
 
 pub(crate) fn get_video_details<R: Read>(dec: &y4m::Decoder<R>) -> VideoDetails {
     let width = dec.get_width();
@@ -41,11 +38,17 @@ pub(crate) fn read_video_frame<R: Read, T: Pixel>(
     dec: &mut y4m::Decoder<R>,
     cfg: &VideoDetails,
 ) -> Result<Frame<T>, ()> {
+    const SB_SIZE_LOG2: usize = 6;
+    const SB_SIZE: usize = 1 << SB_SIZE_LOG2;
+    const SUBPEL_FILTER_SIZE: usize = 8;
+    const FRAME_MARGIN: usize = 16 + SUBPEL_FILTER_SIZE;
+    const LUMA_PADDING: usize = SB_SIZE + FRAME_MARGIN;
+
     let bytes = dec.get_bytes_per_sample();
     dec.read_frame()
         .map(|frame| {
             let mut f: Frame<T> =
-                Frame::new_with_padding(cfg.width, cfg.height, cfg.chroma_sampling, 0);
+                Frame::new_with_padding(cfg.width, cfg.height, cfg.chroma_sampling, LUMA_PADDING);
 
             let (chroma_width, _) = cfg
                 .chroma_sampling

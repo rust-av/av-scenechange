@@ -17,7 +17,7 @@ fn main() {
                 .long("fast"),
         )
         .arg(
-            Arg::with_name("DETECT_FLASHES")
+            Arg::with_name("EXCLUDE_FLASHES")
                 .help("Detect short scene flashes and exclude them as scene cuts")
                 .long("flashes"),
         )
@@ -41,7 +41,7 @@ fn main() {
     let mut reader = BufReader::new(input);
     let opts = DetectionOptions {
         fast_analysis: matches.is_present("FAST_MODE"),
-        ignore_flashes: !matches.is_present("DETECT_FLASHES"),
+        ignore_flashes: matches.is_present("EXCLUDE_FLASHES"),
         min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
             val.parse()
                 .expect("Min-scenecut must be a positive integer")
