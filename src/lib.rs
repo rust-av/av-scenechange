@@ -2,15 +2,17 @@
 
 mod y4m;
 
+pub use rav1e::scenechange::SceneChangeDetector;
+
 use ::y4m::Decoder;
 use rav1e::config::{CpuFeatureLevel, EncoderConfig};
 use rav1e::prelude::{Pixel, Sequence};
-use rav1e::scenechange::SceneChangeDetector;
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::sync::Arc;
 
 /// Options determining how to run scene change detection.
+#[derive(Debug, Clone, Copy)]
 pub struct DetectionOptions {
     /// The normal algorithm uses 8x8-block-level cost estimates
     /// to choose scenecuts.
@@ -66,19 +68,7 @@ pub struct DetectionResults {
 /// This is generally useful for displaying progress, etc.
 pub type ProgressCallback = Box<dyn Fn(usize, usize)>;
 
-/// Runs through a y4m video clip,
-/// detecting where scene changes occur.
-/// This is adjustable based on the `opts` parameters.
-///
-/// This is the preferred, simplified interface
-/// for analyzing a whole clip for scene changes.
-pub fn detect_scene_changes<R: Read, T: Pixel>(
-    dec: &mut Decoder<R>,
-    opts: DetectionOptions,
-    progress_callback: Option<ProgressCallback>,
-) -> DetectionResults {
-    assert!(opts.lookahead_distance >= 1);
-
+pub fn new_detector<R: Read>(dec: &mut Decoder<R>, opts: DetectionOptions) -> SceneChangeDetector {
     let video_details = y4m::get_video_details(dec);
     let mut config = EncoderConfig::with_speed_preset(if opts.fast_analysis { 10 } else { 6 });
     config.min_key_frame_interval = opts
@@ -97,13 +87,30 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     config.chroma_sample_position = video_details.chroma_sample_position;
 
     let sequence = Sequence::new(&config);
-    let mut detector = SceneChangeDetector::new(
+    SceneChangeDetector::new(
         config,
         CpuFeatureLevel::default(),
         opts.lookahead_distance,
         sequence,
         opts.ignore_flashes,
-    );
+    )
+}
+
+/// Runs through a y4m video clip,
+/// detecting where scene changes occur.
+/// This is adjustable based on the `opts` parameters.
+///
+/// This is the preferred, simplified interface
+/// for analyzing a whole clip for scene changes.
+pub fn detect_scene_changes<R: Read, T: Pixel>(
+    dec: &mut Decoder<R>,
+    opts: DetectionOptions,
+    progress_callback: Option<ProgressCallback>,
+) -> DetectionResults {
+    assert!(opts.lookahead_distance >= 1);
+
+    let mut detector = new_detector(dec, opts);
+    let video_details = y4m::get_video_details(dec);
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     keyframes.insert(0);
