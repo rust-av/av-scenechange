@@ -86,7 +86,7 @@ pub fn new_detector<R: Read>(dec: &mut Decoder<R>, opts: DetectionOptions) -> Sc
     config.chroma_sampling = video_details.chroma_sampling;
     config.chroma_sample_position = video_details.chroma_sample_position;
 
-    let sequence = Sequence::new(&config);
+    let sequence = Arc::new(Sequence::new(&config));
     SceneChangeDetector::new(
         config,
         CpuFeatureLevel::default(),

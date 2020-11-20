@@ -89,9 +89,9 @@ checksum = "71b66dc4e6b6d83f3afd41eb3006cd332a60d4e18496a31f2caa4069914d773f"
 
 [[package]]
 name = "cc"
-version = "1.0.62"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1770ced377336a88a67c473594ccc14eca6f4559217c34f64aac8f83d641b40"
+checksum = "92cc7b4cfeaa608da27ccbd00af8e1485761334821791ccf5ce88e9a2bb949e7"
 dependencies = [
  "jobserver",
 ]
@@ -426,7 +426,7 @@ dependencies = [
 [[package]]
 name = "rav1e"
 version = "0.4.0-alpha"
-source = "git+https://github.com/xiph/rav1e#db127a438600667827a0994a25e7b01d33528c1e"
+source = "git+https://github.com/xiph/rav1e#0044845d3e371fd6244e6e7c0bb0073a49ad52a6"
 dependencies = [
  "arbitrary 0.4.7",
  "arg_enum_proc_macro",
@@ -655,7 +655,7 @@ checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 [[package]]
 name = "v_frame"
 version = "0.1.0"
-source = "git+https://github.com/xiph/rav1e#db127a438600667827a0994a25e7b01d33528c1e"
+source = "git+https://github.com/xiph/rav1e#0044845d3e371fd6244e6e7c0bb0073a49ad52a6"
 dependencies = [
  "cfg-if 1.0.0",
  "noop_proc_macro",
@@ -672,7 +672,7 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 [[package]]
 name = "vergen"
 version = "3.0.4"
-source = "git+https://github.com/xiph/rav1e#db127a438600667827a0994a25e7b01d33528c1e"
+source = "git+https://github.com/xiph/rav1e#0044845d3e371fd6244e6e7c0bb0073a49ad52a6"
 dependencies = [
  "bitflags",
  "chrono",
