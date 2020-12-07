@@ -11,7 +11,7 @@ repository = "https://github.com/rust-av/av-scenechange"
 y4m = "0.7.0"
 clap = { version = "2.33.3", optional = true }
 serde = { version = "1.0.118", optional = true, features = ["derive"] }
-serde_json = { version = "1.0.59", optional = true }
+serde_json = { version = "1.0.60", optional = true }
 # TODO: Use upstream once rav1e 0.4 is released
 rav1e = { git = "https://github.com/xiph/rav1e", default-features = false, features = ["asm", "scenechange"] }
 
