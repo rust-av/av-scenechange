@@ -425,7 +425,7 @@ dependencies = [
 [[package]]
 name = "rav1e"
 version = "0.4.0-alpha"
-source = "git+https://github.com/xiph/rav1e#2a620b453525582dcc7f19a504dbec67279d6306"
+source = "git+https://github.com/xiph/rav1e#5caffedb1f795e9ef527e1db82d9d652347940bb"
 dependencies = [
  "arbitrary 0.4.7",
  "arg_enum_proc_macro",
@@ -447,6 +447,7 @@ dependencies = [
  "rand_chacha",
  "rayon",
  "regex",
+ "rust_hawktracer",
  "rustc_version",
  "simd_helpers",
  "thiserror",
@@ -496,6 +497,28 @@ name = "regex-syntax"
 version = "0.6.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
+
+[[package]]
+name = "rust_hawktracer"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3480a29b927f66c6e06527be7f49ef4d291a01d694ec1fe85b0de71d6b02ac1"
+dependencies = [
+ "rust_hawktracer_normal_macro",
+ "rust_hawktracer_proc_macro",
+]
+
+[[package]]
+name = "rust_hawktracer_normal_macro"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a570059949e1dcdc6f35228fa389f54c2c84dfe0c94c05022baacd56eacd2e9"
+
+[[package]]
+name = "rust_hawktracer_proc_macro"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb626abdbed5e93f031baae60d72032f56bc964e11ac2ff65f2ba3ed98d6d3e1"
 
 [[package]]
 name = "rustc_version"
@@ -654,7 +677,7 @@ checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 [[package]]
 name = "v_frame"
 version = "0.1.0"
-source = "git+https://github.com/xiph/rav1e#2a620b453525582dcc7f19a504dbec67279d6306"
+source = "git+https://github.com/xiph/rav1e#5caffedb1f795e9ef527e1db82d9d652347940bb"
 dependencies = [
  "cfg-if 1.0.0",
  "noop_proc_macro",
@@ -671,7 +694,7 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 [[package]]
 name = "vergen"
 version = "3.0.4"
-source = "git+https://github.com/xiph/rav1e#2a620b453525582dcc7f19a504dbec67279d6306"
+source = "git+https://github.com/xiph/rav1e#5caffedb1f795e9ef527e1db82d9d652347940bb"
 dependencies = [
  "bitflags",
  "chrono",
