@@ -20,12 +20,6 @@ dependencies = [
 
 [[package]]
 name = "arbitrary"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "491d5e42b1a073ff1fc1e0a02744b3f8bee9cf4bfd552053cac36c64b879795d"
-
-[[package]]
-name = "arbitrary"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db55d72333851e17d572bec876e390cd3b11eb1ef53ae821dd9f3b653d2b4569"
@@ -83,9 +77,9 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bitstream-io"
-version = "0.9.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71b66dc4e6b6d83f3afd41eb3006cd332a60d4e18496a31f2caa4069914d773f"
+checksum = "03539c739e37dab2c322ce07b1990089ca1fc7ad14b813e1538bf11bef98fe06"
 
 [[package]]
 name = "cc"
@@ -227,9 +221,9 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
+checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
 dependencies = [
  "either",
 ]
@@ -263,11 +257,11 @@ checksum = "89203f3fba0a3795506acaad8ebce3c80c0af93f994d5a1d7a0b1eeb23271929"
 
 [[package]]
 name = "libfuzzer-sys"
-version = "0.2.1"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e969cd2be7a2aae0acbbe205da49134148db2287fb45a811bf441ed72f09a35"
+checksum = "fcf184a4b6b274f82a5df6b357da6055d3e82272327bba281c28bbba6f1664ef"
 dependencies = [
- "arbitrary 0.3.3",
+ "arbitrary",
  "cc",
 ]
 
@@ -432,10 +426,10 @@ dependencies = [
 
 [[package]]
 name = "rav1e"
-version = "0.4.0-alpha"
-source = "git+https://github.com/xiph/rav1e#742c0fe8f085060dfb19c999139f0475fa91817d"
+version = "0.4.0"
+source = "git+https://github.com/xiph/rav1e#b03c61482d1c1c3da67d794b0d6cb12f1ba11516"
 dependencies = [
- "arbitrary 0.4.7",
+ "arbitrary",
  "arg_enum_proc_macro",
  "arrayvec",
  "bitstream-io",
@@ -694,7 +688,7 @@ checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 [[package]]
 name = "v_frame"
 version = "0.2.0"
-source = "git+https://github.com/xiph/rav1e#742c0fe8f085060dfb19c999139f0475fa91817d"
+source = "git+https://github.com/xiph/rav1e#b03c61482d1c1c3da67d794b0d6cb12f1ba11516"
 dependencies = [
  "cfg-if 1.0.0",
  "noop_proc_macro",
@@ -711,7 +705,7 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 [[package]]
 name = "vergen"
 version = "3.0.4"
-source = "git+https://github.com/xiph/rav1e#742c0fe8f085060dfb19c999139f0475fa91817d"
+source = "git+https://github.com/xiph/rav1e#b03c61482d1c1c3da67d794b0d6cb12f1ba11516"
 dependencies = [
  "bitflags",
  "chrono",
