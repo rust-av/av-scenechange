@@ -360,9 +360,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.5.2"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13bd41f508810a131401606d54ac32a467c97172d74ba7662562ebba5ad07fa0"
+checksum = "10acf907b94fc1b1a152d08ef97e7759650268cf986bf127f387e602b02c7e5a"
 
 [[package]]
 name = "paste"
@@ -446,7 +446,8 @@ dependencies = [
 [[package]]
 name = "rav1e"
 version = "0.4.0"
-source = "git+https://github.com/xiph/rav1e#816a7c5509492e58792aec0c5063e630261f51c8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78dde87c10d9381dc0966419fbdb734b1da5955466328db6a5ce3ec7fc7f9709"
 dependencies = [
  "arbitrary",
  "arg_enum_proc_macro",
@@ -689,12 +690,11 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.1.44"
+version = "0.1.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
+checksum = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
 dependencies = [
  "libc",
- "wasi",
  "winapi",
 ]
 
@@ -719,7 +719,8 @@ checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 [[package]]
 name = "v_frame"
 version = "0.2.0"
-source = "git+https://github.com/xiph/rav1e#816a7c5509492e58792aec0c5063e630261f51c8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3e54478b48d863cc6680de8cc8f0c90112b22b7138e2f49aace306d7d3b0e77"
 dependencies = [
  "cfg-if",
  "noop_proc_macro",
@@ -735,18 +736,20 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "vergen"
-version = "3.0.4"
-source = "git+https://github.com/xiph/rav1e#816a7c5509492e58792aec0c5063e630261f51c8"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7141e445af09c8919f1d5f8a20dae0b20c3b57a45dee0d5823c6ed5d237f15a"
 dependencies = [
  "bitflags",
  "chrono",
+ "rustc_version",
 ]
 
 [[package]]
 name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
+version = "0.10.2+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
+checksum = "fd6fbd9a79829dd1ad0cc20627bf1ed606756a7f77edff7b66b7064f9cb327c6"
 
 [[package]]
 name = "winapi"

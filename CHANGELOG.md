@@ -1,3 +1,8 @@
+## Version 0.5.0
+- Bump rav1e dependency to 0.4
+- Expose `new_detector` and `detect_scene_changes` since these
+  may be useful in some situations to use directly
+
 ## Version 0.4.2
 - Fix compilation on non-x86 targets
 - Bump various dependencies
