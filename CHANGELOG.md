@@ -1,16 +1,25 @@
+## Version 0.6.0
+
+- Bump rav1e dependency to 0.5. This should bring significant performance improvements,
+  but may cause breaking changes.
+
 ## Version 0.5.0
+
 - Bump rav1e dependency to 0.4
 - Expose `new_detector` and `detect_scene_changes` since these
   may be useful in some situations to use directly
 
 ## Version 0.4.2
+
 - Fix compilation on non-x86 targets
 - Bump various dependencies
 
 ## Version 0.4.1
+
 - Improve performance and memory usage
 
 ## Version 0.4.0
+
 - [Breaking, New Feature] `detect_scene_changes` returns a `DetectionOptions` struct,
   which includes the list of scenecut frames, and the total count
   of frames in the video. The CLI output will reflect this as well.
@@ -31,11 +40,14 @@
 - Simplify/optimize some internal code.
 
 ## Version 0.3.0
+
 - [Breaking, New Feature] Add the ability to pass a `progress_callback` function
   to the `DetectionOptions`.
 
 ## Version 0.2.0
+
 - [Breaking] Update `y4m` dependency to 0.5
 
 ## Version 0.1.0
+
 - Initial release
