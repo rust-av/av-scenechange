@@ -68,7 +68,10 @@ pub struct DetectionResults {
 /// This is generally useful for displaying progress, etc.
 pub type ProgressCallback = Box<dyn Fn(usize, usize)>;
 
-pub fn new_detector<R: Read>(dec: &mut Decoder<R>, opts: DetectionOptions) -> SceneChangeDetector {
+pub fn new_detector<R: Read, T: Pixel>(
+    dec: &mut Decoder<R>,
+    opts: DetectionOptions,
+) -> SceneChangeDetector<T> {
     let video_details = y4m::get_video_details(dec);
     let mut config = EncoderConfig::with_speed_preset(if opts.fast_analysis { 10 } else { 6 });
     config.min_key_frame_interval = opts
@@ -92,7 +95,6 @@ pub fn new_detector<R: Read>(dec: &mut Decoder<R>, opts: DetectionOptions) -> Sc
         CpuFeatureLevel::default(),
         opts.lookahead_distance,
         sequence,
-        opts.ignore_flashes,
     )
 }
 
