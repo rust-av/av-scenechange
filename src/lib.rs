@@ -43,7 +43,7 @@ pub struct DetectionOptions {
 impl Default for DetectionOptions {
     fn default() -> Self {
         DetectionOptions {
-            fast_analysis: SceneDetectionSpeed::Fast,
+            fast_analysis: SceneDetectionSpeed::Slow,
             ignore_flashes: false,
             lookahead_distance: 5,
             min_scenecut_distance: None,

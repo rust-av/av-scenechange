@@ -17,7 +17,7 @@ fn main() {
                 .long("speed")
                 .short("s")
                 .takes_value(true)
-                .default_value("2"),
+                .default_value("0"),
         )
         .arg(
             Arg::with_name("EXCLUDE_FLASHES")
@@ -68,7 +68,7 @@ fn main() {
         .map(|val| val.parse().expect("Speed mode must be in range [0; 2]"))
         .unwrap();
 
-    if matches.occurrences_of("SCENE_CHANGE_DETECTION_SPEED") != 0 {
+    if matches.is_present("SCENE_CHANGE_DETECTION_SPEED") {
         opts.fast_analysis = if speed_mode == 0 {
             SceneDetectionSpeed::Slow
         } else if speed_mode == 1 {
@@ -87,7 +87,7 @@ fn main() {
     };
     print!("{}", serde_json::to_string(&results).unwrap());
 
-    if matches.occurrences_of("OUTPUT") != 0 {
+    if matches.is_present("OUTPUT") {
         let output_file = matches.value_of("OUTPUT").unwrap();
         let mut file = File::create(&output_file).expect("Could not create file");
 
