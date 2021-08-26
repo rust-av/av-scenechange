@@ -19,7 +19,7 @@ fn main() {
         .arg(
             Arg::with_name("EXCLUDE_FLASHES")
                 .help("Detect short scene flashes and exclude them as scene cuts")
-                .long("no-flashes"),
+                .long("no-flash-detection"),
         )
         .arg(
             Arg::with_name("MIN_KEYINT")
