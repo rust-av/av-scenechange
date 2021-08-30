@@ -63,18 +63,12 @@ fn main() {
         ..Default::default()
     };
 
-    let speed_mode: usize = matches
-        .value_of("SPEED_MODE")
-        .map(|val| val.parse().expect("Speed mode must be in range [0; 2]"))
-        .unwrap();
-
-    if matches.is_present("SCENE_CHANGE_DETECTION_SPEED") {
-        opts.fast_analysis = if speed_mode == 0 {
-            SceneDetectionSpeed::Slow
-        } else if speed_mode == 1 {
-            SceneDetectionSpeed::Medium
-        } else {
-            SceneDetectionSpeed::Fast
+    if let Some(speed_mode) = matches.value_of("SPEED_MODE") {
+        opts.fast_analysis = match speed_mode {
+            "0" => SceneDetectionSpeed::Slow,
+            "1" => SceneDetectionSpeed::Medium,
+            "2" => SceneDetectionSpeed::Fast,
+            _ => panic!("Speed mode must be in range [0; 2]"),
         };
     }
 
