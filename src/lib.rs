@@ -10,6 +10,7 @@ use rav1e::prelude::{Pixel, Sequence};
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::sync::Arc;
+use std::time::Instant;
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
@@ -21,7 +22,7 @@ pub struct DetectionOptions {
     /// Enabling this option switches to a fast algorithm,
     /// which uses a pixel-by-pixel sum-of-absolute-differences
     /// to determine scenecuts.
-    pub fast_analysis: bool,
+    pub fast_analysis: SceneDetectionSpeed,
     /// Enabling this will utilize heuristics to avoid scenecuts
     /// that are too close to each other.
     /// This is generally useful if you want scenecut detection
@@ -42,7 +43,7 @@ pub struct DetectionOptions {
 impl Default for DetectionOptions {
     fn default() -> Self {
         DetectionOptions {
-            fast_analysis: false,
+            fast_analysis: SceneDetectionSpeed::Slow,
             ignore_flashes: false,
             lookahead_distance: 5,
             min_scenecut_distance: None,
@@ -59,6 +60,8 @@ pub struct DetectionResults {
     pub scene_changes: Vec<usize>,
     /// The total number of frames read.
     pub frame_count: usize,
+    /// Average speed (FPS)
+    pub speed: f64,
 }
 
 /// An optional callback that will fire after each frame is analyzed.
@@ -73,7 +76,15 @@ pub fn new_detector<R: Read, T: Pixel>(
     opts: DetectionOptions,
 ) -> SceneChangeDetector<T> {
     let video_details = y4m::get_video_details(dec);
-    let mut config = EncoderConfig::with_speed_preset(if opts.fast_analysis { 10 } else { 6 });
+    let mut config =
+        EncoderConfig::with_speed_preset(if opts.fast_analysis == SceneDetectionSpeed::Fast {
+            10
+        } else if opts.fast_analysis == SceneDetectionSpeed::Medium {
+            8
+        } else {
+            6
+        });
+
     config.min_key_frame_interval = opts
         .min_scenecut_distance
         .map(|val| val as u64)
@@ -117,6 +128,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     let mut keyframes = BTreeSet::new();
     keyframes.insert(0);
 
+    let start_time = Instant::now();
     let mut frameno = 0;
     loop {
         let mut next_input_frameno = frame_queue
@@ -166,5 +178,16 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     DetectionResults {
         scene_changes: keyframes.into_iter().map(|val| val as usize).collect(),
         frame_count: frameno,
+        speed: frameno as f64 / start_time.elapsed().as_secs() as f64,
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialOrd, PartialEq)]
+pub enum SceneDetectionSpeed {
+    /// Fastest scene detection using pixel-wise comparison
+    Fast,
+    /// Scene detection using motion vectors
+    Medium,
+    /// Scene detection using histogram block-based comparison
+    Slow,
 }
