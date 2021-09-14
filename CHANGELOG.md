@@ -1,3 +1,12 @@
+## Version 0.7.0
+
+- Bump rav1e dependency to 0.5-beta.2, which brings a new, improved scenechange algorithm.
+  Medium is equivalent to the old slow level, but with improvements. The fast level
+  also has improvements. The new slow level is a new algorithm with a higher accuracy
+  than the previous two algorithms.
+- The `--fast-mode` CLI argument is removed in favor of a `--speed` or `-s` argument,
+  which takes a 0, 1, or 2 (for slow, medium, or fast). The default is 0 for slow.
+
 ## Version 0.6.0
 
 - Bump rav1e dependency to 0.5. This should bring significant performance improvements,
