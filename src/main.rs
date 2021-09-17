@@ -20,8 +20,8 @@ fn main() {
                 .default_value("0"),
         )
         .arg(
-            Arg::with_name("EXCLUDE_FLASHES")
-                .help("Detect short scene flashes and exclude them as scene cuts")
+            Arg::with_name("NO_FLASH_DETECT")
+                .help("Do not detect short scene flashes and exclude them as scene cuts")
                 .long("no-flash-detection"),
         )
         .arg(
@@ -51,7 +51,7 @@ fn main() {
     let mut reader = BufReader::new(input);
 
     let mut opts = DetectionOptions {
-        ignore_flashes: matches.is_present("EXCLUDE_FLASHES"),
+        ignore_flashes: matches.is_present("NO_FLASH_DETECT"),
         min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
             val.parse()
                 .expect("Min-scenecut must be a positive integer")
