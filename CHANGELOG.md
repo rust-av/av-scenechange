@@ -1,3 +1,8 @@
+## Version 0.7.1
+
+- Fix an inconsistency with how rav1e's scene detection works
+- Fix some CLI help text
+
 ## Version 0.7.0
 
 - Bump rav1e dependency to 0.5-beta.2, which brings a new, improved scenechange algorithm.
