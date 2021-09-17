@@ -158,11 +158,13 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             // End of video
             break;
         }
-        if detector.analyze_next_frame(
-            &frame_set,
-            frameno as u64,
-            *keyframes.iter().last().unwrap(),
-        ) {
+        if frameno == 0
+            || detector.analyze_next_frame(
+                &frame_set,
+                frameno as u64,
+                *keyframes.iter().last().unwrap(),
+            )
+        {
             keyframes.insert(frameno as u64);
         };
 
