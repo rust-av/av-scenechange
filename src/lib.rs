@@ -137,7 +137,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             .copied()
             .map(|key| key + 1)
             .unwrap_or(0);
-        while next_input_frameno < frameno + opts.lookahead_distance {
+        while next_input_frameno <= frameno + opts.lookahead_distance {
             let frame = y4m::read_video_frame::<R, T>(dec, &video_details);
             if let Ok(frame) = frame {
                 frame_queue.insert(next_input_frameno, Arc::new(frame));
@@ -152,7 +152,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         let frame_set = frame_queue
             .values()
             .cloned()
-            .take(opts.lookahead_distance + 1)
+            .take(opts.lookahead_distance + 2)
             .collect::<Vec<_>>();
         if frame_set.len() < 2 {
             // End of video
