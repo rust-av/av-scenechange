@@ -180,7 +180,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     DetectionResults {
         scene_changes: keyframes.into_iter().map(|val| val as usize).collect(),
         frame_count: frameno,
-        speed: frameno as f64 / start_time.elapsed().as_secs() as f64,
+        speed: frameno as f64 / start_time.elapsed().as_secs_f64(),
     }
 }
 
