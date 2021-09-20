@@ -25,7 +25,7 @@ fn main() {
         )
         .arg(
             Arg::with_name("SPEED_MODE")
-                .help("Speed level for scene-change detection, 0: best quality, 1: speed-to-quality trade-off, 2: fastest mode")
+                .help("Speed level for scene-change detection, 0: best quality, 1: fastest mode")
                 .long("speed")
                 .short("s")
                 .takes_value(true)
@@ -63,7 +63,7 @@ fn main() {
     let mut reader = BufReader::new(input);
 
     let mut opts = DetectionOptions {
-        ignore_flashes: matches.is_present("NO_FLASH_DETECT"),
+        detect_flashes: !matches.is_present("NO_FLASH_DETECT"),
         min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
             val.parse()
                 .expect("Min-scenecut must be a positive integer")
@@ -76,11 +76,10 @@ fn main() {
     };
 
     if let Some(speed_mode) = matches.value_of("SPEED_MODE") {
-        opts.fast_analysis = match speed_mode {
-            "0" => SceneDetectionSpeed::Slow,
-            "1" => SceneDetectionSpeed::Medium,
-            "2" => SceneDetectionSpeed::Fast,
-            _ => panic!("Speed mode must be in range [0; 2]"),
+        opts.analysis_speed = match speed_mode {
+            "0" => SceneDetectionSpeed::Standard,
+            "1" => SceneDetectionSpeed::Fast,
+            _ => panic!("Speed mode must be in range [0; 1]"),
         };
     }
 

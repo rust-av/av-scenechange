@@ -15,20 +15,15 @@ use std::time::Instant;
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
 pub struct DetectionOptions {
-    /// The normal algorithm uses 8x8-block-level cost estimates
-    /// to choose scenecuts.
-    /// This is often more accurate, but slower.
-    ///
-    /// Enabling this option switches to a fast algorithm,
-    /// which uses a pixel-by-pixel sum-of-absolute-differences
-    /// to determine scenecuts.
-    pub fast_analysis: SceneDetectionSpeed,
+    /// The speed of detection algorithm to use.
+    /// Slower algorithms are more accurate/better for use in encoders.
+    pub analysis_speed: SceneDetectionSpeed,
     /// Enabling this will utilize heuristics to avoid scenecuts
     /// that are too close to each other.
     /// This is generally useful if you want scenecut detection
     /// for use in an encoder.
     /// If you want a raw list of scene changes, you should disable this.
-    pub ignore_flashes: bool,
+    pub detect_flashes: bool,
     /// The minimum distane between two scene changes.
     pub min_scenecut_distance: Option<usize>,
     /// The maximum distance between two scene changes.
@@ -36,15 +31,15 @@ pub struct DetectionOptions {
     /// The distance to look ahead in the video
     /// for scene flash detection.
     ///
-    /// Not used if `ignore_flashes` is `false`.
+    /// Not used if `detect_flashes` is `false`.
     pub lookahead_distance: usize,
 }
 
 impl Default for DetectionOptions {
     fn default() -> Self {
         DetectionOptions {
-            fast_analysis: SceneDetectionSpeed::Slow,
-            ignore_flashes: false,
+            analysis_speed: SceneDetectionSpeed::Standard,
+            detect_flashes: true,
             lookahead_distance: 5,
             min_scenecut_distance: None,
             max_scenecut_distance: None,
@@ -77,12 +72,10 @@ pub fn new_detector<R: Read, T: Pixel>(
 ) -> SceneChangeDetector<T> {
     let video_details = y4m::get_video_details(dec);
     let mut config =
-        EncoderConfig::with_speed_preset(if opts.fast_analysis == SceneDetectionSpeed::Fast {
+        EncoderConfig::with_speed_preset(if opts.analysis_speed == SceneDetectionSpeed::Fast {
             10
-        } else if opts.fast_analysis == SceneDetectionSpeed::Medium {
-            8
         } else {
-            6
+            8
         });
 
     config.min_key_frame_interval = opts
@@ -104,7 +97,11 @@ pub fn new_detector<R: Read, T: Pixel>(
     SceneChangeDetector::new(
         config,
         CpuFeatureLevel::default(),
-        opts.lookahead_distance,
+        if opts.detect_flashes {
+            opts.lookahead_distance
+        } else {
+            1
+        },
         sequence,
     )
 }
@@ -189,7 +186,5 @@ pub enum SceneDetectionSpeed {
     /// Fastest scene detection using pixel-wise comparison
     Fast,
     /// Scene detection using motion vectors
-    Medium,
-    /// Scene detection using histogram block-based comparison
-    Slow,
+    Standard,
 }

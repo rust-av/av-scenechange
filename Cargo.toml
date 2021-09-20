@@ -29,3 +29,6 @@ tracing = ["rust_hawktracer/profiling_enabled"]
 name = "av-scenechange"
 path = "src/main.rs"
 required-features = ["binary"]
+
+[patch.crates-io]
+rav1e = { git = "https://github.com/xiph/rav1e" }
