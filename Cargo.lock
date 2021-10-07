@@ -75,6 +75,7 @@ dependencies = [
  "fern",
  "log",
  "rav1e",
+ "rust_hawktracer",
  "serde",
  "serde_json",
  "y4m",
@@ -142,6 +143,15 @@ dependencies = [
  "textwrap",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "cmake"
+version = "0.1.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb6210b637171dfba4cda12e579ac6dc73f5165ad56133e5d72ef3131f320855"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -262,6 +272,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "itertools"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
+dependencies = [
+ "either",
 ]
 
 [[package]]
@@ -478,7 +497,7 @@ dependencies = [
  "cc",
  "cfg-if",
  "interpolate_name",
- "itertools",
+ "itertools 0.10.1",
  "libc",
  "libfuzzer-sys",
  "log",
@@ -557,12 +576,28 @@ name = "rust_hawktracer_normal_macro"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a570059949e1dcdc6f35228fa389f54c2c84dfe0c94c05022baacd56eacd2e9"
+dependencies = [
+ "rust_hawktracer_sys",
+]
 
 [[package]]
 name = "rust_hawktracer_proc_macro"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb626abdbed5e93f031baae60d72032f56bc964e11ac2ff65f2ba3ed98d6d3e1"
+dependencies = [
+ "rust_hawktracer_sys",
+]
+
+[[package]]
+name = "rust_hawktracer_sys"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67cc853071df5815fa6c087452d1b533f7c884c836b8a7393b4ff88090cc4c95"
+dependencies = [
+ "cmake",
+ "itertools 0.8.2",
+]
 
 [[package]]
 name = "rustc_version"
@@ -681,7 +716,7 @@ dependencies = [
  "anyhow",
  "cfg-expr",
  "heck",
- "itertools",
+ "itertools 0.10.1",
  "pkg-config",
  "strum",
  "strum_macros",
