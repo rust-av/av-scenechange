@@ -1,3 +1,10 @@
+## Version 0.7.2
+
+- Bump to the final release of rav1e 0.5
+- Bump other dependencies to latest versions
+- Fix another inconsistency with rav1e's scene detection
+- Improve precision of FPS calculation
+
 ## Version 0.7.1
 
 - Fix an inconsistency with how rav1e's scene detection works
