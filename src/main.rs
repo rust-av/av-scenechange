@@ -124,9 +124,8 @@ fn init_logger() {
 
     // this can be changed to flatten
     let level = std::env::var("RAV1E_LOG")
-        .ok()
-        .map(|l| log::LevelFilter::from_str(&l).ok())
-        .unwrap_or(Some(log::LevelFilter::Info))
+        .and_then(|l| log::LevelFilter::from_str(&l))
+        .or(log::LevelFilter::Info)
         .unwrap();
 
     fern::Dispatch::new()
