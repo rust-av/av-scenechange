@@ -44,6 +44,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayref"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4c527152e37cf757a3f78aae5a06fbeefdb07ccc535c980a3208ee3060dd544"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -493,11 +499,11 @@ dependencies = [
 [[package]]
 name = "rav1e"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be4a454413889806ea42227bf43208bdb617fa218da02c4bb35ab02c35b02f71"
+source = "git+https://github.com/xiph/rav1e#de97f3bbcc0336e1e4195ebaeb2c74fda2018dc5"
 dependencies = [
  "arbitrary",
  "arg_enum_proc_macro",
+ "arrayref",
  "arrayvec",
  "bitstream-io",
  "cc",
@@ -810,8 +816,7 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "v_frame"
 version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c70a928a3fbba9cbb0f86ffb4aabed536e7acf692a46b3bfb70c3d9c15b8c6ab"
+source = "git+https://github.com/xiph/rav1e#de97f3bbcc0336e1e4195ebaeb2c74fda2018dc5"
 dependencies = [
  "cfg-if",
  "noop_proc_macro",
@@ -829,13 +834,11 @@ checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "vergen"
-version = "3.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7141e445af09c8919f1d5f8a20dae0b20c3b57a45dee0d5823c6ed5d237f15a"
+version = "3.0.4"
+source = "git+https://github.com/xiph/rav1e#de97f3bbcc0336e1e4195ebaeb2c74fda2018dc5"
 dependencies = [
  "bitflags",
  "chrono",
- "rustc_version",
 ]
 
 [[package]]

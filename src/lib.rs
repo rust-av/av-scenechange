@@ -92,6 +92,8 @@ pub fn new_detector<R: Read, T: Pixel>(
     config.time_base = video_details.time_base;
     config.chroma_sampling = video_details.chroma_sampling;
     config.chroma_sample_position = video_details.chroma_sample_position;
+    // force disable temporal RDO to disable intra cost caching
+    config.speed_settings.transform.tx_domain_distortion = true;
 
     let sequence = Arc::new(Sequence::new(&config));
     SceneChangeDetector::new(
@@ -148,8 +150,8 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         // The frame_queue should start at whatever the previous frame was
         let frame_set = frame_queue
             .values()
-            .cloned()
             .take(opts.lookahead_distance + 2)
+            .cloned()
             .collect::<Vec<_>>();
         if frame_set.len() < 2 {
             // End of video
