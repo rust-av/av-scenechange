@@ -1,5 +1,6 @@
-use rav1e::prelude::{ChromaSamplePosition, ChromaSampling, Frame, Pixel, Rational};
 use std::io::Read;
+
+use rav1e::prelude::{ChromaSamplePosition, ChromaSampling, Frame, Pixel, Rational};
 
 pub(crate) fn get_video_details<R: Read>(dec: &y4m::Decoder<R>) -> VideoDetails {
     let width = dec.get_width();

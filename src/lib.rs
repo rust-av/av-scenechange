@@ -1,14 +1,18 @@
 mod y4m;
 
-pub use rav1e::scenechange::SceneChangeDetector;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    io::Read,
+    sync::Arc,
+    time::Instant,
+};
 
 use ::y4m::Decoder;
-use rav1e::config::{CpuFeatureLevel, EncoderConfig};
-use rav1e::prelude::{Pixel, Sequence};
-use std::collections::{BTreeMap, BTreeSet};
-use std::io::Read;
-use std::sync::Arc;
-use std::time::Instant;
+pub use rav1e::scenechange::SceneChangeDetector;
+use rav1e::{
+    config::{CpuFeatureLevel, EncoderConfig},
+    prelude::{Pixel, Sequence},
+};
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
