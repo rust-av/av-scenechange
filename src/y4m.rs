@@ -20,7 +20,9 @@ pub(crate) fn get_video_details<R: Read>(dec: &y4m::Decoder<R>) -> VideoDetails 
     }
 }
 
-fn map_y4m_color_space(color_space: y4m::Colorspace) -> (ChromaSampling, ChromaSamplePosition) {
+const fn map_y4m_color_space(
+    color_space: y4m::Colorspace,
+) -> (ChromaSampling, ChromaSamplePosition) {
     use y4m::Colorspace::*;
     use ChromaSamplePosition::*;
     use ChromaSampling::*;
@@ -34,10 +36,10 @@ fn map_y4m_color_space(color_space: y4m::Colorspace) -> (ChromaSampling, ChromaS
     }
 }
 
-pub(crate) fn read_video_frame<R: Read, T: Pixel>(
+pub fn read_video_frame<R: Read, T: Pixel>(
     dec: &mut y4m::Decoder<R>,
     cfg: &VideoDetails,
-) -> Result<Frame<T>, ()> {
+) -> anyhow::Result<Frame<T>> {
     const SB_SIZE_LOG2: usize = 6;
     const SB_SIZE: usize = 1 << SB_SIZE_LOG2;
     const SUBPEL_FILTER_SIZE: usize = 8;
@@ -59,11 +61,11 @@ pub(crate) fn read_video_frame<R: Read, T: Pixel>(
             f.planes[2].copy_from_raw_u8(frame.get_v_plane(), chroma_width * bytes, bytes);
             f
         })
-        .map_err(|_| ())
+        .map_err(|e| e.into())
 }
 
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct VideoDetails {
+pub struct VideoDetails {
     pub width: usize,
     pub height: usize,
     pub bit_depth: usize,

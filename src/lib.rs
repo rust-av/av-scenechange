@@ -1,5 +1,3 @@
-#![allow(clippy::too_many_arguments)]
-
 mod y4m;
 
 pub use rav1e::scenechange::SceneChangeDetector;
@@ -78,14 +76,10 @@ pub fn new_detector<R: Read, T: Pixel>(
             8
         });
 
-    config.min_key_frame_interval = opts
-        .min_scenecut_distance
-        .map(|val| val as u64)
-        .unwrap_or(0);
+    config.min_key_frame_interval = opts.min_scenecut_distance.map_or(0, |val| val as u64);
     config.max_key_frame_interval = opts
         .max_scenecut_distance
-        .map(|val| val as u64)
-        .unwrap_or(u32::max_value() as u64);
+        .map_or_else(|| u32::MAX.into(), |val| val as u64);
     config.width = video_details.width;
     config.height = video_details.height;
     config.bit_depth = video_details.bit_depth;
@@ -114,6 +108,7 @@ pub fn new_detector<R: Read, T: Pixel>(
 ///
 /// This is the preferred, simplified interface
 /// for analyzing a whole clip for scene changes.
+#[allow(clippy::needless_pass_by_value)]
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
@@ -130,12 +125,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     let start_time = Instant::now();
     let mut frameno = 0;
     loop {
-        let mut next_input_frameno = frame_queue
-            .keys()
-            .last()
-            .copied()
-            .map(|key| key + 1)
-            .unwrap_or(0);
+        let mut next_input_frameno = frame_queue.keys().last().copied().map_or(0, |key| key + 1);
         while next_input_frameno <= frameno + opts.lookahead_distance {
             let frame = y4m::read_video_frame::<R, T>(dec, &video_details);
             if let Ok(frame) = frame {

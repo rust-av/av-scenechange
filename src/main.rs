@@ -1,4 +1,4 @@
-use av_scenechange::*;
+use av_scenechange::{detect_scene_changes, DetectionOptions, SceneDetectionSpeed};
 use clap::{Arg, Command};
 use std::fs::File;
 use std::io::{self, BufReader, Read, Write};
@@ -74,7 +74,7 @@ fn main() {
         .parse()
         .expect("Max-scenecut must be a positive integer")
     }),
-    ..Default::default()
+    ..DetectionOptions::default()
   };
 
   if let Some(speed_mode) = matches.value_of("SPEED_MODE") {
@@ -105,7 +105,7 @@ fn main() {
 }
 
 #[cfg(not(feature = "devel"))]
-fn init_logger() {
+const fn init_logger() {
   // Do nothing
 }
 

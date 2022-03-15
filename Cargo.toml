@@ -8,6 +8,7 @@ license = "MIT"
 repository = "https://github.com/rust-av/av-scenechange"
 
 [dependencies]
+anyhow = "1.0.56"
 y4m = "0.7.0"
 clap = { version = "3.1.6", optional = true }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
