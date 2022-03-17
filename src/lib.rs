@@ -61,13 +61,6 @@ pub struct DetectionResults {
     pub speed: f64,
 }
 
-/// An optional callback that will fire after each frame is analyzed.
-/// Arguments passed in will be, in order,
-/// the number of frames analyzed, and the number of keyframes detected.
-///
-/// This is generally useful for displaying progress, etc.
-pub type ProgressCallback = Box<dyn Fn(usize, usize)>;
-
 pub fn new_detector<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
@@ -112,11 +105,18 @@ pub fn new_detector<R: Read, T: Pixel>(
 ///
 /// This is the preferred, simplified interface
 /// for analyzing a whole clip for scene changes.
+///
+/// # Arguments
+///
+/// - `progress_callback`: An optional callback that will fire after each frame is analyzed.
+///   Arguments passed in will be, in order,
+///   the number of frames analyzed, and the number of keyframes detected.
+///   This is generally useful for displaying progress, etc.
 #[allow(clippy::needless_pass_by_value)]
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
-    progress_callback: Option<ProgressCallback>,
+    progress_callback: Option<&dyn Fn(usize, usize)>,
 ) -> DetectionResults {
     assert!(opts.lookahead_distance >= 1);
 
@@ -166,7 +166,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         }
 
         frameno += 1;
-        if let Some(ref progress_fn) = progress_callback {
+        if let Some(progress_fn) = progress_callback {
             progress_fn(frameno, keyframes.len());
         }
     }
