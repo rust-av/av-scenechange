@@ -116,6 +116,7 @@ pub fn new_detector<R: Read, T: Pixel>(
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
+    frame_limit: Option<usize>,
     progress_callback: Option<&dyn Fn(usize, usize)>,
 ) -> DetectionResults {
     assert!(opts.lookahead_distance >= 1);
@@ -168,6 +169,11 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         frameno += 1;
         if let Some(progress_fn) = progress_callback {
             progress_fn(frameno, keyframes.len());
+        }
+        if let Some(frame_limit) = frame_limit {
+            if frameno == frame_limit {
+                break;
+            }
         }
     }
     DetectionResults {

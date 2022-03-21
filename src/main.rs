@@ -92,9 +92,9 @@ fn main() {
     let mut dec = y4m::Decoder::new(&mut reader).unwrap();
     let bit_depth = dec.get_bit_depth();
     let results = if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(&mut dec, opts, None)
+        detect_scene_changes::<_, u8>(&mut dec, opts, None, None)
     } else {
-        detect_scene_changes::<_, u16>(&mut dec, opts, None)
+        detect_scene_changes::<_, u16>(&mut dec, opts, None, None)
     };
     print!("{}", serde_json::to_string(&results).unwrap());
 
