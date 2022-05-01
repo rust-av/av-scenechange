@@ -131,7 +131,9 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     let mut frameno = 0;
     loop {
         let mut next_input_frameno = frame_queue.keys().last().copied().map_or(0, |key| key + 1);
-        while next_input_frameno <= frameno + opts.lookahead_distance {
+        while next_input_frameno
+            < (frameno + opts.lookahead_distance + 1).min(frame_limit.unwrap_or(usize::MAX))
+        {
             let frame = y4m::read_video_frame::<R, T>(dec, &video_details);
             if let Ok(frame) = frame {
                 frame_queue.insert(next_input_frameno, Arc::new(frame));
