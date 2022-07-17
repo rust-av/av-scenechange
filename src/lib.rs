@@ -108,10 +108,10 @@ pub fn new_detector<R: Read, T: Pixel>(
 ///
 /// # Arguments
 ///
-/// - `progress_callback`: An optional callback that will fire after each frame is analyzed.
-///   Arguments passed in will be, in order,
-///   the number of frames analyzed, and the number of keyframes detected.
-///   This is generally useful for displaying progress, etc.
+/// - `progress_callback`: An optional callback that will fire after each frame
+///   is analyzed. Arguments passed in will be, in order, the number of frames
+///   analyzed, and the number of keyframes detected. This is generally useful
+///   for displaying progress, etc.
 #[allow(clippy::needless_pass_by_value)]
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
@@ -184,7 +184,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialOrd, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialOrd, PartialEq, Eq)]
 pub enum SceneDetectionSpeed {
     /// Fastest scene detection using pixel-wise comparison
     Fast,
