@@ -148,7 +148,6 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         let frame_set = frame_queue
             .values()
             .take(opts.lookahead_distance + 2)
-            .cloned()
             .collect::<Vec<_>>();
         if frame_set.len() < 2 {
             // End of video
