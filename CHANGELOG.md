@@ -1,3 +1,11 @@
+## Version 0.8.0
+
+- Upgrade clap to 4.0
+- Add frame limit arg to API
+- [Breaking] Change `progress_callback` to take a &dyn Fn
+- Misc improvements including some speedups from rav1e
+- Update to Rust edition 2021
+
 ## Version 0.7.2
 
 - Bump to the final release of rav1e 0.5

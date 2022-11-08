@@ -1,8 +1,8 @@
 [package]
 name = "av-scenechange"
-version = "0.7.2"
+version = "0.8.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Estimates frames in a video where a scenecut would be ideal"
 license = "MIT"
 repository = "https://github.com/rust-av/av-scenechange"
