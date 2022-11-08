@@ -4,7 +4,35 @@ use std::{
 };
 
 use av_scenechange::{detect_scene_changes, DetectionOptions, SceneDetectionSpeed};
-use clap::{Arg, Command};
+use clap::Parser;
+
+#[derive(Parser, Debug)]
+struct Args {
+    /// Sets the input file to use
+    #[clap(value_parser)]
+    pub input: String,
+
+    /// Optional file to write results to
+    #[clap(long, short, value_parser)]
+    pub output: Option<String>,
+
+    /// Speed level for scene-change detection, 0: best quality, 1: fastest mode
+    #[clap(long, short, value_parser, default_value_t = 0)]
+    pub speed: u8,
+
+    /// Do not detect short scene flashes and exclude them as scene cuts
+    #[clap(long)]
+    pub no_flash_detection: bool,
+
+    /// Sets a minimum interval between two consecutive scenecuts
+    #[clap(long, value_parser)]
+    pub min_scenecut: Option<usize>,
+
+    /// Sets a maximum interval between two consecutive scenecuts,
+    /// after which a scenecut will be forced
+    #[clap(long, value_parser)]
+    pub max_scenecut: Option<usize>,
+}
 
 fn main() {
     #[cfg(feature = "tracing")]
@@ -19,75 +47,25 @@ fn main() {
         buffer_size: 4096,
     });
 
-    let matches = Command::new("av-scenechange")
-        .arg(
-            Arg::new("INPUT")
-                .help("Sets the input file to use")
-                .required(true)
-                .index(1),
-        )
-        .arg(
-            Arg::new("SPEED_MODE")
-                .help("Speed level for scene-change detection, 0: best quality, 1: fastest mode")
-                .long("speed")
-                .short('s')
-                .takes_value(true)
-                .default_value("0"),
-        )
-        .arg(
-            Arg::new("NO_FLASH_DETECT")
-                .help("Do not detect short scene flashes and exclude them as scene cuts")
-                .long("no-flash-detection"),
-        )
-        .arg(
-            Arg::new("MIN_KEYINT")
-                .help("Sets a minimum interval between two consecutive scenecuts")
-                .long("min-scenecut")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("MAX_KEYINT")
-                .help(
-                    "Sets a maximum interval between two consecutive scenecuts, after which a \
-                     scenecut will be forced",
-                )
-                .long("max-scenecut")
-                .takes_value(true),
-        )
-        .arg(
-            Arg::new("OUTPUT")
-                .help("File to write results in")
-                .long("output")
-                .short('o')
-                .takes_value(true),
-        )
-        .get_matches();
-    let input = match matches.value_of("INPUT").unwrap() {
+    let matches = Args::parse();
+    let input = match matches.input.as_str() {
         "-" => Box::new(io::stdin()) as Box<dyn Read>,
-        f => Box::new(File::open(&f).unwrap()) as Box<dyn Read>,
+        f => Box::new(File::open(f).unwrap()) as Box<dyn Read>,
     };
     let mut reader = BufReader::new(input);
 
     let mut opts = DetectionOptions {
-        detect_flashes: !matches.is_present("NO_FLASH_DETECT"),
-        min_scenecut_distance: matches.value_of("MIN_KEYINT").map(|val| {
-            val.parse()
-                .expect("Min-scenecut must be a positive integer")
-        }),
-        max_scenecut_distance: matches.value_of("MAX_KEYINT").map(|val| {
-            val.parse()
-                .expect("Max-scenecut must be a positive integer")
-        }),
+        detect_flashes: !matches.no_flash_detection,
+        min_scenecut_distance: matches.min_scenecut,
+        max_scenecut_distance: matches.max_scenecut,
         ..DetectionOptions::default()
     };
 
-    if let Some(speed_mode) = matches.value_of("SPEED_MODE") {
-        opts.analysis_speed = match speed_mode {
-            "0" => SceneDetectionSpeed::Standard,
-            "1" => SceneDetectionSpeed::Fast,
-            _ => panic!("Speed mode must be in range [0; 1]"),
-        };
-    }
+    opts.analysis_speed = match matches.speed {
+        0 => SceneDetectionSpeed::Standard,
+        1 => SceneDetectionSpeed::Fast,
+        _ => panic!("Speed mode must be in range [0; 1]"),
+    };
 
     let mut dec = y4m::Decoder::new(&mut reader).unwrap();
     let bit_depth = dec.get_bit_depth();
@@ -98,8 +76,7 @@ fn main() {
     };
     print!("{}", serde_json::to_string(&results).unwrap());
 
-    if matches.is_present("OUTPUT") {
-        let output_file = matches.value_of("OUTPUT").unwrap();
+    if let Some(output_file) = matches.output {
         let mut file = File::create(&output_file).expect("Could not create file");
 
         let output =

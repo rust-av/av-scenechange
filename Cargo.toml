@@ -10,10 +10,14 @@ repository = "https://github.com/rust-av/av-scenechange"
 [dependencies]
 anyhow = "1.0.56"
 y4m = "0.7.0"
-clap = { version = "3.1.6", optional = true }
+clap = { version = "4.0.22", optional = true, features = ["derive"] }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.62", optional = true }
-rav1e = { git = "https://github.com/xiph/rav1e", default-features = false, features = ["asm", "scenechange", "threading"] }
+rav1e = { git = "https://github.com/xiph/rav1e", default-features = false, features = [
+    "asm",
+    "scenechange",
+    "threading",
+] }
 log = { version = "0.4.14", optional = true }
 console = { version = "0.15", optional = true }
 fern = { version = "0.6", optional = true }
