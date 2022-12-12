@@ -1,3 +1,7 @@
+## Version 0.8.1
+
+- Finally release a new version because we can depend on rav1e 0.6.1
+
 ## Version 0.8.0
 
 - Upgrade clap to 4.0
