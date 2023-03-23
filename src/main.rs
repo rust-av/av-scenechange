@@ -121,7 +121,7 @@ fn main() {
     print!("{}", serde_json::to_string(&results).unwrap());
 
     if let Some(output_file) = matches.output {
-        let mut file = File::create(&output_file).expect("Could not create file");
+        let mut file = File::create(output_file).expect("Could not create file");
 
         let output =
             serde_json::to_string_pretty(&results).expect("Could not convert results into json");
