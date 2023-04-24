@@ -1,3 +1,7 @@
+## Version 0.9.0
+
+- Bump `y4m` dependency to `0.8`
+
 ## Version 0.8.1
 
 - Finally release a new version because we can depend on rav1e 0.6.1

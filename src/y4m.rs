@@ -26,17 +26,18 @@ const fn map_y4m_color_space(
 ) -> (ChromaSampling, ChromaSamplePosition) {
     use y4m::Colorspace::{
         C420jpeg, C420mpeg2, C420p10, C420p12, C420paldv, C422p10, C422p12, C444p10, C444p12,
-        Cmono, C420, C422, C444,
+        Cmono, Cmono12, C420, C422, C444,
     };
     use ChromaSamplePosition::{Colocated, Unknown, Vertical};
     use ChromaSampling::{Cs400, Cs420, Cs422, Cs444};
     match color_space {
-        Cmono => (Cs400, Unknown),
+        Cmono | Cmono12 => (Cs400, Unknown),
         C420jpeg | C420paldv => (Cs420, Unknown),
         C420mpeg2 => (Cs420, Vertical),
         C420 | C420p10 | C420p12 => (Cs420, Colocated),
         C422 | C422p10 | C422p12 => (Cs422, Colocated),
         C444 | C444p10 | C444p12 => (Cs444, Colocated),
+        _ => unimplemented!(),
     }
 }
 
