@@ -21,14 +21,21 @@ rav1e = { version = "0.6.4", default-features = false, features = [
 log = { version = "0.4.14", optional = true }
 console = { version = "0.15", optional = true }
 fern = { version = "0.6", optional = true }
-rust_hawktracer = "0.7.0"
+tracing-subscriber = { version = "0.3.18", optional = true }
+tracing-chrome = { version = "0.7.1", optional = true }
+tracing = { version = "0.1.40", optional = true }
 
 [features]
 default = ["binary"]
 binary = ["clap", "serialize"]
 serialize = ["serde", "serde_json"]
 devel = ["log", "console", "fern"]
-tracing = ["rust_hawktracer/profiling_enabled"]
+tracing = [
+  "tracing-subscriber",
+  "tracing-chrome",
+  "dep:tracing",
+  "rav1e/tracing"
+]
 
 [[bin]]
 name = "av-scenechange"
