@@ -134,9 +134,9 @@ fn main() -> Result<()> {
 
     #[cfg(feature = "tracing")]
     {
-        use tracing_subscriber::layer::subscriberext;
+        use tracing_subscriber::layer::SubscriberExt;
         tracing::subscriber::set_global_default(tracing_subscriber::registry().with(chrome_layer))
-            .unwrap();
+            .expect("Could not initialize tracing subscriber");
     }
 
     let matches = Args::parse();

@@ -13,7 +13,7 @@ y4m = "0.8.0"
 clap = { version = "4.0.22", optional = true, features = ["derive"] }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.62", optional = true }
-rav1e = { version = "0.6.4", default-features = false, features = [
+rav1e = { version = "0.7.0", default-features = false, features = [
     "asm",
     "scenechange",
     "threading",
