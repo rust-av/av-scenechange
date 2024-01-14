@@ -1,3 +1,7 @@
+## Version 0.10.0
+
+- Bump `rav1e` dependency to `0.7`
+
 ## Version 0.9.0
 
 - Bump `y4m` dependency to `0.8`
