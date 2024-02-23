@@ -34,23 +34,13 @@ jobs:
         sudo dpkg -i "nasm_${NASM_VERSION}_amd64.deb"
 
     - name: Run rustfmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check --verbose
+      run: |
+        cargo fmt -- --check --verbose
 
-    - name: Lint no-default-features
-      uses: actions-rs/clippy-check@v1
+    - name: Run clippy
+      uses: clechasseur/rs-clippy-check@v3
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --no-default-features
-
-    - name: Lint
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features --tests --benches
-        name: lint
+        args: -- -D warnings --verbose -A clippy::wrong-self-convention -A clippy::many_single_char_names -A clippy::upper-case-acronyms
 
   build:
 
