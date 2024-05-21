@@ -83,17 +83,11 @@ jobs:
                       Select-Object -Last 1
           echo "$LinkPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Install VapourSynth
-        uses: rlaphoenix/install-vapoursynth-action@v2.1.1
-        with:
-          version: 66
-          cache: true
-
       - name: Build
-        run: cargo build --all-features --tests --benches
+        run: cargo build --features binary,devel,tracing,serialize --tests --benches
 
       - name: Run tests
-        run: cargo test --all-features
+        run: cargo test --features binary,devel,tracing,serialize
 
       - name: Generate docs
-        run: cargo doc --all-features --no-deps
+        run: cargo doc --features binary,devel,tracing,serialize --no-deps
