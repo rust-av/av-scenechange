@@ -89,6 +89,9 @@
 #![warn(clippy::missing_errors_doc)]
 #![warn(clippy::missing_panics_doc)]
 
+pub mod decoder;
+#[cfg(feature = "vapoursynth")]
+pub mod vapoursynth;
 mod y4m;
 
 use std::{
@@ -98,7 +101,8 @@ use std::{
     time::Instant,
 };
 
-use ::y4m::Decoder;
+pub use ::y4m::Decoder as Y4mDecoder;
+use decoder::Decoder;
 pub use rav1e::scenechange::SceneChangeDetector;
 use rav1e::{
     config::{CpuFeatureLevel, EncoderConfig},
@@ -152,11 +156,14 @@ pub struct DetectionResults {
     pub speed: f64,
 }
 
+/// # Errors
+///
+/// - If using a Vapoursynth script that contains an unsupported video format.
 pub fn new_detector<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
-) -> SceneChangeDetector<T> {
-    let video_details = y4m::get_video_details(dec);
+) -> anyhow::Result<SceneChangeDetector<T>> {
+    let video_details = dec.get_video_details()?;
     let mut config =
         EncoderConfig::with_speed_preset(if opts.analysis_speed == SceneDetectionSpeed::Fast {
             10
@@ -178,7 +185,7 @@ pub fn new_detector<R: Read, T: Pixel>(
     config.speed_settings.transform.tx_domain_distortion = true;
 
     let sequence = Arc::new(Sequence::new(&config));
-    SceneChangeDetector::new(
+    Ok(SceneChangeDetector::new(
         config,
         CpuFeatureLevel::default(),
         if opts.detect_flashes {
@@ -187,7 +194,7 @@ pub fn new_detector<R: Read, T: Pixel>(
             1
         },
         sequence,
-    )
+    ))
 }
 
 /// Runs through a y4m video clip,
@@ -204,6 +211,10 @@ pub fn new_detector<R: Read, T: Pixel>(
 ///   analyzed, and the number of keyframes detected. This is generally useful
 ///   for displaying progress, etc.
 ///
+/// # Errors
+///
+/// - If using a Vapoursynth script that contains an unsupported video format.
+///
 /// # Panics
 ///
 /// - If `opts.lookahead_distance` is 0.
@@ -213,11 +224,11 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     opts: DetectionOptions,
     frame_limit: Option<usize>,
     progress_callback: Option<&dyn Fn(usize, usize)>,
-) -> DetectionResults {
+) -> anyhow::Result<DetectionResults> {
     assert!(opts.lookahead_distance >= 1);
 
-    let mut detector = new_detector(dec, opts);
-    let video_details = y4m::get_video_details(dec);
+    let mut detector = new_detector::<R, T>(dec, opts)?;
+    let video_details = dec.get_video_details()?;
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     keyframes.insert(0);
@@ -229,7 +240,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         while next_input_frameno
             < (frameno + opts.lookahead_distance + 1).min(frame_limit.unwrap_or(usize::MAX))
         {
-            let frame = y4m::read_video_frame::<R, T>(dec, &video_details);
+            let frame = dec.read_video_frame(&video_details);
             if let Ok(frame) = frame {
                 frame_queue.insert(next_input_frameno, Arc::new(frame));
                 next_input_frameno += 1;
@@ -275,11 +286,11 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             }
         }
     }
-    DetectionResults {
+    Ok(DetectionResults {
         scene_changes: keyframes.into_iter().map(|val| val as usize).collect(),
         frame_count: frameno,
         speed: frameno as f64 / start_time.elapsed().as_secs_f64(),
-    }
+    })
 }
 
 #[derive(Clone, Copy, Debug, PartialOrd, PartialEq, Eq)]
