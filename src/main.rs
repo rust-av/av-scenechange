@@ -95,7 +95,9 @@ use std::{
 };
 
 use anyhow::Result;
-use av_scenechange::{detect_scene_changes, DetectionOptions, SceneDetectionSpeed};
+use av_scenechange::{
+    decoder::Decoder, detect_scene_changes, DetectionOptions, SceneDetectionSpeed,
+};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -159,12 +161,12 @@ fn main() -> Result<()> {
         _ => panic!("Speed mode must be in range [0; 1]"),
     };
 
-    let mut dec = y4m::Decoder::new(&mut reader)?;
-    let bit_depth = dec.get_bit_depth();
+    let mut dec = Decoder::Y4m(y4m::Decoder::new(&mut reader)?);
+    let bit_depth = dec.get_video_details()?.bit_depth;
     let results = if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(&mut dec, opts, None, None)
+        detect_scene_changes::<_, u8>(&mut dec, opts, None, None)?
     } else {
-        detect_scene_changes::<_, u16>(&mut dec, opts, None, None)
+        detect_scene_changes::<_, u16>(&mut dec, opts, None, None)?
     };
     print!("{}", serde_json::to_string(&results)?);
 
