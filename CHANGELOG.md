@@ -1,3 +1,8 @@
+## Version 0.11.0
+
+- Add support for Vapoursynth decoder (requires Cargo `vapoursynth` feature, disabled by default)
+- Breaking change required to add a wrapper enum defining which decoder is being used
+
 ## Version 0.10.0
 
 - Bump `rav1e` dependency to `0.7`
