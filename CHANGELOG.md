@@ -1,3 +1,8 @@
+## Version 0.12.0
+
+- [Breaking] Move `VideoDetails` struct from `y4m` module to `decoder` module, since it is not specific to y4m
+- Add support for Ffmpeg decoder (requires Cargo `ffmpeg` feature, disabled by default)
+
 ## Version 0.11.0
 
 - Add support for Vapoursynth decoder (requires Cargo `vapoursynth` feature, disabled by default)
