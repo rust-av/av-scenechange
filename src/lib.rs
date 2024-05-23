@@ -90,6 +90,9 @@
 #![warn(clippy::missing_panics_doc)]
 
 pub mod decoder;
+
+#[cfg(feature = "ffmpeg")]
+pub mod ffmpeg;
 #[cfg(feature = "vapoursynth")]
 pub mod vapoursynth;
 mod y4m;

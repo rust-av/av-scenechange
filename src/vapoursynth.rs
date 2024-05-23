@@ -11,7 +11,7 @@ use vapoursynth::{
     vsscript::{Environment, EvalFlags},
 };
 
-use crate::y4m::VideoDetails;
+use crate::decoder::VideoDetails;
 
 const OUTPUT_INDEX: i32 = 0;
 
