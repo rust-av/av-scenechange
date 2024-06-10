@@ -1,3 +1,7 @@
+## Version 0.12.1
+
+- Enable threading for ffmpeg decoder, should greatly improve speed
+
 ## Version 0.12.0
 
 - [Breaking] Move `VideoDetails` struct from `y4m` module to `decoder` module, since it is not specific to y4m

@@ -1,6 +1,6 @@
 [package]
 name = "av-scenechange"
-version = "0.12.0"
+version = "0.12.1"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
 edition = "2021"
 description = "Estimates frames in a video where a scenecut would be ideal"
@@ -14,9 +14,9 @@ clap = { version = "4.0.22", optional = true, features = ["derive"] }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.62", optional = true }
 rav1e = { version = "0.7.0", default-features = false, features = [
-  "asm",
-  "scenechange",
-  "threading",
+    "asm",
+    "scenechange",
+    "threading",
 ] }
 log = { version = "0.4.14", optional = true }
 console = { version = "0.15", optional = true }
@@ -25,17 +25,17 @@ tracing-subscriber = { version = "0.3.18", optional = true }
 tracing-chrome = { version = "0.7.1", optional = true }
 tracing = { version = "0.1.40", optional = true }
 ffmpeg-the-third = { version = "2.0.1", optional = true, default-features = false, features = [
-  "codec",
-  "format",
+    "codec",
+    "format",
 ] }
 
 [dependencies.vapoursynth]
 version = "0.4.0"
 features = [
-  "vsscript-functions",
-  "vapoursynth-functions",
-  "vapoursynth-api-32",
-  "vsscript-api-31",
+    "vsscript-functions",
+    "vapoursynth-functions",
+    "vapoursynth-api-32",
+    "vsscript-api-31",
 ]
 optional = true
 
@@ -46,10 +46,10 @@ binary = ["clap", "serialize"]
 serialize = ["serde", "serde_json"]
 devel = ["log", "console", "fern"]
 tracing = [
-  "tracing-subscriber",
-  "tracing-chrome",
-  "dep:tracing",
-  "rav1e/tracing",
+    "tracing-subscriber",
+    "tracing-chrome",
+    "dep:tracing",
+    "rav1e/tracing",
 ]
 ffmpeg = ["ffmpeg-the-third"]
 
