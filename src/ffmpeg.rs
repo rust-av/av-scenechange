@@ -3,13 +3,14 @@ extern crate ffmpeg_the_third as ffmpeg;
 use std::path::Path;
 
 use anyhow::bail;
+use ffmpeg::{format, frame};
 use ffmpeg::codec::{decoder, packet};
 use ffmpeg::format::context;
 use ffmpeg::media::Type;
-use ffmpeg::{format, frame};
+use ffmpeg_the_third::threading;
+use rav1e::{Frame, Pixel};
 use rav1e::color::{ChromaSamplePosition, ChromaSampling};
 use rav1e::data::Rational;
-use rav1e::{Frame, Pixel};
 
 use crate::decoder::VideoDetails;
 
@@ -44,9 +45,9 @@ impl FfmpegDecoder {
             .best(Type::Video)
             .ok_or_else(|| anyhow::anyhow!("Could not find video stream"))?;
         let stream_index = input.index();
-        let mut decoder = ffmpeg::codec::context::Context::from_parameters(input.parameters())?
-            .decoder()
-            .video()?;
+        let mut context = ffmpeg::codec::context::Context::from_parameters(input.parameters())?;
+        context.set_threading(threading::Config::kind(threading::Type::Slice));
+        let mut decoder = context.decoder().video()?;
         decoder.set_parameters(input.parameters())?;
 
         let frame_rate = input.avg_frame_rate();
