@@ -1,4 +1,4 @@
-## Version 0.12.1
+## Version 0.12.2
 
 - Enable threading for ffmpeg decoder, should greatly improve speed
 

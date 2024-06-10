@@ -46,7 +46,7 @@ impl FfmpegDecoder {
             .ok_or_else(|| anyhow::anyhow!("Could not find video stream"))?;
         let stream_index = input.index();
         let mut context = ffmpeg::codec::context::Context::from_parameters(input.parameters())?;
-        context.set_threading(threading::Config::kind(threading::Type::Slice));
+        context.set_threading(threading::Config::kind(threading::Type::Frame));
         let mut decoder = context.decoder().video()?;
         decoder.set_parameters(input.parameters())?;
 
