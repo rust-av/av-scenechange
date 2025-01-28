@@ -1,3 +1,8 @@
+## Version 0.13.0
+
+- [Breaking] Update ffmpeg-the-third to 3.x
+- Update all other dependencies to latest version
+
 ## Version 0.12.2
 
 - Enable threading for ffmpeg decoder, should greatly improve speed

@@ -3,14 +3,14 @@ extern crate ffmpeg_the_third as ffmpeg;
 use std::path::Path;
 
 use anyhow::bail;
-use ffmpeg::{format, frame};
 use ffmpeg::codec::{decoder, packet};
 use ffmpeg::format::context;
 use ffmpeg::media::Type;
+use ffmpeg::{format, frame};
 use ffmpeg_the_third::threading;
-use rav1e::{Frame, Pixel};
 use rav1e::color::{ChromaSamplePosition, ChromaSampling};
 use rav1e::data::Rational;
+use rav1e::{Frame, Pixel};
 
 use crate::decoder::VideoDetails;
 
