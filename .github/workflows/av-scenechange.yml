@@ -43,7 +43,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-latest, windows-latest]
+        platform: [ ubuntu-latest, windows-latest ]
 
     runs-on: ${{ matrix.platform }}
 
@@ -91,3 +91,18 @@ jobs:
 
       - name: Generate docs
         run: cargo doc --features binary,devel,tracing,serialize --no-deps
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Generate code coverage
+        run: cargo llvm-cov --features binary,tracing,serialize --lcov --output-path lcov.log --ignore-filename-regex tests\.rs
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.log
+          fail_ci_if_error: false
