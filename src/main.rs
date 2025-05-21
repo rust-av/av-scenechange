@@ -43,16 +43,6 @@ struct Args {
 fn main() -> Result<()> {
     init_logger();
 
-    #[cfg(feature = "tracing")]
-    let (chrome_layer, _guard) = tracing_chrome::ChromeLayerBuilder::new().build();
-
-    #[cfg(feature = "tracing")]
-    {
-        use tracing_subscriber::layer::SubscriberExt;
-        tracing::subscriber::set_global_default(tracing_subscriber::registry().with(chrome_layer))
-            .expect("Could not initialize tracing subscriber");
-    }
-
     let matches = Args::parse();
     let input = match matches.input.as_str() {
         "-" => Box::new(io::stdin()) as Box<dyn Read>,
