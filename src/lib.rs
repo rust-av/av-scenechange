@@ -27,9 +27,10 @@ use std::{
 
 pub use ::y4m::Decoder as Y4mDecoder;
 use decoder::Decoder;
+pub use num_rational::Rational32;
 use v_frame::pixel::Pixel;
 
-use crate::{analyze::SceneChangeDetector, cpu::CpuFeatureLevel};
+pub use crate::{analyze::SceneChangeDetector, cpu::CpuFeatureLevel};
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]

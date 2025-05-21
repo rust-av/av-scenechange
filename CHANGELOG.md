@@ -1,3 +1,8 @@
+## Version 0.14.1
+
+- Readd support for caching intra costs
+- Expose structs for advanced API users
+
 ## Version 0.14.0
 
 - [Breaking/Feature] Add `SceneDetectionSpeed::None`, which will only place keyframes at fixed intervals without running dynamic detection

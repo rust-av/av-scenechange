@@ -23,6 +23,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
         &mut self,
         frame1: Arc<Frame<T>>,
         frame2: Arc<Frame<T>>,
+        input_frameno: usize,
     ) -> ScenecutResult {
         let frame2_inter_ref = Arc::clone(&frame2);
         let frame1_imp_ref = Arc::clone(&frame1);
@@ -56,6 +57,9 @@ impl<T: Pixel> SceneChangeDetector<T> {
                     self.bit_depth,
                     self.cpu_feature_level,
                 );
+                if let Some(ref mut intra_cache) = self.intra_costs {
+                    intra_cache.insert(input_frameno, intra_costs.clone());
+                }
 
                 intra_cost = intra_costs.iter().map(|&cost| cost as u64).sum::<u64>() as f64
                     / intra_costs.len() as f64;
