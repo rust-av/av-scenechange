@@ -1,4 +1,4 @@
-use std::{cmp, num::NonZeroUsize, sync::Arc};
+use std::{cmp, collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 
 use log::debug;
 use num_rational::Rational32;
@@ -48,6 +48,11 @@ impl<T: Pixel> ScaleFunction<T> {
     }
 }
 /// Runs keyframe detection on frames from the lookahead queue.
+///
+/// This struct is intended for advanced users who need the ability to analyze
+/// a small subset of frames at a time, for example in a streaming fashion.
+/// Most users will prefer to use `new_detector` and `detect_scene_changes`
+/// at the top level of this crate.
 pub struct SceneChangeDetector<T: Pixel> {
     // User configuration options
     /// Scenecut detection mode
@@ -90,10 +95,18 @@ pub struct SceneChangeDetector<T: Pixel> {
     temp_plane: Option<Plane<T>>,
     /// Buffer for `FrameMEStats` for cost scenecut
     frame_me_stats_buffer: Option<RefMEStats>,
+
+    /// Calculated intra costs for each input frame.
+    /// These can be cached for reuse by advanced API users.
+    /// Caching will occur if this is not `None`.
+    pub intra_costs: Option<BTreeMap<usize, Box<[u32]>>>,
 }
 
 impl<T: Pixel> SceneChangeDetector<T> {
+    /// Creates a new instance of the `SceneChangeDetector`.
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::missing_panics_doc)]
+    #[inline]
     pub fn new(
         resolution: (usize, usize),
         bit_depth: usize,
@@ -115,9 +128,10 @@ impl<T: Pixel> SceneChangeDetector<T> {
         let score_deque = Vec::with_capacity(5 + lookahead_distance);
 
         // Downscaling factor for fast scenedetect (is currently always a power of 2)
-        let factor = scale_func
-            .as_ref()
-            .map_or(NonZeroUsize::new(1).unwrap(), |x| x.factor);
+        let factor = scale_func.as_ref().map_or(
+            NonZeroUsize::new(1).expect("constant should not panic"),
+            |x| x.factor,
+        );
 
         let pixels = if scene_detection_mode == SceneDetectionSpeed::Fast {
             fast_idiv(resolution.1, factor) * fast_idiv(resolution.0, factor)
@@ -145,6 +159,15 @@ impl<T: Pixel> SceneChangeDetector<T> {
             resolution,
             temp_plane: None,
             frame_me_stats_buffer: None,
+            intra_costs: None,
+        }
+    }
+
+    /// Enables caching of intra costs. For advanced API users.
+    #[inline]
+    pub fn enable_cache(&mut self) {
+        if self.intra_costs.is_none() {
+            self.intra_costs = Some(BTreeMap::new());
         }
     }
 
@@ -156,6 +179,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// to the second frame in `frame_set`.
     ///
     /// This will gracefully handle the first frame in the video as well.
+    #[inline]
     pub fn analyze_next_frame(
         &mut self,
         frame_set: &[&Arc<Frame<T>>],
@@ -265,7 +289,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
     ) {
         let mut result = match self.scene_detection_mode {
             SceneDetectionSpeed::Fast => self.fast_scenecut(frame1, frame2),
-            SceneDetectionSpeed::Standard => self.cost_scenecut(frame1, frame2),
+            SceneDetectionSpeed::Standard => self.cost_scenecut(frame1, frame2, input_frameno),
             _ => unreachable!(),
         };
 

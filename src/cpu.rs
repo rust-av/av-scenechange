@@ -20,6 +20,7 @@ mod rust {
     impl CpuFeatureLevel {
         #[cfg(test)]
         #[allow(unused)]
+        #[inline]
         pub const fn all() -> &'static [Self] {
             use CpuFeatureLevel::*;
             &[RUST]
@@ -62,16 +63,19 @@ mod x86 {
             ]
         }
 
+        #[inline]
         pub const fn len() -> usize {
             CpuFeatureLevel::AVX512ICL as usize + 1
         }
 
+        #[inline]
         pub const fn as_index(self) -> usize {
             self as usize
         }
     }
 
     impl Default for CpuFeatureLevel {
+        #[inline]
         fn default() -> CpuFeatureLevel {
             fn avx512_detected() -> bool {
                 is_x86_feature_detected!("avx512bw")
@@ -204,21 +208,25 @@ mod neon {
 
     impl CpuFeatureLevel {
         #[cfg(test)]
+        #[inline]
         pub const fn all() -> &'static [Self] {
             use CpuFeatureLevel::*;
             &[RUST, NEON]
         }
 
+        #[inline]
         pub const fn len() -> usize {
             CpuFeatureLevel::NEON as usize + 1
         }
 
+        #[inline]
         pub fn as_index(self) -> usize {
             self as usize
         }
     }
 
     impl Default for CpuFeatureLevel {
+        #[inline]
         fn default() -> CpuFeatureLevel {
             let detected = CpuFeatureLevel::NEON;
             let manual: CpuFeatureLevel = match env::var("CPU_TARGET") {
