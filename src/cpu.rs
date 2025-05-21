@@ -10,6 +10,8 @@ mod rust {
     use arg_enum_proc_macro::ArgEnum;
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, ArgEnum, Default)]
+    #[allow(clippy::upper_case_acronyms)]
+
     pub enum CpuFeatureLevel {
         #[default]
         RUST,
@@ -194,6 +196,7 @@ mod neon {
     use arg_enum_proc_macro::ArgEnum;
 
     #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, ArgEnum)]
+    #[allow(clippy::upper_case_acronyms)]
     pub enum CpuFeatureLevel {
         RUST,
         NEON,

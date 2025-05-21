@@ -502,6 +502,7 @@ impl<'a, T: Pixel> IntraEdge<'a, T> {
         (self.0, self.1, self.2)
     }
 
+    #[allow(dead_code)]
     pub const fn top_left_ptr(&self) -> *const T {
         self.1.as_ptr()
     }

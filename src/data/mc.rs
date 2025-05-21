@@ -532,6 +532,7 @@ mod simd_neon {
         },
     };
 
+    #[allow(clippy::too_many_arguments)]
     pub fn put_8tap_internal<T: Pixel>(
         dst: &mut PlaneRegionMut<'_, T>,
         src: PlaneSlice<'_, T>,
