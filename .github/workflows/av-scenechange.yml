@@ -52,7 +52,7 @@ jobs:
           echo "$LinkPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Clippy
-        run: cargo clippy --features binary,devel,tracing,serialize --tests --benches -D warnings
+        run: cargo clippy --features binary,devel,tracing,serialize --tests --benches -- -D warnings
 
       - name: Build
         run: cargo build --features binary,devel,tracing,serialize --tests --benches
