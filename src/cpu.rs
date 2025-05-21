@@ -170,19 +170,19 @@ mod x86 {
 
         // use $name_$key as our values
         ($pub:vis, $name:ident: [$type:ty], default: $empty:expr, [$($key:ident),*]) => {
-            paste::item!{
-            cpu_function_lookup_table!(
-                $pub, $name: [$type], default: $empty, [$(($key, [<$name _$key>])),*]
-            );
+            pastey::item!{
+                cpu_function_lookup_table!(
+                    $pub, $name: [$type], default: $empty, [$(($key, [<$name _$key>])),*]
+                );
             }
         };
 
         // version for default visibility
         ($name:ident: [$type:ty], default: $empty:expr, [$($key:ident),*]) => {
-            paste::item!{
-            cpu_function_lookup_table!(
-                $name: [$type], default: $empty, [$(($key, [<$name _$key>])),*]
-            );
+            pastey::item!{
+                cpu_function_lookup_table!(
+                    $name: [$type], default: $empty, [$(($key, [<$name _$key>])),*]
+                );
             }
         };
     }
@@ -282,7 +282,7 @@ mod neon {
 
         // use $name_$key as our values
         ($pub:vis, $name:ident: [$type:ty], default: $empty:expr, [$($key:ident),*]) => {
-            paste::item!{
+            pastey::item!{
             cpu_function_lookup_table!(
                 $pub, $name: [$type], default: $empty, [$(($key, [<$name _$key>])),*]
             );
@@ -291,7 +291,7 @@ mod neon {
 
         // version for default visibility
         ($name:ident: [$type:ty], default: $empty:expr, [$($key:ident),*]) => {
-            paste::item!{
+            pastey::item!{
             cpu_function_lookup_table!(
                 $name: [$type], default: $empty, [$(($key, [<$name _$key>])),*]
             );
