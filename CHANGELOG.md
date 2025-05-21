@@ -1,3 +1,8 @@
+## Version 0.14.0
+
+- [Breaking/Feature] Add `SceneDetectionSpeed::None`, which will only place keyframes at fixed intervals without running dynamic detection
+- Migrate detection code from rav1e into this crate
+
 ## Version 0.13.0
 
 - [Breaking] Update ffmpeg-the-third to 3.x
