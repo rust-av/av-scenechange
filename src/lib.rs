@@ -8,6 +8,10 @@
 
 pub mod decoder;
 
+mod analyze;
+#[macro_use]
+mod cpu;
+mod data;
 #[cfg(feature = "ffmpeg")]
 pub mod ffmpeg;
 #[cfg(feature = "vapoursynth")]
@@ -23,11 +27,9 @@ use std::{
 
 pub use ::y4m::Decoder as Y4mDecoder;
 use decoder::Decoder;
-pub use rav1e::scenechange::SceneChangeDetector;
-use rav1e::{
-    config::{CpuFeatureLevel, EncoderConfig},
-    prelude::{Pixel, Sequence},
-};
+use v_frame::pixel::Pixel;
+
+use crate::{analyze::SceneChangeDetector, cpu::CpuFeatureLevel};
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
@@ -41,7 +43,7 @@ pub struct DetectionOptions {
     /// for use in an encoder.
     /// If you want a raw list of scene changes, you should disable this.
     pub detect_flashes: bool,
-    /// The minimum distane between two scene changes.
+    /// The minimum distance between two scene changes.
     pub min_scenecut_distance: Option<usize>,
     /// The maximum distance between two scene changes.
     pub max_scenecut_distance: Option<usize>,
@@ -53,6 +55,7 @@ pub struct DetectionOptions {
 }
 
 impl Default for DetectionOptions {
+    #[inline]
     fn default() -> Self {
         DetectionOptions {
             analysis_speed: SceneDetectionSpeed::Standard,
@@ -79,41 +82,28 @@ pub struct DetectionResults {
 /// # Errors
 ///
 /// - If using a Vapoursynth script that contains an unsupported video format.
+#[inline]
 pub fn new_detector<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
 ) -> anyhow::Result<SceneChangeDetector<T>> {
     let video_details = dec.get_video_details()?;
-    let mut config =
-        EncoderConfig::with_speed_preset(if opts.analysis_speed == SceneDetectionSpeed::Fast {
-            10
-        } else {
-            8
-        });
 
-    config.min_key_frame_interval = opts.min_scenecut_distance.map_or(0, |val| val as u64);
-    config.max_key_frame_interval = opts
-        .max_scenecut_distance
-        .map_or_else(|| u32::MAX.into(), |val| val as u64);
-    config.width = video_details.width;
-    config.height = video_details.height;
-    config.bit_depth = video_details.bit_depth;
-    config.time_base = video_details.time_base;
-    config.chroma_sampling = video_details.chroma_sampling;
-    config.chroma_sample_position = video_details.chroma_sample_position;
-    // force disable temporal RDO to disable intra cost caching
-    config.speed_settings.transform.tx_domain_distortion = true;
-
-    let sequence = Arc::new(Sequence::new(&config));
     Ok(SceneChangeDetector::new(
-        config,
-        CpuFeatureLevel::default(),
+        (video_details.width, video_details.height),
+        video_details.bit_depth,
+        video_details.time_base.recip(),
+        video_details.chroma_sampling,
         if opts.detect_flashes {
             opts.lookahead_distance
         } else {
             1
         },
-        sequence,
+        opts.analysis_speed,
+        opts.min_scenecut_distance.map_or(0, |val| val),
+        opts.max_scenecut_distance
+            .map_or_else(|| u32::MAX as usize, |val| val),
+        CpuFeatureLevel::default(),
     ))
 }
 
@@ -138,7 +128,7 @@ pub fn new_detector<R: Read, T: Pixel>(
 /// # Panics
 ///
 /// - If `opts.lookahead_distance` is 0.
-#[allow(clippy::needless_pass_by_value)]
+#[inline]
 pub fn detect_scene_changes<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
@@ -182,14 +172,14 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         if frameno == 0
             || detector.analyze_next_frame(
                 &frame_set,
-                frameno as u64,
+                frameno,
                 *keyframes
                     .iter()
                     .last()
                     .expect("at least 1 keyframe should exist"),
             )
         {
-            keyframes.insert(frameno as u64);
+            keyframes.insert(frameno);
         };
 
         if frameno > 0 {
@@ -207,7 +197,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         }
     }
     Ok(DetectionResults {
-        scene_changes: keyframes.into_iter().map(|val| val as usize).collect(),
+        scene_changes: keyframes.into_iter().collect(),
         frame_count: frameno,
         speed: frameno as f64 / start_time.elapsed().as_secs_f64(),
     })
@@ -217,6 +207,9 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
 pub enum SceneDetectionSpeed {
     /// Fastest scene detection using pixel-wise comparison
     Fast,
-    /// Scene detection using motion vectors
+    /// Scene detection using frame costs and motion vectors
     Standard,
+    /// Do not perform scenecut detection, only place keyframes at fixed
+    /// intervals
+    None,
 }

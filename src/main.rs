@@ -5,7 +5,10 @@ use std::{
 
 use anyhow::Result;
 use av_scenechange::{
-    decoder::Decoder, detect_scene_changes, DetectionOptions, SceneDetectionSpeed,
+    decoder::Decoder,
+    detect_scene_changes,
+    DetectionOptions,
+    SceneDetectionSpeed,
 };
 use clap::Parser;
 
@@ -109,10 +112,10 @@ fn init_logger() {
         }
     }
 
-    let level = std::env::var("RAV1E_LOG")
+    let level = std::env::var("LOG")
         .ok()
         .and_then(|l| log::LevelFilter::from_str(&l).ok())
-        .unwrap_or(log::LevelFilter::Info);
+        .unwrap_or(log::LevelFilter::Warn);
 
     fern::Dispatch::new()
         .format(move |out, message, record| {
@@ -124,12 +127,7 @@ fn init_logger() {
         })
         // set the default log level. to filter out verbose log messages from dependencies, set
         // this to Warn and overwrite the log level for your crate.
-        .level(log::LevelFilter::Warn)
-        // change log levels for individual modules. Note: This looks for the record's target
-        // field which defaults to the module path but can be overwritten with the `target`
-        // parameter:
-        // `info!(target="special_target", "This log message is about special_target");`
-        .level_for("rav1e", level)
+        .level(level)
         // output to stdout
         .chain(std::io::stderr())
         .apply()

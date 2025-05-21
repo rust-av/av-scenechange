@@ -3,14 +3,19 @@ extern crate ffmpeg_the_third as ffmpeg;
 use std::path::Path;
 
 use anyhow::bail;
-use ffmpeg::codec::{decoder, packet};
-use ffmpeg::format::context;
-use ffmpeg::media::Type;
-use ffmpeg::{format, frame};
+use ffmpeg::{
+    codec::{decoder, packet},
+    format,
+    format::context,
+    frame,
+    media::Type,
+};
 use ffmpeg_the_third::threading;
-use rav1e::color::{ChromaSamplePosition, ChromaSampling};
-use rav1e::data::Rational;
-use rav1e::{Frame, Pixel};
+use num_rational::Rational32;
+use v_frame::{
+    frame::Frame,
+    pixel::{ChromaSampling, Pixel},
+};
 
 use crate::decoder::VideoDetails;
 
@@ -36,6 +41,7 @@ impl FfmpegDecoder {
     /// - If ffmpeg is not available or not working on the system
     /// - If the source contains no video
     /// - If the source has an unsupported pixel format
+    #[inline]
     pub fn new<P: AsRef<Path>>(input: P) -> anyhow::Result<Self> {
         ffmpeg::init()?;
 
@@ -89,16 +95,7 @@ impl FfmpegDecoder {
                         bail!("Unsupported pixel format {:?}", decoder.format());
                     }
                 },
-                chroma_sample_position: match decoder.format() {
-                    format::pixel::Pixel::YUV422P
-                    | format::pixel::Pixel::YUV422P10LE
-                    | format::pixel::Pixel::YUV422P12LE => ChromaSamplePosition::Vertical,
-                    _ => ChromaSamplePosition::Colocated,
-                },
-                time_base: Rational::new(
-                    frame_rate.denominator() as u64,
-                    frame_rate.numerator() as u64,
-                ),
+                time_base: Rational32::new(frame_rate.denominator(), frame_rate.numerator()),
             },
             decoder,
             input_ctx,
@@ -139,18 +136,19 @@ impl FfmpegDecoder {
     /// # Errors
     ///
     /// - If there are no frames remaining
+    #[inline]
     pub fn read_video_frame<T: Pixel>(&mut self) -> anyhow::Result<Frame<T>> {
-        // For some reason there's a crap ton of work needed to get ffmpeg to do something simple,
-        // because each codec has it's own stupid way of doing things and they don't all
-        // decode the same way.
+        // For some reason there's a crap ton of work needed to get ffmpeg to do
+        // something simple, because each codec has it's own stupid way of doing
+        // things and they don't all decode the same way.
         //
-        // Maybe ffmpeg could have made a simple, singular interface that does this for us,
-        // but noooooo.
+        // Maybe ffmpeg could have made a simple, singular interface that does this for
+        // us, but noooooo.
         //
         // Reference: https://ffmpeg.org/doxygen/trunk/api-h264-test_8c_source.html#l00110
         loop {
-            // This iterator is actually really stupid... it doesn't reset itself after each `new`.
-            // But that solves our lifetime hell issues, ironically.
+            // This iterator is actually really stupid... it doesn't reset itself after each
+            // `new`. But that solves our lifetime hell issues, ironically.
             let packet = self
                 .input_ctx
                 .packets()

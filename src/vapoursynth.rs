@@ -1,10 +1,10 @@
 use std::{mem::size_of, path::Path, slice};
 
 use anyhow::{bail, ensure};
-use rav1e::{
-    color::{ChromaSamplePosition, ChromaSampling},
-    data::Rational,
-    Frame, Pixel,
+use num_rational::Rational32;
+use v_frame::{
+    frame::Frame,
+    pixel::{ChromaSampling, Pixel},
 };
 use vapoursynth::{
     video_info::{Property, VideoInfo},
@@ -25,7 +25,9 @@ impl VapoursynthDecoder {
     /// # Errors
     ///
     /// - If sourcing an invalid Vapoursynth script.
-    /// - If using a Vapoursynth script that contains an unsupported video format.
+    /// - If using a Vapoursynth script that contains an unsupported video
+    ///   format.
+    #[inline]
     pub fn new(source: &Path) -> anyhow::Result<VapoursynthDecoder> {
         let env = Environment::from_file(source, EvalFlags::SetWorkingDir)?;
         let total_frames = {
@@ -42,7 +44,9 @@ impl VapoursynthDecoder {
     /// # Errors
     ///
     /// - If sourcing an invalid Vapoursynth script.
-    /// - If using a Vapoursynth script that contains an unsupported video format.
+    /// - If using a Vapoursynth script that contains an unsupported video
+    ///   format.
+    #[inline]
     pub fn get_video_details(&self) -> anyhow::Result<VideoDetails> {
         let (node, _) = self.env.get_output(OUTPUT_INDEX)?;
         let info = node.info();
@@ -52,7 +56,6 @@ impl VapoursynthDecoder {
             height,
             bit_depth: get_bit_depth(info)?,
             chroma_sampling: get_chroma_sampling(info)?,
-            chroma_sample_position: ChromaSamplePosition::Unknown,
             time_base: get_time_base(info)?,
         })
     }
@@ -60,9 +63,11 @@ impl VapoursynthDecoder {
     /// # Errors
     ///
     /// - If sourcing an invalid Vapoursynth script.
-    /// - If using a Vapoursynth script that contains an unsupported video format.
+    /// - If using a Vapoursynth script that contains an unsupported video
+    ///   format.
     /// - If a frame cannot be read.
     #[allow(clippy::transmute_ptr_to_ptr)]
+    #[inline]
     pub fn read_video_frame<T: Pixel>(&mut self, cfg: &VideoDetails) -> anyhow::Result<Frame<T>> {
         const SB_SIZE_LOG2: usize = 6;
         const SB_SIZE: usize = 1 << SB_SIZE_LOG2;
@@ -162,11 +167,15 @@ fn get_resolution(info: VideoInfo) -> anyhow::Result<(usize, usize)> {
     Ok((resolution.width, resolution.height))
 }
 
-/// Get the time base (inverse of frame rate) from a Vapoursynth `VideoInfo` struct.
-fn get_time_base(info: VideoInfo) -> anyhow::Result<Rational> {
+/// Get the time base (inverse of frame rate) from a Vapoursynth `VideoInfo`
+/// struct.
+fn get_time_base(info: VideoInfo) -> anyhow::Result<Rational32> {
     match info.framerate {
         Property::Variable => bail!("Cannot output clips with varying framerate"),
-        Property::Constant(fps) => Ok(Rational::new(fps.denominator, fps.numerator)),
+        Property::Constant(fps) => Ok(Rational32::new(
+            fps.denominator as i32,
+            fps.numerator as i32,
+        )),
     }
 }
 
