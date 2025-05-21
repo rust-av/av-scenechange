@@ -1,7 +1,7 @@
 use std::mem::{transmute, MaybeUninit};
 
 use aligned::{Aligned, A64};
-#[cfg(not(any(asm_x86_64, asm_neon)))]
+#[cfg(not(asm_x86_64))]
 use rust::*;
 #[cfg(asm_x86_64)]
 use simd_x86::*;
@@ -28,7 +28,6 @@ use crate::{
 pub const BLOCK_TO_PLANE_SHIFT: usize = MI_SIZE_LOG2;
 
 mod rust {
-    use simd_helpers::cold_for_target_arch;
     use v_frame::pixel::Pixel;
 
     use super::IntraEdge;
@@ -39,7 +38,7 @@ mod rust {
 
     #[cfg_attr(
         all(asm_x86_64, any(target_feature = "ssse3", target_feature = "avx2")),
-        cold_for_target_arch("x86_64")
+        cold
     )]
     pub(super) fn dispatch_predict_dc_intra<T: Pixel>(
         variant: PredictionVariant,

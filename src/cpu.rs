@@ -250,14 +250,14 @@ mod neon {
                 out[$key as usize] = $value;
                 set[$key as usize] = true;
             )*
-            cpu_function_lookup_table!(waterfall_cpu_features(out, set, [SSE2, SSSE3, SSE4_1, AVX2, AVX512, AVX512ICL]));
+            cpu_function_lookup_table!(waterfall_cpu_features(out, set, [NEON]));
             out
             };
         };
+
         ($pub:vis, $name:ident: [$type:ty], default: $empty:expr, [$(($key:ident, $value:expr)),*]) => {
             $pub cpu_function_lookup_table!($name: [$type], default: $empty, [$(($key, $value)),*]);
         };
-
         // Fill empty output functions with the existent functions they support.
         // cpus should be in order of lowest cpu level to highest
         // Used like an internal function
@@ -275,6 +275,7 @@ mod neon {
             $out[$cpu as usize] = best[1];
             )*
         };
+
 
         // use $name_$key as our values
         ($pub:vis, $name:ident: [$type:ty], default: $empty:expr, [$($key:ident),*]) => {

@@ -134,7 +134,6 @@ const SUBPEL_FILTERS: [[[i32; SUBPEL_FILTER_SIZE]; 16]; 6] = [
 
 mod rust {
     use num_traits::AsPrimitive;
-    use simd_helpers::cold_for_target_arch;
     use v_frame::{math::round_shift, pixel::Pixel, plane::PlaneSlice};
 
     use crate::{
@@ -147,7 +146,7 @@ mod rust {
 
     #[cfg_attr(
         all(asm_x86_64, any(target_feature = "ssse3", target_feature = "avx2")),
-        cold_for_target_arch("x86_64")
+        cold
     )]
     #[allow(clippy::too_many_arguments)]
     pub fn put_8tap_internal<T: Pixel>(
@@ -518,7 +517,6 @@ mod simd_x86 {
     );
 }
 
-// TODO: uncomment once code has no errors
 #[cfg(asm_neon)]
 mod simd_neon {
     use v_frame::{
@@ -528,7 +526,10 @@ mod simd_neon {
 
     use crate::{
         cpu::CpuFeatureLevel,
-        data::{mc::FilterMode::*, plane::PlaneRegionMut},
+        data::{
+            mc::{FilterMode, FilterMode::*},
+            plane::PlaneRegionMut,
+        },
     };
 
     pub fn put_8tap_internal<T: Pixel>(
@@ -629,7 +630,7 @@ mod simd_neon {
 
     macro_rules! decl_mc_fns {
       ($(($mode_x:expr, $mode_y:expr, $func_name:ident)),+) => {
-        extern {
+        extern "C" {
           $(
             fn $func_name(
               dst: *mut u8, dst_stride: isize, src: *const u8, src_stride: isize,
@@ -669,7 +670,7 @@ mod simd_neon {
 
     macro_rules! decl_mc_hbd_fns {
       ($(($mode_x:expr, $mode_y:expr, $func_name:ident)),+) => {
-        extern {
+        extern "C" {
           $(
             fn $func_name(
               dst: *mut u16, dst_stride: isize, src: *const u16, src_stride: isize,

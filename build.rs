@@ -220,7 +220,7 @@ fn build_neon_asm_files() {
         println!("cargo:rustc-link-search={out_dir}");
         println!("cargo:rustc-link-lib=static=avsc-aarch64");
     }
-    rerun_dir("src/arm");
+    rerun_dir("src/asm/arm");
 }
 
 #[allow(unused_variables)]

@@ -13,7 +13,6 @@ use super::{block::BlockSize, plane::PlaneRegion};
 use crate::cpu::CpuFeatureLevel;
 
 mod rust {
-    use simd_helpers::cold_for_target_arch;
     use v_frame::{
         math::msb,
         pixel::{CastFromPrimitive, Pixel},
@@ -33,10 +32,7 @@ mod rust {
     /// Use the sum of 4x4 and 8x8 hadamard transforms for the transform, but
     /// revert to sad on edges when these transforms do not fit into w and h.
     /// 4x4 transforms instead of 8x8 transforms when width or height < 8.
-    #[cfg_attr(
-        all(asm_x86_64, target_feature = "avx2"),
-        cold_for_target_arch("x86_64")
-    )]
+    #[cfg_attr(all(asm_x86_64, target_feature = "avx2"), cold)]
     pub(super) fn get_satd_internal<T: Pixel>(
         plane_org: &PlaneRegion<'_, T>,
         plane_ref: &PlaneRegion<'_, T>,
@@ -354,7 +350,6 @@ mod simd_x86 {
     }
 }
 
-// TODO: uncomment once code has no errors
 #[cfg(asm_neon)]
 mod simd_neon {
     use v_frame::pixel::{Pixel, PixelType};
@@ -526,7 +521,7 @@ mod simd_neon {
         let call_rust =
             || -> u32 { super::rust::get_satd_internal(src, dst, w, h, bit_depth, cpu) };
 
-        let dist = match (bsize_opt, T::type_enum()) {
+        match (bsize_opt, T::type_enum()) {
             (Err(_), _) => call_rust(),
             (Ok(bsize), PixelType::U8) => {
                 match SATD_FNS[cpu.as_index()][to_index(bsize)] {
@@ -556,9 +551,7 @@ mod simd_neon {
                     None => call_rust(),
                 }
             }
-        };
-
-        dist
+        }
     }
 }
 
