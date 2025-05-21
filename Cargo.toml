@@ -3,6 +3,7 @@ name = "av-scenechange"
 version = "0.13.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
 edition = "2021"
+rust-version = "1.74.1"
 description = "Estimates frames in a video where a scenecut would be ideal"
 license = "MIT"
 repository = "https://github.com/rust-av/av-scenechange"
@@ -24,7 +25,7 @@ libc = { version = "0.2.172", optional = true }
 log = { version = "0.4.14" }
 num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
-paste = "1.0.15"
+pastey = "0.1.0"
 rayon = "1.10.0"
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.62", optional = true }

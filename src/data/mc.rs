@@ -395,7 +395,7 @@ mod simd_x86 {
 
     macro_rules! decl_mc_fns {
       ($(($mode_x:expr, $mode_y:expr, $func_name:ident)),+) => {
-        paste::item! {
+        pastey::item! {
           extern "C" {
             $(
               fn [<$func_name _ssse3>](
@@ -463,7 +463,7 @@ mod simd_x86 {
 
     macro_rules! decl_mc_hbd_fns {
       ($(($mode_x:expr, $mode_y:expr, $func_name:ident)),+) => {
-        paste::item! {
+        pastey::item! {
           extern "C" {
             $(
               fn [<$func_name _ssse3>](
