@@ -12,7 +12,6 @@ build = "build.rs"
 [dependencies]
 aligned = "0.4.2"
 anyhow = "1.0.56"
-arg_enum_proc_macro = "0.3.4"
 arrayvec = "0.7.6"
 cfg-if = "1.0.0"
 clap = { version = "4.0.22", optional = true, features = ["derive"] }
@@ -27,7 +26,6 @@ libc = { version = "0.2.172", optional = true }
 log = { version = "0.4.14" }
 num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
-pastey = "0.1.0"
 rayon = "1.10.0"
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.62", optional = true }
