@@ -3,15 +3,12 @@ use v_frame::{
     plane::{Plane, PlaneConfig, PlaneOffset, PlaneSlice},
 };
 
-use crate::{
-    cpu::CpuFeatureLevel,
-    data::{
-        frame::{FrameInvariants, RefType},
-        mc::put_8tap,
-        motion::MotionVector,
-        plane::PlaneRegionMut,
-        tile::TileRect,
-    },
+use crate::data::{
+    frame::{FrameInvariants, RefType},
+    mc::put_8tap,
+    motion::MotionVector,
+    plane::PlaneRegionMut,
+    tile::TileRect,
 };
 
 // There are more modes than in the spec because every allowed
@@ -82,7 +79,6 @@ impl PredictionMode {
         ref_frame: RefType,
         mv: MotionVector,
         bit_depth: usize,
-        cpu_feature_level: CpuFeatureLevel,
     ) {
         assert!(!self.is_intra());
         let frame_po = tile_rect.to_frame_plane_offset(po);
@@ -90,16 +86,7 @@ impl PredictionMode {
         if let Some(ref rec) = fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize] {
             let (row_frac, col_frac, src) =
                 PredictionMode::get_mv_params(&rec.frame.planes[p], frame_po, mv);
-            put_8tap(
-                dst,
-                src,
-                width,
-                height,
-                col_frac,
-                row_frac,
-                bit_depth,
-                cpu_feature_level,
-            );
+            put_8tap(dst, src, width, height, col_frac, row_frac, bit_depth);
         }
     }
 

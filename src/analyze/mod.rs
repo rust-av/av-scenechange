@@ -9,7 +9,7 @@ use v_frame::{
 };
 
 use self::fast::{detect_scale_factor, FAST_THRESHOLD};
-use crate::{data::motion::RefMEStats, CpuFeatureLevel, SceneDetectionSpeed};
+use crate::{data::motion::RefMEStats, SceneDetectionSpeed};
 
 mod fast;
 mod importance;
@@ -63,8 +63,6 @@ pub struct SceneChangeDetector<T: Pixel> {
     min_key_frame_interval: usize,
     /// Maximum number of frames between two scenecuts
     max_key_frame_interval: usize,
-    /// The CPU feature level to be used.
-    cpu_feature_level: CpuFeatureLevel,
 
     // Internal configuration options
     /// Minimum average difference between YUV deltas that will trigger a scene
@@ -116,7 +114,6 @@ impl<T: Pixel> SceneChangeDetector<T> {
         scene_detection_mode: SceneDetectionSpeed,
         min_key_frame_interval: usize,
         max_key_frame_interval: usize,
-        cpu_feature_level: CpuFeatureLevel,
     ) -> Self {
         // Downscaling function for fast scene detection
         let scale_func = detect_scale_factor(resolution, scene_detection_mode);
@@ -154,7 +151,6 @@ impl<T: Pixel> SceneChangeDetector<T> {
             chroma_sampling,
             min_key_frame_interval,
             max_key_frame_interval,
-            cpu_feature_level,
             downscaled_frame_buffer: None,
             resolution,
             temp_plane: None,

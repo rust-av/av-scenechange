@@ -1,13 +1,15 @@
 #[cfg(asm_x86_64)]
-mod simd_x86;
+mod avx2;
+#[cfg(asm_x86_64)]
+mod avx512icl;
+mod rust;
+#[cfg(asm_x86_64)]
+mod ssse3;
 
 use std::mem::{transmute, MaybeUninit};
 
 use aligned::{Aligned, A64};
-#[cfg(not(asm_x86_64))]
-use rust::*;
-#[cfg(asm_x86_64)]
-use simd_x86::*;
+use cfg_if::cfg_if;
 use v_frame::{
     frame::Frame,
     pixel::Pixel,
@@ -15,137 +17,22 @@ use v_frame::{
 };
 
 use super::importance::IMPORTANCE_BLOCK_SIZE;
-use crate::{
-    cpu::CpuFeatureLevel,
-    data::{
-        block::{BlockSize, TxSize, MAX_TX_SIZE},
-        plane::{Area, AsRegion, PlaneRegion, PlaneRegionMut, Rect},
-        prediction::PredictionVariant,
-        satd::get_satd,
-        slice_assume_init_mut,
-        superblock::MI_SIZE_LOG2,
-        tile::TileRect,
-    },
+use crate::data::{
+    block::{BlockSize, TxSize, MAX_TX_SIZE},
+    plane::{Area, AsRegion, PlaneRegion, PlaneRegionMut, Rect},
+    prediction::PredictionVariant,
+    satd::get_satd,
+    slice_assume_init_mut,
+    superblock::MI_SIZE_LOG2,
+    tile::TileRect,
 };
 
 pub const BLOCK_TO_PLANE_SHIFT: usize = MI_SIZE_LOG2;
-
-mod rust {
-    use v_frame::pixel::Pixel;
-
-    use super::IntraEdge;
-    use crate::{
-        cpu::CpuFeatureLevel,
-        data::{block::TxSize, plane::PlaneRegionMut, prediction::PredictionVariant},
-    };
-
-    #[cfg_attr(
-        all(asm_x86_64, any(target_feature = "ssse3", target_feature = "avx2")),
-        cold
-    )]
-    pub(super) fn dispatch_predict_dc_intra<T: Pixel>(
-        variant: PredictionVariant,
-        dst: &mut PlaneRegionMut<'_, T>,
-        tx_size: TxSize,
-        bit_depth: usize,
-        edge_buf: &IntraEdge<T>,
-        _cpu: CpuFeatureLevel,
-    ) {
-        let width = tx_size.width();
-        let height = tx_size.height();
-
-        // left pixels are ordered from bottom to top and right-aligned
-        let (left, _top_left, above) = edge_buf.as_slices();
-
-        let above_slice = above;
-        let left_slice = &left[left.len().saturating_sub(height)..];
-
-        (match variant {
-            PredictionVariant::NONE => pred_dc_128,
-            PredictionVariant::LEFT => pred_dc_left,
-            PredictionVariant::TOP => pred_dc_top,
-            PredictionVariant::BOTH => pred_dc,
-        })(dst, above_slice, left_slice, width, height, bit_depth)
-    }
-
-    fn pred_dc<T: Pixel>(
-        output: &mut PlaneRegionMut<'_, T>,
-        above: &[T],
-        left: &[T],
-        width: usize,
-        height: usize,
-        _bit_depth: usize,
-    ) {
-        let edges = left[..height].iter().chain(above[..width].iter());
-        let len = (width + height) as u32;
-        let avg = (edges.fold(0u32, |acc, &v| {
-            let v: u32 = v.into();
-            v + acc
-        }) + (len >> 1))
-            / len;
-        let avg = T::cast_from(avg);
-
-        for line in output.rows_iter_mut().take(height) {
-            line[..width].fill(avg);
-        }
-    }
-
-    fn pred_dc_128<T: Pixel>(
-        output: &mut PlaneRegionMut<'_, T>,
-        _above: &[T],
-        _left: &[T],
-        width: usize,
-        height: usize,
-        bit_depth: usize,
-    ) {
-        let v = T::cast_from(128u32 << (bit_depth - 8));
-        for line in output.rows_iter_mut().take(height) {
-            line[..width].fill(v);
-        }
-    }
-
-    fn pred_dc_left<T: Pixel>(
-        output: &mut PlaneRegionMut<'_, T>,
-        _above: &[T],
-        left: &[T],
-        width: usize,
-        height: usize,
-        _bit_depth: usize,
-    ) {
-        let sum = left[..].iter().fold(0u32, |acc, &v| {
-            let v: u32 = v.into();
-            v + acc
-        });
-        let avg = T::cast_from((sum + (height >> 1) as u32) / height as u32);
-        for line in output.rows_iter_mut().take(height) {
-            line[..width].fill(avg);
-        }
-    }
-
-    fn pred_dc_top<T: Pixel>(
-        output: &mut PlaneRegionMut<'_, T>,
-        above: &[T],
-        _left: &[T],
-        width: usize,
-        height: usize,
-        _bit_depth: usize,
-    ) {
-        let sum = above[..width].iter().fold(0u32, |acc, &v| {
-            let v: u32 = v.into();
-            v + acc
-        });
-        let avg = T::cast_from((sum + (width >> 1) as u32) / width as u32);
-        for line in output.rows_iter_mut().take(height) {
-            line[..width].fill(avg);
-        }
-    }
-}
 
 pub(crate) fn estimate_intra_costs<T: Pixel>(
     temp_plane: &mut Plane<T>,
     frame: &Frame<T>,
     bit_depth: usize,
-    cpu_feature_level: CpuFeatureLevel,
 ) -> Box<[u32]> {
     let plane = &frame.planes[0];
     let plane_after_prediction = temp_plane;
@@ -198,7 +85,6 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(
                 tx_size,
                 bit_depth,
                 &edge_buf,
-                cpu_feature_level,
             );
 
             let plane_after_prediction_region = plane_after_prediction.region(Area::Rect(Rect {
@@ -214,7 +100,6 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(
                 bsize.width(),
                 bsize.height(),
                 bit_depth,
-                cpu_feature_level,
             );
 
             intra_costs.push(intra_cost);
@@ -329,7 +214,6 @@ pub fn predict_dc_intra<T: Pixel>(
     tx_size: TxSize,
     bit_depth: usize,
     edge_buf: &IntraEdge<T>,
-    cpu: CpuFeatureLevel,
 ) {
     let &Rect {
         x: frame_x,
@@ -343,7 +227,22 @@ pub fn predict_dc_intra<T: Pixel>(
 
     let variant = PredictionVariant::new(x, y);
 
-    dispatch_predict_dc_intra::<T>(variant, dst, tx_size, bit_depth, edge_buf, cpu);
+    cfg_if! {
+        if #[cfg(asm_x86_64)] {
+            if crate::cpu::has_avx512icl() {
+                unsafe { avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                return;
+            } else if crate::cpu::has_avx2() {
+                unsafe { avx2::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                return;
+            } else if crate::cpu::has_ssse3() {
+                unsafe { ssse3::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                return;
+            }
+        }
+    }
+
+    rust::predict_dc_intra_internal::<T>(variant, dst, tx_size, bit_depth, edge_buf);
 }
 
 type IntraEdgeBuffer<T> = Aligned<A64, [MaybeUninit<T>; 4 * MAX_TX_SIZE + 1]>;

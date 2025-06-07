@@ -30,7 +30,7 @@ use decoder::Decoder;
 pub use num_rational::Rational32;
 use v_frame::pixel::Pixel;
 
-pub use crate::{analyze::SceneChangeDetector, cpu::CpuFeatureLevel};
+pub use crate::analyze::SceneChangeDetector;
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
@@ -104,7 +104,6 @@ pub fn new_detector<R: Read, T: Pixel>(
         opts.min_scenecut_distance.map_or(0, |val| val),
         opts.max_scenecut_distance
             .map_or_else(|| u32::MAX as usize, |val| val),
-        CpuFeatureLevel::default(),
     ))
 }
 

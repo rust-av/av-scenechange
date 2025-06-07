@@ -1,11 +1,8 @@
 use v_frame::{pixel::Pixel, plane::Plane};
 
-use crate::{
-    data::{
-        plane::{Area, AsRegion},
-        satd::get_satd,
-    },
-    CpuFeatureLevel,
+use crate::data::{
+    plane::{Area, AsRegion},
+    satd::get_satd,
 };
 
 // Generate plane data for get_sad_same()
@@ -77,14 +74,7 @@ fn get_satd_same_inner<T: Pixel>() {
 
         assert_eq!(
             distortion,
-            get_satd(
-                &input_region,
-                &rec_region,
-                w,
-                h,
-                bit_depth,
-                CpuFeatureLevel::default()
-            )
+            get_satd(&input_region, &rec_region, w, h, bit_depth,)
         );
     }
 }
