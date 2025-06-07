@@ -2,3 +2,5 @@
 **/*.rs.bk
 /.idea
 /.vscode
+lcov.info
+codecov.json

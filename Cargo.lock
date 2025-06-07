@@ -116,15 +116,17 @@ checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
 
 [[package]]
 name = "av-scenechange"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "aligned",
  "anyhow",
  "arg_enum_proc_macro",
  "arrayvec",
  "cc",
+ "cfg-if",
  "clap",
  "console",
+ "cpufeatures",
  "fern",
  "ffmpeg-the-third",
  "libc",
@@ -287,6 +289,15 @@ dependencies = [
  "once_cell",
  "unicode-width",
  "windows-sys",
+]
+
+[[package]]
+name = "cpufeatures"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

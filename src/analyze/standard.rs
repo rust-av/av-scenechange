@@ -51,12 +51,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
                     .temp_plane
                     .get_or_insert_with(|| frame2.planes[0].clone());
 
-                let intra_costs = estimate_intra_costs(
-                    temp_plane,
-                    &*frame2,
-                    self.bit_depth,
-                    self.cpu_feature_level,
-                );
+                let intra_costs = estimate_intra_costs(temp_plane, &*frame2, self.bit_depth);
                 if let Some(ref mut intra_cache) = self.intra_costs {
                     intra_cache.insert(input_frameno, intra_costs.clone());
                 }
@@ -72,7 +67,6 @@ impl<T: Pixel> SceneChangeDetector<T> {
                     self.frame_rate,
                     self.chroma_sampling,
                     buffer,
-                    self.cpu_feature_level,
                 );
             });
             s.spawn(|_| {

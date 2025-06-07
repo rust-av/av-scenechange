@@ -1,3 +1,10 @@
+## Version 0.15.0
+
+- [Breaking] Remove `CpuFeatureLevel` struct and params. This removes the ability
+  to disable SIMD at runtime, but this isn't a particularly useful feature
+  and added code complexity.
+- Refactor SIMD modules
+
 ## Version 0.14.1
 
 - Readd support for caching intra costs

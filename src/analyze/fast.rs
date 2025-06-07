@@ -59,7 +59,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// Calculates the average sum of absolute difference (SAD) per pixel
     /// between 2 planes
     fn delta_in_planes(&self, plane1: &Plane<T>, plane2: &Plane<T>) -> f64 {
-        let delta = sad_plane(plane1, plane2, self.cpu_feature_level);
+        let delta = sad_plane(plane1, plane2);
 
         delta as f64 / self.scaled_pixels as f64
     }
