@@ -1,21 +1,53 @@
 use std::mem::MaybeUninit;
 
 use aligned::Aligned;
+use cfg_if::cfg_if;
 use v_frame::{pixel::Pixel, plane::Plane};
 
-use super::{rust::predict_dc_intra_internal, IntraEdge, IntraEdgeBuffer, MAX_TX_SIZE};
+use super::{IntraEdge, IntraEdgeBuffer, MAX_TX_SIZE};
 use crate::data::{
     block::TxSize,
-    plane::{Area, AsRegion, Rect},
+    plane::{Area, AsRegion, PlaneRegionMut, Rect},
     prediction::PredictionVariant,
 };
+
+fn predict_dc_intra_internal_verify_asm<T: Pixel>(
+    variant: PredictionVariant,
+    dst: &mut PlaneRegionMut<'_, T>,
+    tx_size: TxSize,
+    bit_depth: usize,
+    edge_buf: &IntraEdge<T>,
+) {
+    super::rust::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf);
+    let rust_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
+
+    cfg_if! {
+        if #[cfg(asm_x86_64)] {
+            if crate::cpu::has_avx512icl() {
+                unsafe { super::avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
+                assert_eq!(rust_output, asm_output);
+            }
+            if crate::cpu::has_avx2() {
+                unsafe { super::avx2::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
+                assert_eq!(rust_output, asm_output);
+            }
+            if crate::cpu::has_ssse3() {
+                unsafe { super::ssse3::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
+                assert_eq!(rust_output, asm_output);
+            }
+        }
+    }
+}
 
 /// Helper function to create a test plane for use in unit tests
 fn create_test_plane<T: Pixel>(width: usize, height: usize, stride: usize) -> Plane<T> {
     Plane::new(width, height, stride, height, 0, 0)
 }
 
-/// Helper function to create IntraEdge from edge pixel values
+/// Helper function to create `IntraEdge` from edge pixel values
 fn create_test_edge_buf<'a, T: Pixel>(
     edge_buf: &'a mut IntraEdgeBuffer<T>,
     left_pixels: &[T],
@@ -58,7 +90,13 @@ fn test_predict_dc_intra_variant_none_u8() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &[], &[], 0u8);
 
-    predict_dc_intra_internal(PredictionVariant::NONE, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::NONE,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Expected value for 8-bit depth is 128
     let expected_value = 128u8;
@@ -87,7 +125,13 @@ fn test_predict_dc_intra_variant_none_u16() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &[], &[], 0u16);
 
-    predict_dc_intra_internal(PredictionVariant::NONE, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::NONE,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Expected value for 10-bit depth is 128 << (10-8) = 512
     let expected_value = 512u16;
@@ -118,7 +162,13 @@ fn test_predict_dc_intra_variant_left() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &[], 0u8);
 
-    predict_dc_intra_internal(PredictionVariant::LEFT, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::LEFT,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Expected average: (200 + 100 + 150 + 50 + 2) / 4 = 125
     let expected_value = 125u8;
@@ -149,7 +199,13 @@ fn test_predict_dc_intra_variant_top() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &[], &top_pixels, 0u8);
 
-    predict_dc_intra_internal(PredictionVariant::TOP, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::TOP,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Expected average: (80 + 120 + 160 + 240 + 2) / 4 = 150
     let expected_value = 150u8;
@@ -182,10 +238,129 @@ fn test_predict_dc_intra_variant_both() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
-    predict_dc_intra_internal(PredictionVariant::BOTH, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::BOTH,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Expected average: (100+140+180+220 + 110+130+170+190 + 4) / 8 = 155
     let expected_value = 155u8;
+    for y in 0..height {
+        for x in 0..width {
+            assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
+        }
+    }
+}
+
+#[test]
+fn test_predict_dc_intra_variant_left_u16() {
+    let bit_depth = 16;
+    let tx_size = TxSize::TX_4X4;
+    let width = tx_size.width();
+    let height = tx_size.height();
+
+    let mut plane = create_test_plane::<u16>(width, height, width);
+    let mut dst = plane.region_mut(Area::Rect(Rect {
+        x: 0,
+        y: 0,
+        width,
+        height,
+    }));
+
+    // Left pixels: [200, 100, 150, 50] (bottom to top)
+    let left_pixels = [200u16, 100, 150, 50];
+    let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
+    let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &[], 0u16);
+
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::LEFT,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
+
+    // Expected average: (200 + 100 + 150 + 50 + 2) / 4 = 125
+    let expected_value = 125u16;
+    for y in 0..height {
+        for x in 0..width {
+            assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
+        }
+    }
+}
+
+#[test]
+fn test_predict_dc_intra_variant_top_u16() {
+    let bit_depth = 16;
+    let tx_size = TxSize::TX_4X4;
+    let width = tx_size.width();
+    let height = tx_size.height();
+
+    let mut plane = create_test_plane::<u16>(width, height, width);
+    let mut dst = plane.region_mut(Area::Rect(Rect {
+        x: 0,
+        y: 0,
+        width,
+        height,
+    }));
+
+    // Top pixels: [80, 120, 160, 240]
+    let top_pixels = [80u16, 120, 160, 240];
+    let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
+    let edge = create_test_edge_buf(&mut edge_buf, &[], &top_pixels, 0u16);
+
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::TOP,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
+
+    // Expected average: (80 + 120 + 160 + 240 + 2) / 4 = 150
+    let expected_value = 150u16;
+    for y in 0..height {
+        for x in 0..width {
+            assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
+        }
+    }
+}
+
+#[test]
+fn test_predict_dc_intra_variant_both_u16() {
+    let bit_depth = 16;
+    let tx_size = TxSize::TX_4X4;
+    let width = tx_size.width();
+    let height = tx_size.height();
+
+    let mut plane = create_test_plane::<u16>(width, height, width);
+    let mut dst = plane.region_mut(Area::Rect(Rect {
+        x: 0,
+        y: 0,
+        width,
+        height,
+    }));
+
+    // Left pixels: [100, 140, 180, 220] (bottom to top)
+    // Top pixels: [110, 130, 170, 190]
+    let left_pixels = [100u16, 140, 180, 220];
+    let top_pixels = [110u16, 130, 170, 190];
+    let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
+    let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u16);
+
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::BOTH,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
+
+    // Expected average: (100+140+180+220 + 110+130+170+190 + 4) / 8 = 155
+    let expected_value = 155u16;
     for y in 0..height {
         for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
@@ -224,9 +399,16 @@ fn test_predict_dc_intra_different_sizes() {
         let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
         let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
-        predict_dc_intra_internal(PredictionVariant::BOTH, &mut dst, tx_size, bit_depth, &edge);
+        predict_dc_intra_internal_verify_asm(
+            PredictionVariant::BOTH,
+            &mut dst,
+            tx_size,
+            bit_depth,
+            &edge,
+        );
 
-        // Expected average: (height*100 + width*200 + (width+height)/2) / (width+height)
+        // Expected average: (height*100 + width*200 + (width+height)/2) /
+        // (width+height)
         let sum = (height * 100 + width * 200) as u32;
         let len = (width + height) as u32;
         let expected_value = ((sum + (len >> 1)) / len) as u8;
@@ -271,7 +453,13 @@ fn test_predict_dc_intra_edge_cases() {
         let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
         let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
-        predict_dc_intra_internal(PredictionVariant::BOTH, &mut dst, tx_size, bit_depth, &edge);
+        predict_dc_intra_internal_verify_asm(
+            PredictionVariant::BOTH,
+            &mut dst,
+            tx_size,
+            bit_depth,
+            &edge,
+        );
 
         // Verify all pixels have the same value (DC prediction should be uniform)
         let first_pixel = dst[0][0];
@@ -309,7 +497,13 @@ fn test_predict_dc_intra_rounding() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
-    predict_dc_intra_internal(PredictionVariant::BOTH, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::BOTH,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Sum = 7, len = 8, (7 + 4) / 8 = 1
     let expected_value = 1u8;
@@ -341,7 +535,13 @@ fn test_predict_dc_intra_larger_blocks() {
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
-    predict_dc_intra_internal(PredictionVariant::BOTH, &mut dst, tx_size, bit_depth, &edge);
+    predict_dc_intra_internal_verify_asm(
+        PredictionVariant::BOTH,
+        &mut dst,
+        tx_size,
+        bit_depth,
+        &edge,
+    );
 
     // Verify uniformity
     let first_pixel = dst[0][0];
@@ -386,7 +586,13 @@ fn test_predict_dc_intra_rectangular_blocks() {
         let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
         let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
-        predict_dc_intra_internal(PredictionVariant::BOTH, &mut dst, tx_size, bit_depth, &edge);
+        predict_dc_intra_internal_verify_asm(
+            PredictionVariant::BOTH,
+            &mut dst,
+            tx_size,
+            bit_depth,
+            &edge,
+        );
 
         // Verify all pixels are uniform
         let first_pixel = dst[0][0];
