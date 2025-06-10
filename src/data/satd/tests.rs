@@ -59,7 +59,7 @@ fn get_satd_verify_asm<T: Pixel>(
                 assert_eq!(rust_output, asm_output);
             }
         } else if #[cfg(asm_neon)] {
-            let asm_output = unsafe { super::neon::get_satd_internal(src, dst, w, h, bit_depth); }
+            let asm_output = unsafe { super::neon::get_satd_internal(src, dst, w, h, bit_depth) };
             assert_eq!(rust_output, asm_output);
         }
     }

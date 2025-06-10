@@ -38,6 +38,9 @@ fn predict_dc_intra_internal_verify_asm<T: Pixel>(
                 let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
                 assert_eq!(rust_output, asm_output);
             }
+        } else if #[cfg(asm_neon)] {
+            // Silence unused warning. In the future maybe we will have NEON ASM here.
+            let _output = rust_output;
         }
     }
 }
