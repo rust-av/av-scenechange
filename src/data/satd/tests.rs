@@ -1,10 +1,7 @@
 use cfg_if::cfg_if;
 use v_frame::{pixel::Pixel, plane::Plane};
 
-use crate::data::{
-    plane::{Area, AsRegion, PlaneRegion},
-    satd::get_satd,
-};
+use crate::data::plane::{Area, AsRegion, PlaneRegion};
 
 // Generate plane data for get_sad_same()
 fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
