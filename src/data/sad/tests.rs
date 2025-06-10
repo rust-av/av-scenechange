@@ -2,7 +2,7 @@ use cfg_if::cfg_if;
 use v_frame::{pixel::Pixel, plane::Plane};
 
 use crate::data::{
-    plane::{Area, AsRegion, PlaneRegion},
+    plane::{Area, AsRegion},
     sad::get_sad,
 };
 
@@ -36,6 +36,53 @@ fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
     }
 
     (input_plane, rec_plane)
+}
+
+// Generate plane data for sad_plane_internal tests
+fn setup_equal_stride_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
+    // Two planes with same stride for sad_plane_internal testing
+    let mut input_plane = Plane::new(320, 240, 0, 0, 0, 0);
+    let mut rec_plane = Plane::new(320, 240, 0, 0, 0, 0);
+
+    for (i, row) in input_plane
+        .data
+        .chunks_mut(input_plane.cfg.stride)
+        .enumerate()
+    {
+        for (j, pixel) in row.iter_mut().enumerate() {
+            let val = ((j + i) as i32) & 255i32;
+            assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
+            *pixel = T::cast_from(val);
+        }
+    }
+
+    for (i, row) in rec_plane.data.chunks_mut(rec_plane.cfg.stride).enumerate() {
+        for (j, pixel) in row.iter_mut().enumerate() {
+            let val = (j as i32 - i as i32) & 255i32;
+            assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
+            *pixel = T::cast_from(val);
+        }
+    }
+
+    (input_plane, rec_plane)
+}
+
+fn sad_plane_verify_asm<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
+    let rust_output = super::rust::sad_plane_internal(src, dst);
+
+    cfg_if! {
+        if #[cfg(asm_x86_64)] {
+            if crate::cpu::has_avx2() {
+                let asm_output = unsafe { super::avx2::sad_plane_internal(src, dst) };
+                assert_eq!(rust_output, asm_output);
+            }
+            // All x86_64 CPUs have SSE2
+            let asm_output = unsafe { super::sse2::sad_plane_internal(src, dst) };
+            assert_eq!(rust_output, asm_output);
+        }
+    }
+
+    rust_output
 }
 
 fn get_sad_same_inner<T: Pixel>() {
@@ -80,6 +127,40 @@ fn get_sad_same_inner<T: Pixel>() {
     }
 }
 
+fn sad_plane_same_inner<T: Pixel>() {
+    let (input_plane, rec_plane) = setup_equal_stride_planes::<T>();
+
+    // Test with the full planes
+    let _sad_value = sad_plane_verify_asm(&input_plane, &rec_plane);
+
+    // Test with smaller planes to ensure the algorithm works correctly
+    let mut small_input = Plane::new(16, 16, 0, 0, 0, 0);
+    let mut small_rec = Plane::new(16, 16, 0, 0, 0, 0);
+
+    // Initialize the small planes with test data
+    for (i, row) in small_input
+        .data
+        .chunks_mut(small_input.cfg.stride)
+        .enumerate()
+    {
+        for (j, pixel) in row.iter_mut().enumerate() {
+            let val = ((j + i) as i32) & 255i32;
+            assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
+            *pixel = T::cast_from(val);
+        }
+    }
+
+    for (i, row) in small_rec.data.chunks_mut(small_rec.cfg.stride).enumerate() {
+        for (j, pixel) in row.iter_mut().enumerate() {
+            let val = (j as i32 - i as i32) & 255i32;
+            assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
+            *pixel = T::cast_from(val);
+        }
+    }
+
+    let _small_sad = sad_plane_verify_asm(&small_input, &small_rec);
+}
+
 #[test]
 fn get_sad_same_u8() {
     get_sad_same_inner::<u8>();
@@ -88,4 +169,14 @@ fn get_sad_same_u8() {
 #[test]
 fn get_sad_same_u16() {
     get_sad_same_inner::<u16>();
+}
+
+#[test]
+fn sad_plane_same_u8() {
+    sad_plane_same_inner::<u8>();
+}
+
+#[test]
+fn sad_plane_same_u16() {
+    sad_plane_same_inner::<u16>();
 }
