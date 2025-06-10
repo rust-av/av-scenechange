@@ -4,6 +4,9 @@ mod rust;
 #[cfg(asm_x86_64)]
 mod sse2;
 
+#[cfg(test)]
+mod tests;
+
 use cfg_if::cfg_if;
 use v_frame::{pixel::Pixel, plane::Plane};
 

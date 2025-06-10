@@ -1,9 +1,7 @@
+use cfg_if::cfg_if;
 use v_frame::{pixel::Pixel, plane::Plane};
 
-use crate::data::{
-    plane::{Area, AsRegion},
-    satd::get_satd,
-};
+use crate::data::plane::{Area, AsRegion, PlaneRegion};
 
 // Generate plane data for get_sad_same()
 fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
@@ -35,6 +33,38 @@ fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
     }
 
     (input_plane, rec_plane)
+}
+
+fn get_satd_verify_asm<T: Pixel>(
+    src: &PlaneRegion<'_, T>,
+    dst: &PlaneRegion<'_, T>,
+    w: usize,
+    h: usize,
+    bit_depth: usize,
+) -> u32 {
+    let rust_output = super::rust::get_satd_internal(src, dst, w, h, bit_depth);
+
+    cfg_if! {
+        if #[cfg(asm_x86_64)] {
+            if crate::cpu::has_avx2() {
+                let asm_output = unsafe { super::avx2::get_satd_internal(src, dst, w, h, bit_depth) };
+                assert_eq!(rust_output, asm_output);
+            }
+            if crate::cpu::has_sse4() {
+                let asm_output = unsafe { super::sse4::get_satd_internal(src, dst, w, h, bit_depth) };
+                assert_eq!(rust_output, asm_output);
+            }
+            if crate::cpu::has_ssse3() {
+                let asm_output = unsafe { super::ssse3::get_satd_internal(src, dst, w, h, bit_depth) };
+                assert_eq!(rust_output, asm_output);
+            }
+        } else if #[cfg(asm_neon)] {
+            let asm_output = unsafe { super::neon::get_satd_internal(src, dst, w, h, bit_depth) };
+            assert_eq!(rust_output, asm_output);
+        }
+    }
+
+    rust_output
 }
 
 fn get_satd_same_inner<T: Pixel>() {
@@ -74,7 +104,7 @@ fn get_satd_same_inner<T: Pixel>() {
 
         assert_eq!(
             distortion,
-            get_satd(&input_region, &rec_region, w, h, bit_depth,)
+            get_satd_verify_asm(&input_region, &rec_region, w, h, bit_depth)
         );
     }
 }

@@ -6,6 +6,9 @@ mod rust;
 #[cfg(asm_x86_64)]
 mod ssse3;
 
+#[cfg(test)]
+mod tests;
+
 use std::mem::{transmute, MaybeUninit};
 
 use aligned::{Aligned, A64};
