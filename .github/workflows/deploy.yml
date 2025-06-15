@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Install nasm
         run: |
@@ -38,7 +38,7 @@ jobs:
               "$METRICS_PATH\av-scenechange.exe"
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: av-scenechange-bins
           path: av-scenechange.zip
@@ -49,10 +49,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Download the zip
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
 
       - name: Unzip av-scenechange Windows binaries
         run: |
@@ -69,7 +69,7 @@ jobs:
           mv av-scenechange.exe ..
 
       - name: Create a release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Version ${{ steps.data.outputs.version }}
           body_path: CHANGELOG.txt
