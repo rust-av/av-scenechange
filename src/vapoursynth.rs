@@ -1,4 +1,4 @@
-use std::{mem::size_of, path::Path, slice};
+use std::{collections::HashMap, mem::size_of, path::Path, slice};
 
 use anyhow::{bail, ensure};
 use num_rational::Rational32;
@@ -7,6 +7,8 @@ use v_frame::{
     pixel::{ChromaSampling, Pixel},
 };
 use vapoursynth::{
+    api::API,
+    map::OwnedMap,
     video_info::{Property, VideoInfo},
     vsscript::{Environment, EvalFlags},
 };
@@ -28,17 +30,77 @@ impl VapoursynthDecoder {
     /// - If using a Vapoursynth script that contains an unsupported video
     ///   format.
     #[inline]
-    pub fn new(source: &Path) -> anyhow::Result<VapoursynthDecoder> {
-        let env = Environment::from_file(source, EvalFlags::SetWorkingDir)?;
+    pub fn new(env: Environment) -> anyhow::Result<VapoursynthDecoder> {
         let total_frames = {
             let (node, _) = env.get_output(OUTPUT_INDEX)?;
             get_num_frames(node.info())?
         };
+
         Ok(Self {
             env,
             frames_read: 0,
             total_frames,
         })
+    }
+
+    /// # Errors
+    ///
+    /// - If sourcing an invalid Vapoursynth script.
+    /// - If using a Vapoursynth script that contains an unsupported video
+    ///   format.
+    /// - If arguments are invalid.
+    #[inline]
+    pub fn new_from_file(
+        source: &Path,
+        arguments: Option<HashMap<String, String>>,
+    ) -> anyhow::Result<VapoursynthDecoder> {
+        let mut env = Environment::new()?;
+
+        // Set arguments
+        VapoursynthDecoder::set_arguments(&env, arguments)?;
+        env.eval_file(source, EvalFlags::SetWorkingDir)?;
+
+        VapoursynthDecoder::new(env)
+    }
+
+    /// # Errors
+    ///
+    /// - If Vapoursynth script is invalid.
+    /// - If using a Vapoursynth script that contains an unsupported video
+    ///   format.
+    /// - If arguments are invalid.
+    #[inline]
+    pub fn new_from_script(
+        script: &str,
+        arguments: Option<HashMap<String, String>>,
+    ) -> anyhow::Result<VapoursynthDecoder> {
+        let mut env = Environment::new()?;
+
+        // Set arguments
+        VapoursynthDecoder::set_arguments(&env, arguments)?;
+
+        env.eval_script(script)?;
+
+        VapoursynthDecoder::new(env)
+    }
+
+    fn set_arguments(
+        env: &Environment,
+        arguments: Option<HashMap<String, String>>,
+    ) -> anyhow::Result<()> {
+        let args_err_msg = "Failed to set arguments";
+        let api = API::get().ok_or(anyhow::anyhow!(args_err_msg))?;
+        let mut arguments_map = OwnedMap::new(api);
+
+        if let Some(arguments) = arguments {
+            for (key, value) in arguments {
+                arguments_map
+                    .set_data(key.as_str(), value.as_bytes())
+                    .map_err(|_| anyhow::anyhow!(args_err_msg))?;
+            }
+        }
+
+        Ok(env.set_variables(&arguments_map)?)
     }
 
     /// # Errors
