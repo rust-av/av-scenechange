@@ -11,15 +11,15 @@ use crate::ffmpeg::FfmpegDecoder;
 #[cfg(feature = "vapoursynth")]
 use crate::vapoursynth::VapoursynthDecoder;
 
-pub enum Decoder<R: Read> {
+pub enum Decoder<'core, R: Read> {
     Y4m(y4m::Decoder<R>),
     #[cfg(feature = "vapoursynth")]
-    Vapoursynth(VapoursynthDecoder),
+    Vapoursynth(VapoursynthDecoder<'core>),
     #[cfg(feature = "ffmpeg")]
     Ffmpeg(FfmpegDecoder),
 }
 
-impl<R: Read> Decoder<R> {
+impl<'core, R: Read> Decoder<'core, R> {
     /// # Errors
     ///
     /// - If using a Vapoursynth script that contains an unsupported video

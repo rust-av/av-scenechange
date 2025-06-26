@@ -8,7 +8,9 @@ use v_frame::{
 };
 use vapoursynth::{
     api::API,
+    core::CoreRef,
     map::OwnedMap,
+    node::Node,
     video_info::{Property, VideoInfo},
     vsscript::{Environment, EvalFlags},
 };
@@ -17,27 +19,31 @@ use crate::decoder::VideoDetails;
 
 const OUTPUT_INDEX: i32 = 0;
 
-pub struct VapoursynthDecoder {
-    env: Environment,
+pub struct VapoursynthDecoder<'core> {
+    // env: &'core Environment,
+    pub core: CoreRef<'core>,
+    pub node: Node<'core>,
     frames_read: usize,
     total_frames: usize,
 }
 
-impl VapoursynthDecoder {
+impl<'core> VapoursynthDecoder<'core> {
     /// # Errors
     ///
     /// - If sourcing an invalid Vapoursynth script.
     /// - If using a Vapoursynth script that contains an unsupported video
     ///   format.
     #[inline]
-    pub fn new(env: Environment) -> anyhow::Result<VapoursynthDecoder> {
-        let total_frames = {
-            let (node, _) = env.get_output(OUTPUT_INDEX)?;
-            get_num_frames(node.info())?
-        };
+    pub fn new(env: &'core Environment) -> anyhow::Result<Self> {
+        let core = env.get_core()?;
+        let node = env.get_output(OUTPUT_INDEX)?.0;
+
+        let total_frames = get_num_frames(node.info())?;
 
         Ok(Self {
-            env,
+            // env,
+            core,
+            node,
             frames_read: 0,
             total_frames,
         })
@@ -51,16 +57,15 @@ impl VapoursynthDecoder {
     /// - If arguments are invalid.
     #[inline]
     pub fn new_from_file(
+        env: &'core mut Environment,
         source: &Path,
         arguments: Option<HashMap<String, String>>,
-    ) -> anyhow::Result<VapoursynthDecoder> {
-        let mut env = Environment::new()?;
-
+    ) -> anyhow::Result<Self> {
         // Set arguments
-        VapoursynthDecoder::set_arguments(&env, arguments)?;
+        VapoursynthDecoder::set_arguments(env, arguments)?;
         env.eval_file(source, EvalFlags::SetWorkingDir)?;
 
-        VapoursynthDecoder::new(env)
+        Self::new(env)
     }
 
     /// # Errors
@@ -71,17 +76,15 @@ impl VapoursynthDecoder {
     /// - If arguments are invalid.
     #[inline]
     pub fn new_from_script(
+        env: &'core mut Environment,
         script: &str,
         arguments: Option<HashMap<String, String>>,
-    ) -> anyhow::Result<VapoursynthDecoder> {
-        let mut env = Environment::new()?;
-
-        // Set arguments
-        VapoursynthDecoder::set_arguments(&env, arguments)?;
+    ) -> anyhow::Result<Self> {
+        VapoursynthDecoder::set_arguments(env, arguments)?;
 
         env.eval_script(script)?;
 
-        VapoursynthDecoder::new(env)
+        Self::new(env)
     }
 
     fn set_arguments(
@@ -110,8 +113,8 @@ impl VapoursynthDecoder {
     ///   format.
     #[inline]
     pub fn get_video_details(&self) -> anyhow::Result<VideoDetails> {
-        let (node, _) = self.env.get_output(OUTPUT_INDEX)?;
-        let info = node.info();
+        // let (node, _) = self.env.get_output(OUTPUT_INDEX)?;
+        let info = self.node.info();
         let (width, height) = get_resolution(info)?;
         Ok(VideoDetails {
             width,
@@ -141,8 +144,7 @@ impl VapoursynthDecoder {
             bail!("No frames left");
         }
 
-        let (node, _) = self.env.get_output(OUTPUT_INDEX)?;
-        let vs_frame = node.get_frame(self.frames_read)?;
+        let vs_frame = &self.node.get_frame(self.frames_read)?;
         self.frames_read += 1;
 
         let bytes = size_of::<T>();
