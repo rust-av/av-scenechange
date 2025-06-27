@@ -13,15 +13,12 @@ build = "build.rs"
 aligned = "0.4.2"
 anyhow = "1.0.56"
 arrayvec = "0.7.6"
+av-decoders = { version = "0.1.0" }
 cfg-if = "1.0.0"
 clap = { version = "4.0.22", optional = true, features = ["derive"] }
 console = { version = "0.15", optional = true }
 cpufeatures = "0.2.17"
 fern = { version = "0.7", optional = true }
-ffmpeg-the-third = { version = "3.0.0", optional = true, default-features = false, features = [
-    "codec",
-    "format",
-] }
 libc = { version = "0.2.172", optional = true }
 log = { version = "0.4.14" }
 num-rational = { version = "0.4.2", default-features = false }
@@ -34,12 +31,6 @@ tracing = { version = "0.1.40", optional = true }
 tracing-chrome = { version = "0.7.1", optional = true }
 tracing-subscriber = { version = "0.3.18", optional = true }
 v_frame = "0.3.8"
-vapoursynth = { version = "0.4.0", features = [
-    "vsscript-functions",
-    "vapoursynth-functions",
-    "vapoursynth-api-32",
-    "vsscript-api-31",
-], optional = true }
 y4m = "0.8.0"
 
 [build-dependencies]
@@ -51,8 +42,9 @@ default = ["binary", "asm"]
 binary = ["clap", "serialize"]
 serialize = ["serde", "serde_json"]
 devel = ["console", "fern"]
+ffmpeg = ["av-decoders/ffmpeg"]
+vapoursynth = ["av-decoders/vapoursynth"]
 tracing = ["tracing-subscriber", "tracing-chrome", "dep:tracing"]
-ffmpeg = ["ffmpeg-the-third"]
 asm = ["nasm-rs", "cc", "libc"]
 
 [[bin]]
