@@ -51,12 +51,6 @@ fn main() -> Result<()> {
 
     let matches = Args::parse();
 
-    // let mut dec = from_stdin()?;
-    let mut dec = match matches.input.as_str() {
-        "-" => from_stdin()? as Decoder<dyn Read>,
-        file => from_file(file)? as Decoder<dyn Read>,
-    };
-
     let mut opts = DetectionOptions {
         detect_flashes: !matches.no_flash_detection,
         min_scenecut_distance: matches.min_scenecut,
@@ -70,12 +64,17 @@ fn main() -> Result<()> {
         _ => panic!("Speed mode must be in range [0; 1]"),
     };
 
-    let bit_depth = dec.get_video_details().bit_depth;
-    let results = if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(&mut dec, opts, None, None)?
-    } else {
-        detect_scene_changes::<_, u16>(&mut dec, opts, None, None)?
+    let results = match matches.input.as_str() {
+        "-" => {
+            let mut dec = from_stdin()?;
+            process_video(&mut dec, opts)?
+        }
+        file => {
+            let mut dec = from_file(file)?;
+            process_video(&mut dec, opts)?
+        }
     };
+
     print!("{}", serde_json::to_string(&results)?);
 
     if let Some(output_file) = matches.output {
@@ -86,6 +85,18 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn process_video<R: Read>(
+    dec: &mut Decoder<R>,
+    opts: DetectionOptions,
+) -> Result<av_scenechange::DetectionResults> {
+    let bit_depth = dec.get_video_details().bit_depth;
+    if bit_depth == 8 {
+        detect_scene_changes::<_, u8>(dec, opts, None, None)
+    } else {
+        detect_scene_changes::<_, u16>(dec, opts, None, None)
+    }
 }
 
 #[cfg(not(feature = "devel"))]
