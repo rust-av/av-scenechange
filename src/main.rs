@@ -1,15 +1,11 @@
 use std::{
     fs::File,
-    io::{self, BufReader, Read, Write},
+    io::{Read, Write},
 };
 
 use anyhow::Result;
-use av_scenechange::{
-    decoder::Decoder,
-    detect_scene_changes,
-    DetectionOptions,
-    SceneDetectionSpeed,
-};
+use av_decoders::{from_file, from_stdin, Decoder};
+use av_scenechange::{detect_scene_changes, DetectionOptions, SceneDetectionSpeed};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -54,11 +50,6 @@ fn main() -> Result<()> {
     }
 
     let matches = Args::parse();
-    let input = match matches.input.as_str() {
-        "-" => Box::new(io::stdin()) as Box<dyn Read>,
-        f => Box::new(File::open(f)?) as Box<dyn Read>,
-    };
-    let mut reader = BufReader::new(input);
 
     let mut opts = DetectionOptions {
         detect_flashes: !matches.no_flash_detection,
@@ -73,13 +64,17 @@ fn main() -> Result<()> {
         _ => panic!("Speed mode must be in range [0; 1]"),
     };
 
-    let mut dec = Decoder::Y4m(y4m::Decoder::new(&mut reader)?);
-    let bit_depth = dec.get_video_details()?.bit_depth;
-    let results = if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(&mut dec, opts, None, None)?
-    } else {
-        detect_scene_changes::<_, u16>(&mut dec, opts, None, None)?
+    let results = match matches.input.as_str() {
+        "-" => {
+            let mut dec = from_stdin()?;
+            process_video(&mut dec, opts)?
+        }
+        file => {
+            let mut dec = from_file(file)?;
+            process_video(&mut dec, opts)?
+        }
     };
+
     print!("{}", serde_json::to_string(&results)?);
 
     if let Some(output_file) = matches.output {
@@ -90,6 +85,18 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn process_video<R: Read>(
+    dec: &mut Decoder<R>,
+    opts: DetectionOptions,
+) -> Result<av_scenechange::DetectionResults> {
+    let bit_depth = dec.get_video_details().bit_depth;
+    if bit_depth == 8 {
+        detect_scene_changes::<_, u8>(dec, opts, None, None)
+    } else {
+        detect_scene_changes::<_, u16>(dec, opts, None, None)
+    }
 }
 
 #[cfg(not(feature = "devel"))]

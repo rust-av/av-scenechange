@@ -6,17 +6,10 @@
 #![warn(clippy::missing_errors_doc)]
 #![warn(clippy::missing_panics_doc)]
 
-pub mod decoder;
-
 mod analyze;
 #[macro_use]
 mod cpu;
 mod data;
-#[cfg(feature = "ffmpeg")]
-pub mod ffmpeg;
-#[cfg(feature = "vapoursynth")]
-pub mod vapoursynth;
-mod y4m;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -25,8 +18,7 @@ use std::{
     time::Instant,
 };
 
-pub use ::y4m::Decoder as Y4mDecoder;
-use decoder::Decoder;
+pub use av_decoders::Decoder;
 pub use num_rational::Rational32;
 use v_frame::pixel::Pixel;
 
@@ -88,12 +80,12 @@ pub fn new_detector<R: Read, T: Pixel>(
     dec: &mut Decoder<R>,
     opts: DetectionOptions,
 ) -> anyhow::Result<SceneChangeDetector<T>> {
-    let video_details = dec.get_video_details()?;
+    let video_details = dec.get_video_details();
 
     Ok(SceneChangeDetector::new(
         (video_details.width, video_details.height),
         video_details.bit_depth,
-        video_details.time_base.recip(),
+        video_details.frame_rate.recip(),
         video_details.chroma_sampling,
         if opts.detect_flashes {
             opts.lookahead_distance
@@ -138,7 +130,6 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     assert!(opts.lookahead_distance >= 1);
 
     let mut detector = new_detector::<R, T>(dec, opts)?;
-    let video_details = dec.get_video_details()?;
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     keyframes.insert(0);
@@ -150,7 +141,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         while next_input_frameno
             < (frameno + opts.lookahead_distance + 1).min(frame_limit.unwrap_or(usize::MAX))
         {
-            let frame = dec.read_video_frame(&video_details);
+            let frame = dec.read_video_frame();
             if let Ok(frame) = frame {
                 frame_queue.insert(next_input_frameno, Arc::new(frame));
                 next_input_frameno += 1;
