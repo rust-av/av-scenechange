@@ -55,6 +55,7 @@ required-features = ["binary"]
 [lints.clippy]
 inline_always = "warn"
 missing_inline_in_public_items = "warn"
+uninlined_format_args = "allow"
 
 [lints.rust.unexpected_cfgs]
 level = "warn"
