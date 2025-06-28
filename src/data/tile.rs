@@ -12,7 +12,7 @@ use crate::data::{
     frame::{FrameState, MAX_PLANES},
     motion::{FrameMEStats, TileMEStatsMut, WriteGuardMEStats},
     plane::{PlaneBlockOffset, PlaneRegion, Rect},
-    superblock::{PlaneSuperBlockOffset, SuperBlockOffset, MI_SIZE, MI_SIZE_LOG2, SB_SIZE_LOG2},
+    superblock::{MI_SIZE, MI_SIZE_LOG2, PlaneSuperBlockOffset, SB_SIZE_LOG2, SuperBlockOffset},
 };
 
 pub const MAX_TILE_WIDTH: usize = 4096;

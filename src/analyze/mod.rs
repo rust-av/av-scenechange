@@ -8,8 +8,8 @@ use v_frame::{
     plane::Plane,
 };
 
-use self::fast::{detect_scale_factor, FAST_THRESHOLD};
-use crate::{data::motion::RefMEStats, SceneDetectionSpeed};
+use self::fast::{FAST_THRESHOLD, detect_scale_factor};
+use crate::{SceneDetectionSpeed, data::motion::RefMEStats};
 
 mod fast;
 mod importance;

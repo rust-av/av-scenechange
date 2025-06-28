@@ -1,11 +1,17 @@
+//! Scenechange detection tool based on rav1e's scene detection code.
+//! It is focused around detecting scenechange points that will be optimal
+//! for an encoder to place keyframes. It may not be the best tool
+//! if your use case is to generate scene changes as a human would
+//! interpret them--for that there are other tools such as `SCXvid` and `WWXD`.
+
 use std::{
     fs::File,
     io::{Read, Write},
 };
 
 use anyhow::Result;
-use av_decoders::{from_file, from_stdin, Decoder};
-use av_scenechange::{detect_scene_changes, DetectionOptions, SceneDetectionSpeed};
+use av_decoders::{Decoder, from_file, from_stdin};
+use av_scenechange::{DetectionOptions, SceneDetectionSpeed, detect_scene_changes};
 use clap::Parser;
 
 #[derive(Parser, Debug)]

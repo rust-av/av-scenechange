@@ -5,7 +5,7 @@ use crate::data::{block::BlockSize, plane::PlaneRegion};
 macro_rules! declare_asm_dist_fn {
         ($(($name: ident, $T: ident)),+) => (
             $(
-                extern "C" { fn $name (
+                unsafe extern "C" { fn $name (
                     src: *const $T, src_stride: isize, dst: *const $T, dst_stride: isize
                 ) -> u32; }
             )+

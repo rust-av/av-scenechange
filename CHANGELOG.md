@@ -1,3 +1,11 @@
+# Changelog
+
+## Version 0.16.0
+
+- [Breaking] Use `av_decoders` crate instead of providing our own decoder structs
+- [Breaking] Bump minimum rust version to 1.86
+- Bump Rust edition to 2024, since the minimum Rust version had to be bumped anyway
+
 ## Version 0.15.0
 
 - [Breaking] Remove `CpuFeatureLevel` struct and params. This removes the ability

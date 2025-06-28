@@ -1,10 +1,8 @@
-// Documentation lints
-// FIXME: add docs and turn this to warn
-#![allow(missing_docs)]
-#![warn(clippy::doc_link_with_quotes)]
-#![warn(clippy::doc_markdown)]
-#![warn(clippy::missing_errors_doc)]
-#![warn(clippy::missing_panics_doc)]
+//! Scenechange detection tool based on rav1e's scene detection code.
+//! It is focused around detecting scenechange points that will be optimal
+//! for an encoder to place keyframes. It may not be the best tool
+//! if your use case is to generate scene changes as a human would
+//! interpret them--for that there are other tools such as `SCXvid` and `WWXD`.
 
 mod analyze;
 #[macro_use]
@@ -18,7 +16,7 @@ use std::{
     time::Instant,
 };
 
-pub use av_decoders::Decoder;
+pub use av_decoders::{self, Decoder};
 pub use num_rational::Rational32;
 use v_frame::pixel::Pixel;
 
@@ -194,6 +192,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     })
 }
 
+/// Specifies the scene detection algorithm to use
 #[derive(Clone, Copy, Debug, PartialOrd, PartialEq, Eq)]
 pub enum SceneDetectionSpeed {
     /// Fastest scene detection using pixel-wise comparison

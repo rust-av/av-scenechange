@@ -1,46 +1,46 @@
 use std::sync::Arc;
 
-use aligned::{Aligned, A64};
+use aligned::{A64, Aligned};
 use arrayvec::ArrayVec;
 use num_rational::Rational32;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use v_frame::{
     frame::Frame,
-    math::{clamp, ILog},
+    math::{ILog, clamp},
     pixel::{ChromaSampling, Pixel},
     plane::{Plane, PlaneConfig, PlaneOffset},
 };
 
 use super::importance::{
-    IMPORTANCE_BLOCK_SIZE,
     IMP_BLOCK_MV_UNITS_PER_PIXEL,
     IMP_BLOCK_SIZE_IN_MV_UNITS,
+    IMPORTANCE_BLOCK_SIZE,
 };
 use crate::data::{
     block::{BlockOffset, BlockSize, MIB_SIZE_LOG2},
-    frame::{FrameInvariants, FrameState, RefType, ALLOWED_REF_FRAMES},
+    frame::{ALLOWED_REF_FRAMES, FrameInvariants, FrameState, RefType},
     motion::{
         MEStats,
+        MV_LOW,
+        MV_UPP,
         MVSamplingMode,
         MotionEstimationSubsets,
         MotionVector,
         ReadGuardMEStats,
         RefMEStats,
         TileMEStats,
-        MV_LOW,
-        MV_UPP,
     },
     plane::{Area, AsRegion, PlaneBlockOffset, PlaneRegion, PlaneRegionMut, Rect},
     prediction::PredictionMode,
     sad::get_sad,
     satd::get_satd,
     superblock::{
-        SuperBlockOffset,
-        TileSuperBlockOffset,
         MAX_SB_SIZE_LOG2,
         MI_SIZE,
         MI_SIZE_LOG2,
         SB_SIZE,
+        SuperBlockOffset,
+        TileSuperBlockOffset,
     },
     tile::{TileBlockOffset, TileRect, TileStateMut, TilingInfo},
 };

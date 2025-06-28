@@ -5,7 +5,7 @@ use crate::data::{block::TxSize, plane::PlaneRegionMut, prediction::PredictionVa
 
 macro_rules! decl_angular_ipred_fn {
         ($($f:ident),+) => {
-            extern "C" {
+            unsafe extern "C" {
             $(
                 fn $f(
                 dst: *mut u8, stride: libc::ptrdiff_t, topleft: *const u8,

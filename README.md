@@ -69,7 +69,7 @@ let results = detect_scene_changes(&mut decoder, options, None, None)?;
 
 ### Prerequisites
 
-- **Rust**: Minimum version 1.74.1
+- **Rust**: Minimum version 1.86
 - **NASM**: Required for optimized assembly code (can be disabled with `--no-default-features`)
 
 #### Installing NASM

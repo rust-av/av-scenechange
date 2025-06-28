@@ -1,9 +1,9 @@
 [package]
 name = "av-scenechange"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
-edition = "2021"
-rust-version = "1.74.1"
+edition = "2024"
+rust-version = "1.86"
 description = "Estimates frames in a video where a scenecut would be ideal"
 license = "MIT"
 repository = "https://github.com/rust-av/av-scenechange"
@@ -16,7 +16,7 @@ arrayvec = "0.7.6"
 av-decoders = { version = "0.1.0" }
 cfg-if = "1.0.0"
 clap = { version = "4.0.22", optional = true, features = ["derive"] }
-console = { version = "0.15", optional = true }
+console = { version = "0.16", optional = true }
 cpufeatures = "0.2.17"
 fern = { version = "0.7", optional = true }
 libc = { version = "0.2.172", optional = true }
@@ -52,10 +52,19 @@ name = "av-scenechange"
 path = "src/main.rs"
 required-features = ["binary"]
 
+[lints.rust]
+missing_docs = "warn"
+unsafe_op_in_unsafe_fn = "allow"
+
 [lints.clippy]
+doc_link_with_quotes = "warn"
+doc_markdown = "warn"
 inline_always = "warn"
+missing_errors_doc = "warn"
 missing_inline_in_public_items = "warn"
+missing_panics_doc = "warn"
 uninlined_format_args = "allow"
+
 
 [lints.rust.unexpected_cfgs]
 level = "warn"

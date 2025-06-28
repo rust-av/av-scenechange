@@ -10,7 +10,7 @@ use v_frame::{
     plane::{Plane, PlaneConfig, PlaneOffset},
 };
 
-use super::block::{BlockOffset, BLOCK_TO_PLANE_SHIFT};
+use super::block::{BLOCK_TO_PLANE_SHIFT, BlockOffset};
 
 /// Bounded region of a plane
 ///

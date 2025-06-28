@@ -3,8 +3,8 @@ use std::{cmp, sync::Arc};
 use log::debug;
 use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
-use super::{fast_idiv, ScaleFunction, SceneChangeDetector, ScenecutResult};
-use crate::{data::sad::sad_plane, SceneDetectionSpeed};
+use super::{ScaleFunction, SceneChangeDetector, ScenecutResult, fast_idiv};
+use crate::{SceneDetectionSpeed, data::sad::sad_plane};
 
 /// Experiments have determined this to be an optimal threshold
 pub(super) const FAST_THRESHOLD: f64 = 18.0;
