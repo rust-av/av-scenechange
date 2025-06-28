@@ -9,9 +9,9 @@ mod ssse3;
 #[cfg(test)]
 mod tests;
 
-use std::mem::{transmute, MaybeUninit};
+use std::mem::{MaybeUninit, transmute};
 
-use aligned::{Aligned, A64};
+use aligned::{A64, Aligned};
 use cfg_if::cfg_if;
 use v_frame::{
     frame::Frame,
@@ -21,7 +21,7 @@ use v_frame::{
 
 use super::importance::IMPORTANCE_BLOCK_SIZE;
 use crate::data::{
-    block::{BlockSize, TxSize, MAX_TX_SIZE},
+    block::{BlockSize, MAX_TX_SIZE, TxSize},
     plane::{Area, AsRegion, PlaneRegion, PlaneRegionMut, Rect},
     prediction::PredictionVariant,
     satd::get_satd,

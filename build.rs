@@ -1,3 +1,5 @@
+//! Build script for av-scenechange
+
 use std::{
     env,
     fs,

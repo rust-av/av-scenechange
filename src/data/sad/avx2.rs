@@ -3,7 +3,7 @@ use v_frame::{
     plane::Plane,
 };
 
-extern "C" {
+unsafe extern "C" {
     fn avsc_sad_plane_8bpc_avx2(
         src: *const u8,
         dst: *const u8,
