@@ -4,13 +4,10 @@
 //! if your use case is to generate scene changes as a human would
 //! interpret them--for that there are other tools such as `SCXvid` and `WWXD`.
 
-use std::{
-    fs::File,
-    io::{Read, Write},
-};
+use std::{fs::File, io::Write};
 
 use anyhow::Result;
-use av_decoders::{Decoder, from_file, from_stdin};
+use av_decoders::Decoder;
 use av_scenechange::{DetectionOptions, SceneDetectionSpeed, detect_scene_changes};
 use clap::Parser;
 
@@ -70,15 +67,14 @@ fn main() -> Result<()> {
         _ => panic!("Speed mode must be in range [0; 1]"),
     };
 
-    let results = match matches.input.as_str() {
-        "-" => {
-            let mut dec = from_stdin()?;
-            process_video(&mut dec, opts)?
-        }
-        file => {
-            let mut dec = from_file(file)?;
-            process_video(&mut dec, opts)?
-        }
+    let mut dec = match matches.input.as_str() {
+        "-" => Decoder::from_stdin()?,
+        file => Decoder::from_file(file, None, None)?,
+    };
+
+    let results = match dec.get_video_details().bit_depth {
+        8 => detect_scene_changes::<u8>(&mut dec, opts, None, None)?,
+        _ => detect_scene_changes::<u16>(&mut dec, opts, None, None)?,
     };
 
     print!("{}", serde_json::to_string(&results)?);
@@ -91,18 +87,6 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-fn process_video<R: Read>(
-    dec: &mut Decoder<R>,
-    opts: DetectionOptions,
-) -> Result<av_scenechange::DetectionResults> {
-    let bit_depth = dec.get_video_details().bit_depth;
-    if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(dec, opts, None, None)
-    } else {
-        detect_scene_changes::<_, u16>(dec, opts, None, None)
-    }
 }
 
 #[cfg(not(feature = "devel"))]
