@@ -11,7 +11,6 @@ mod data;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    io::Read,
     sync::Arc,
     time::Instant,
 };
@@ -74,8 +73,8 @@ pub struct DetectionResults {
 ///
 /// - If using a Vapoursynth script that contains an unsupported video format.
 #[inline]
-pub fn new_detector<R: Read, T: Pixel>(
-    dec: &mut Decoder<R>,
+pub fn new_detector<T: Pixel>(
+    dec: &mut Decoder,
     opts: DetectionOptions,
 ) -> anyhow::Result<SceneChangeDetector<T>> {
     let video_details = dec.get_video_details();
@@ -119,15 +118,15 @@ pub fn new_detector<R: Read, T: Pixel>(
 ///
 /// - If `opts.lookahead_distance` is 0.
 #[inline]
-pub fn detect_scene_changes<R: Read, T: Pixel>(
-    dec: &mut Decoder<R>,
+pub fn detect_scene_changes<T: Pixel>(
+    dec: &mut Decoder,
     opts: DetectionOptions,
     frame_limit: Option<usize>,
     progress_callback: Option<&dyn Fn(usize, usize)>,
 ) -> anyhow::Result<DetectionResults> {
     assert!(opts.lookahead_distance >= 1);
 
-    let mut detector = new_detector::<R, T>(dec, opts)?;
+    let mut detector = new_detector::<T>(dec, opts)?;
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     keyframes.insert(0);
