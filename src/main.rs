@@ -69,7 +69,7 @@ fn main() -> Result<()> {
 
     let mut dec = match matches.input.as_str() {
         "-" => Decoder::from_stdin()?,
-        file => Decoder::from_file(file, None, None)?,
+        file => Decoder::from_file(file)?,
     };
 
     let results = match dec.get_video_details().bit_depth {
