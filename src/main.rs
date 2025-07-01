@@ -4,13 +4,10 @@
 //! if your use case is to generate scene changes as a human would
 //! interpret them--for that there are other tools such as `SCXvid` and `WWXD`.
 
-use std::{
-    fs::File,
-    io::{Read, Write},
-};
+use std::{fs::File, io::Write};
 
 use anyhow::Result;
-use av_decoders::{Decoder, from_file, from_stdin};
+use av_decoders::Decoder;
 use av_scenechange::{DetectionOptions, SceneDetectionSpeed, detect_scene_changes};
 use clap::Parser;
 
@@ -72,11 +69,11 @@ fn main() -> Result<()> {
 
     let results = match matches.input.as_str() {
         "-" => {
-            let mut dec = from_stdin()?;
+            let mut dec = Decoder::from_stdin()?;
             process_video(&mut dec, opts)?
         }
         file => {
-            let mut dec = from_file(file)?;
+            let mut dec = Decoder::from_file(file)?;
             process_video(&mut dec, opts)?
         }
     };
@@ -93,15 +90,15 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn process_video<R: Read>(
-    dec: &mut Decoder<R>,
+fn process_video(
+    dec: &mut Decoder,
     opts: DetectionOptions,
 ) -> Result<av_scenechange::DetectionResults> {
     let bit_depth = dec.get_video_details().bit_depth;
     if bit_depth == 8 {
-        detect_scene_changes::<_, u8>(dec, opts, None, None)
+        detect_scene_changes::<u8>(dec, opts, None, None)
     } else {
-        detect_scene_changes::<_, u16>(dec, opts, None, None)
+        detect_scene_changes::<u16>(dec, opts, None, None)
     }
 }
 
