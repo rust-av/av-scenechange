@@ -64,6 +64,8 @@ impl Default for DetectionOptions {
 pub struct DetectionResults {
     /// The 0-indexed frame numbers where scene changes were detected.
     pub scene_changes: Vec<usize>,
+    /// A map of scores for each frame. Some frames may not have a score.
+    pub scores: BTreeMap<usize, ScenecutResult>,
     /// The total number of frames read.
     pub frame_count: usize,
     /// Average speed (FPS)
@@ -131,6 +133,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
     let mut frame_queue = BTreeMap::new();
     let mut keyframes = BTreeSet::new();
     keyframes.insert(0);
+    let mut scores = BTreeMap::new();
 
     let start_time = Instant::now();
     let mut frameno = 0;
@@ -158,19 +161,23 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             // End of video
             break;
         }
-        if frameno == 0
-            || detector
-                .analyze_next_frame(
-                    &frame_set,
-                    frameno,
-                    *keyframes
-                        .iter()
-                        .last()
-                        .expect("at least 1 keyframe should exist"),
-                )
-                .0
-        {
+        if frameno == 0 {
             keyframes.insert(frameno);
+        } else {
+            let (cut, score) = detector.analyze_next_frame(
+                &frame_set,
+                frameno,
+                *keyframes
+                    .iter()
+                    .last()
+                    .expect("at least 1 keyframe should exist"),
+            );
+            if let Some(score) = score {
+                scores.insert(frameno, score);
+            }
+            if cut {
+                keyframes.insert(frameno);
+            }
         };
 
         if frameno > 0 {
@@ -191,6 +198,7 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
         scene_changes: keyframes.into_iter().collect(),
         frame_count: frameno,
         speed: frameno as f64 / start_time.elapsed().as_secs_f64(),
+        scores,
     })
 }
 
