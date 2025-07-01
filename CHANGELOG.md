@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.17.0 (unreleased)
+
+- [Breaking] Update the `analyze_next_frame` method to also return the frame scores, if present
+
 ## Version 0.16.0
 
 - [Breaking] Use `av_decoders` crate instead of providing our own decoder structs
