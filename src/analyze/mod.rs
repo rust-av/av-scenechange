@@ -181,7 +181,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
         frame_set: &[&Arc<Frame<T>>],
         input_frameno: usize,
         previous_keyframe: usize,
-    ) -> bool {
+    ) -> (bool, Option<ScenecutResult>) {
         // Use score deque for adaptive threshold for scene cut
         // Declare score_deque offset based on lookahead  for scene change scores
 
@@ -191,14 +191,14 @@ impl<T: Pixel> SceneChangeDetector<T> {
         if frame_set.len() <= self.lookahead_offset {
             // Don't insert keyframes in the last few frames of the video
             // This is basically a scene flash and a waste of bits
-            return false;
+            return (false, None);
         }
 
         if self.scene_detection_mode == SceneDetectionSpeed::None {
             if let Some(true) = self.handle_min_max_intervals(distance) {
-                return true;
+                return (true, None);
             };
-            return false;
+            return (false, None);
         }
 
         // Initialization of score deque
@@ -245,7 +245,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
             self.score_deque.pop();
         }
 
-        scenecut
+        (scenecut, Some(score))
     }
 
     fn handle_min_max_intervals(&mut self, distance: usize) -> Option<bool> {
@@ -403,8 +403,9 @@ impl<T: Pixel> SceneChangeDetector<T> {
     }
 }
 
+/// Contains the scores for scenecut analysis on a single frame
 #[derive(Debug, Clone, Copy)]
-struct ScenecutResult {
+pub struct ScenecutResult {
     inter_cost: f64,
     imp_block_cost: f64,
     backward_adjusted_cost: f64,

@@ -20,7 +20,7 @@ pub use av_decoders::{self, Decoder};
 pub use num_rational::Rational32;
 use v_frame::pixel::Pixel;
 
-pub use crate::analyze::SceneChangeDetector;
+pub use crate::analyze::{SceneChangeDetector, ScenecutResult};
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
@@ -159,14 +159,16 @@ pub fn detect_scene_changes<R: Read, T: Pixel>(
             break;
         }
         if frameno == 0
-            || detector.analyze_next_frame(
-                &frame_set,
-                frameno,
-                *keyframes
-                    .iter()
-                    .last()
-                    .expect("at least 1 keyframe should exist"),
-            )
+            || detector
+                .analyze_next_frame(
+                    &frame_set,
+                    frameno,
+                    *keyframes
+                        .iter()
+                        .last()
+                        .expect("at least 1 keyframe should exist"),
+                )
+                .0
         {
             keyframes.insert(frameno);
         };
