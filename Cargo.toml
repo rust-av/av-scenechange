@@ -1,6 +1,6 @@
 [package]
 name = "av-scenechange"
-version = "0.16.0"
+version = "0.17.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
 edition = "2024"
 rust-version = "1.86"
