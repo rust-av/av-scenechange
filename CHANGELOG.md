@@ -1,9 +1,9 @@
 # Changelog
 
-## Version 0.17.0 (unreleased)
+## Version 0.17.0
 
 - [Breaking] Update the `analyze_next_frame` method to also return the frame scores, if present
-  [Breaking] Update the `DetectionResults` to also return frame scores
+- [Breaking] Update the `DetectionResults` to also return frame scores
 
 ## Version 0.16.0
 
