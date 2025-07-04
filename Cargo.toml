@@ -37,6 +37,9 @@ y4m = "0.8.0"
 cc = { version = "1.2.23", optional = true, features = ["parallel"] }
 nasm-rs = { version = "0.3", optional = true, features = ["parallel"] }
 
+[dev-dependencies]
+criterion = "0.6.0"
+
 [features]
 default = ["binary", "asm"]
 binary = ["clap", "serialize"]
@@ -70,3 +73,7 @@ uninlined_format_args = "allow"
 level = "warn"
 # These custom cfgs are expected, so tell rustc not to output warnings for them
 check-cfg = ['cfg(asm_x86_64)', 'cfg(asm_neon)']
+
+[[bench]]
+name = "scd_bench"
+harness = false
