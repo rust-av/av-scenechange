@@ -250,7 +250,7 @@ pub fn detect_scene_changes_recursive<T: Pixel>(
     );
 
     let video_details = dec.get_video_details();
-    let total_frames = video_details.num_frames.unwrap();
+    let total_frames = video_details.total_frames.unwrap();
     // Build a binary tree of keyframes
     let mut root = Node::new::<T>(dec, opts, frame_limit, 0, total_frames, true);
     // Traverse the tree depth-first and detect scene changes chronologically
