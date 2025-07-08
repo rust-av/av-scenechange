@@ -8,6 +8,7 @@ description = "Estimates frames in a video where a scenecut would be ideal"
 license = "MIT"
 repository = "https://github.com/rust-av/av-scenechange"
 build = "build.rs"
+exclude = [".github/*", "benches", "test_files"]
 
 [dependencies]
 aligned = "0.4.2"
