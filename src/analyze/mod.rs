@@ -406,10 +406,11 @@ impl<T: Pixel> SceneChangeDetector<T> {
 /// Contains the scores for scenecut analysis on a single frame
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serialize", derive(serde::Serialize))]
+#[allow(missing_docs)]
 pub struct ScenecutResult {
-    inter_cost: f64,
-    imp_block_cost: f64,
-    backward_adjusted_cost: f64,
-    forward_adjusted_cost: f64,
-    threshold: f64,
+    pub inter_cost: f64,
+    pub imp_block_cost: f64,
+    pub backward_adjusted_cost: f64,
+    pub forward_adjusted_cost: f64,
+    pub threshold: f64,
 }

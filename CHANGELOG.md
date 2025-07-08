@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.17.1
+
+- Make the fields on `ScenecutResult` public so that it can actually be useful
+
 ## Version 0.17.0
 
 - [Breaking] Update the `analyze_next_frame` method to also return the frame scores, if present
