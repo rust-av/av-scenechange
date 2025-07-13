@@ -14,7 +14,7 @@ exclude = [".github/*", "benches", "test_files"]
 aligned = "0.4.2"
 anyhow = "1.0.56"
 arrayvec = "0.7.6"
-av-decoders = { version = "0.2.0" }
+av-decoders = { version = "0.3.0" }
 cfg-if = "1.0.0"
 clap = { version = "4.0.22", optional = true, features = ["derive"] }
 console = { version = "0.16", optional = true }

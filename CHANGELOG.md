@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.17.2 (unreleased)
+
+- Update `av_decoders` create from `0.2.0` to `0.3.0`
+
 ## Version 0.17.1
 
 - Make the fields on `ScenecutResult` public so that it can actually be useful
