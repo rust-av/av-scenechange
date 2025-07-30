@@ -93,14 +93,14 @@ clip.set_output(0)
         );
         // Create the decoder once to build the index file
         let _ = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Vapoursynth(black_box(
-            VapoursynthDecoder::from_script(&script).unwrap(),
+            VapoursynthDecoder::from_script(&script, None).unwrap(),
         )))
         .unwrap();
 
         b.iter_batched(
             || {
                 let decoder = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Vapoursynth(
-                    black_box(VapoursynthDecoder::from_script(&script).unwrap()),
+                    black_box(VapoursynthDecoder::from_script(&script, None).unwrap()),
                 ))
                 .unwrap();
                 let bit_depth = decoder.get_video_details().bit_depth;
