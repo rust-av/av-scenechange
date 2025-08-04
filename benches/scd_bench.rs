@@ -2,6 +2,7 @@
 #![allow(clippy::unwrap_used)]
 
 use std::{
+    collections::HashMap,
     fs::File,
     hint::black_box,
     io::{BufReader, Read},
@@ -93,14 +94,14 @@ clip.set_output(0)
         );
         // Create the decoder once to build the index file
         let _ = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Vapoursynth(black_box(
-            VapoursynthDecoder::from_script(&script, None).unwrap(),
+            VapoursynthDecoder::from_script(&script, HashMap::new()).unwrap(),
         )))
         .unwrap();
 
         b.iter_batched(
             || {
                 let decoder = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Vapoursynth(
-                    black_box(VapoursynthDecoder::from_script(&script, None).unwrap()),
+                    black_box(VapoursynthDecoder::from_script(&script, HashMap::new()).unwrap()),
                 ))
                 .unwrap();
                 let bit_depth = decoder.get_video_details().bit_depth;
