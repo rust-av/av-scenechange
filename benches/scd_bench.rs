@@ -2,7 +2,6 @@
 #![allow(clippy::unwrap_used)]
 
 use std::{
-    collections::HashMap,
     fs::File,
     hint::black_box,
     io::{BufReader, Read},
@@ -83,6 +82,8 @@ fn y4m_long_benchmark(c: &mut Criterion) {
 #[cfg(feature = "vapoursynth")]
 fn vapoursynth_benchmark(c: &mut Criterion) {
     c.bench_function("vapoursynth detect", |b| {
+        use std::collections::HashMap;
+
         let script = format!(
             r#"
 import vapoursynth as vs
