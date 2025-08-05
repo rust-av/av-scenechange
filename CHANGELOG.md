@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 0.17.3 (unreleased)
+## Version 0.17.3
 
 - Update `av_decoders` crate from `0.3.0` to `0.4.0`
 
