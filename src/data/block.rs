@@ -1,16 +1,9 @@
-use std::{
-    fmt,
-    fmt::Display,
-    ops::{Index, IndexMut},
-};
+use std::{fmt, fmt::Display};
 
 use thiserror::Error;
 use v_frame::plane::PlaneOffset;
 
-use crate::data::{
-    plane::PlaneBlockOffset,
-    superblock::{MI_SIZE_LOG2, SB_SIZE_LOG2},
-};
+use crate::data::superblock::{MI_SIZE_LOG2, SB_SIZE_LOG2};
 
 pub const MAX_TX_SIZE: usize = 64;
 pub const BLOCK_TO_PLANE_SHIFT: usize = MI_SIZE_LOG2;
@@ -245,42 +238,3 @@ impl BlockOffset {
         }
     }
 }
-
-#[derive(Clone)]
-pub struct FrameBlocks {
-    blocks: Box<[Block]>,
-    pub cols: usize,
-}
-
-impl Index<usize> for FrameBlocks {
-    type Output = [Block];
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.blocks[index * self.cols..(index + 1) * self.cols]
-    }
-}
-
-impl IndexMut<usize> for FrameBlocks {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.blocks[index * self.cols..(index + 1) * self.cols]
-    }
-}
-
-// for convenience, also index by BlockOffset
-
-impl Index<PlaneBlockOffset> for FrameBlocks {
-    type Output = Block;
-
-    fn index(&self, bo: PlaneBlockOffset) -> &Self::Output {
-        &self[bo.0.y][bo.0.x]
-    }
-}
-
-impl IndexMut<PlaneBlockOffset> for FrameBlocks {
-    fn index_mut(&mut self, bo: PlaneBlockOffset) -> &mut Self::Output {
-        &mut self[bo.0.y][bo.0.x]
-    }
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct Block {}

@@ -96,7 +96,7 @@ impl PredictionMode {
         rec_plane: &Plane<T>,
         po: PlaneOffset,
         mv: MotionVector,
-    ) -> (i32, i32, PlaneSlice<T>) {
+    ) -> (i32, i32, PlaneSlice<'_, T>) {
         let &PlaneConfig { xdec, ydec, .. } = &rec_plane.cfg;
         let row_offset = mv.row as i32 >> (3 + ydec);
         let col_offset = mv.col as i32 >> (3 + xdec);
