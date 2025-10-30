@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.18.0
+
+- Update `av_decoders` crate to `0.5.0` for ffmpeg 8.0 support
+
 ## Version 0.17.3
 
 - Update `av_decoders` crate from `0.3.0` to `0.4.0`

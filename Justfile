@@ -8,5 +8,7 @@ codecov-upload:
 
 precommit:
     cargo +nightly fmt
-    cargo clippy
+    cargo clippy -- -D warnings
+    cargo clippy --features ffmpeg -- -D warnings
+    cargo clippy --features vapoursynth -- -D warnings
     just lcov
