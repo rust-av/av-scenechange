@@ -106,7 +106,10 @@ cd av-scenechange
 cargo build --release
 
 # Build without assembly optimizations (no NASM required)
-cargo build --release --no-default-features --features binary
+cargo build --release --no-default-features --features binary,parallel
+
+# Build without parallel processing (single-threaded)
+cargo build --release --no-default-features --features binary,asm
 
 # Build with additional features
 cargo build --release --features ffmpeg  # FFmpeg input support
@@ -129,6 +132,7 @@ This will install the binary to `~/.cargo/bin/av-scenechange`.
 
 - `binary` (default): Enables command-line interface
 - `asm` (default): Enables optimized assembly code (requires NASM)
+- `parallel` (default): Enables parallel processing using Rayon for improved performance
 - `serialize`: Enables JSON serialization support
 - `ffmpeg`: Adds FFmpeg decoder support
 - `vapoursynth`: Adds VapourSynth decoder support

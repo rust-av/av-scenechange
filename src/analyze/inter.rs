@@ -3,6 +3,7 @@ use std::sync::Arc;
 use aligned::{A64, Aligned};
 use arrayvec::ArrayVec;
 use num_rational::Rational32;
+#[cfg(feature = "parallel")]
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use v_frame::{
     frame::Frame,
@@ -224,14 +225,25 @@ fn compute_motion_vectors<T: Pixel>(
     tiling_info: &mut TilingInfo,
     bit_depth: usize,
 ) {
-    tiling_info
-        .tile_iter_mut(fs)
-        .collect::<Vec<_>>()
-        .into_par_iter()
-        .for_each(|mut ctx| {
+    #[cfg(feature = "parallel")]
+    {
+        tiling_info
+            .tile_iter_mut(fs)
+            .collect::<Vec<_>>()
+            .into_par_iter()
+            .for_each(|mut ctx| {
+                let ts = &mut ctx.ts;
+                estimate_tile_motion(fi, ts, bit_depth);
+            });
+    }
+
+    #[cfg(not(feature = "parallel"))]
+    {
+        tiling_info.tile_iter_mut(fs).for_each(|mut ctx| {
             let ts = &mut ctx.ts;
             estimate_tile_motion(fi, ts, bit_depth);
         });
+    }
 }
 
 fn estimate_tile_motion<T: Pixel>(

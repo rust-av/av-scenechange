@@ -24,7 +24,7 @@ libc = { version = "0.2.172", optional = true }
 log = { version = "0.4.14" }
 num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
-rayon = "1.10.0"
+rayon = { version = "1.10.0", optional = true }
 serde = { version = "1.0.123", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.62", optional = true }
 thiserror = "2.0.12"
@@ -35,14 +35,14 @@ v_frame = "0.3.8"
 y4m = "0.8.0"
 
 [build-dependencies]
-cc = { version = "1.2.23", optional = true, features = ["parallel"] }
-nasm-rs = { version = "0.3", optional = true, features = ["parallel"] }
+cc = { version = "1.2.23", optional = true }
+nasm-rs = { version = "0.3", optional = true }
 
 [dev-dependencies]
 criterion = "0.6.0"
 
 [features]
-default = ["binary", "asm"]
+default = ["binary", "asm", "parallel"]
 binary = ["clap", "serialize"]
 serialize = ["serde", "serde_json"]
 devel = ["console", "fern"]
@@ -50,6 +50,7 @@ ffmpeg = ["av-decoders/ffmpeg"]
 vapoursynth = ["av-decoders/vapoursynth"]
 tracing = ["tracing-subscriber", "tracing-chrome", "dep:tracing"]
 asm = ["nasm-rs", "cc", "libc"]
+parallel = ["rayon", "cc/parallel", "nasm-rs/parallel"]
 
 [[bin]]
 name = "av-scenechange"
