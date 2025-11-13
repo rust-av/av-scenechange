@@ -29,10 +29,6 @@ impl<T: Pixel> SceneChangeDetector<T> {
         let frame1_imp_ref = Arc::clone(&frame1);
         let frame2_imp_ref = Arc::clone(&frame2);
 
-        let mut intra_cost = 0.0;
-        let mut mv_inter_cost = 0.0;
-        let mut imp_block_cost = 0.0;
-
         let cols = 2 * self.resolution.0.align_power_of_two_and_shift(3);
         let rows = 2 * self.resolution.1.align_power_of_two_and_shift(3);
 
@@ -45,35 +41,73 @@ impl<T: Pixel> SceneChangeDetector<T> {
             clone
         };
 
-        rayon::scope(|s| {
-            s.spawn(|_| {
-                let temp_plane = self
-                    .temp_plane
-                    .get_or_insert_with(|| frame2.planes[0].clone());
+        #[cfg(feature = "parallel")]
+        let (intra_cost, mv_inter_cost, imp_block_cost) = {
+            let mut intra_cost = 0.0;
+            let mut mv_inter_cost = 0.0;
+            let mut imp_block_cost = 0.0;
 
-                let intra_costs = estimate_intra_costs(temp_plane, &*frame2, self.bit_depth);
-                if let Some(ref mut intra_cache) = self.intra_costs {
-                    intra_cache.insert(input_frameno, intra_costs.clone());
-                }
+            rayon::scope(|s| {
+                s.spawn(|_| {
+                    let temp_plane = self
+                        .temp_plane
+                        .get_or_insert_with(|| frame2.planes[0].clone());
 
-                intra_cost = intra_costs.iter().map(|&cost| cost as u64).sum::<u64>() as f64
-                    / intra_costs.len() as f64;
+                    let intra_costs = estimate_intra_costs(temp_plane, &*frame2, self.bit_depth);
+                    if let Some(ref mut intra_cache) = self.intra_costs {
+                        intra_cache.insert(input_frameno, intra_costs.clone());
+                    }
+
+                    intra_cost = intra_costs.iter().map(|&cost| cost as u64).sum::<u64>() as f64
+                        / intra_costs.len() as f64;
+                });
+                s.spawn(|_| {
+                    mv_inter_cost = estimate_inter_costs(
+                        frame2_inter_ref,
+                        frame1,
+                        self.bit_depth,
+                        self.frame_rate,
+                        self.chroma_sampling,
+                        buffer,
+                    );
+                });
+                s.spawn(|_| {
+                    imp_block_cost =
+                        estimate_importance_block_difference(frame2_imp_ref, frame1_imp_ref);
+                });
             });
-            s.spawn(|_| {
-                mv_inter_cost = estimate_inter_costs(
-                    frame2_inter_ref,
-                    frame1,
-                    self.bit_depth,
-                    self.frame_rate,
-                    self.chroma_sampling,
-                    buffer,
-                );
-            });
-            s.spawn(|_| {
-                imp_block_cost =
-                    estimate_importance_block_difference(frame2_imp_ref, frame1_imp_ref);
-            });
-        });
+
+            (intra_cost, mv_inter_cost, imp_block_cost)
+        };
+
+        #[cfg(not(feature = "parallel"))]
+        let (intra_cost, mv_inter_cost, imp_block_cost) = {
+            let temp_plane = self
+                .temp_plane
+                .get_or_insert_with(|| frame2.planes[0].clone());
+
+            let intra_costs = estimate_intra_costs(temp_plane, &*frame2, self.bit_depth);
+            if let Some(ref mut intra_cache) = self.intra_costs {
+                intra_cache.insert(input_frameno, intra_costs.clone());
+            }
+
+            let intra_cost = intra_costs.iter().map(|&cost| cost as u64).sum::<u64>() as f64
+                / intra_costs.len() as f64;
+
+            let mv_inter_cost = estimate_inter_costs(
+                frame2_inter_ref,
+                frame1,
+                self.bit_depth,
+                self.frame_rate,
+                self.chroma_sampling,
+                buffer,
+            );
+
+            let imp_block_cost =
+                estimate_importance_block_difference(frame2_imp_ref, frame1_imp_ref);
+
+            (intra_cost, mv_inter_cost, imp_block_cost)
+        };
 
         // `BIAS` determines how likely we are
         // to choose a keyframe, between 0.0-1.0.
