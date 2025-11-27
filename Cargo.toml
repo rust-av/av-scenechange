@@ -12,34 +12,34 @@ exclude = [".github/*", "benches", "test_files"]
 
 [dependencies]
 aligned = "0.4.2"
-anyhow = "1.0.56"
+anyhow = "1.0.100"
 arrayvec = "0.7.6"
 av-decoders = { version = "0.5.0" }
-cfg-if = "1.0.0"
-clap = { version = "4.0.22", optional = true, features = ["derive"] }
-console = { version = "0.16", optional = true }
+cfg-if = "1.0.4"
+clap = { version = "4.5.53", optional = true, features = ["derive"] }
+console = { version = "0.16.1", optional = true }
 cpufeatures = "0.2.17"
-fern = { version = "0.7", optional = true }
-libc = { version = "0.2.172", optional = true }
-log = { version = "0.4.14" }
+fern = { version = "0.7.1", optional = true }
+libc = { version = "0.2.177", optional = true }
+log = { version = "0.4.28" }
 num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
-rayon = "1.10.0"
-serde = { version = "1.0.123", optional = true, features = ["derive"] }
-serde_json = { version = "1.0.62", optional = true }
-thiserror = "2.0.12"
-tracing = { version = "0.1.40", optional = true }
-tracing-chrome = { version = "0.7.1", optional = true }
-tracing-subscriber = { version = "0.3.18", optional = true }
-v_frame = "0.3.8"
+rayon = "1.11.0"
+serde = { version = "1.0.228", optional = true, features = ["derive"] }
+serde_json = { version = "1.0.145", optional = true }
+thiserror = "2.0.17"
+tracing = { version = "0.1.41", optional = true }
+tracing-chrome = { version = "0.7.2", optional = true }
+tracing-subscriber = { version = "0.3.20", optional = true }
+v_frame = "0.3.9"
 y4m = "0.8.0"
 
 [build-dependencies]
-cc = { version = "1.2.23", optional = true, features = ["parallel"] }
-nasm-rs = { version = "0.3", optional = true, features = ["parallel"] }
+cc = { version = "1.2.47", optional = true, features = ["parallel"] }
+nasm-rs = { version = "0.3.1", optional = true, features = ["parallel"] }
 
 [dev-dependencies]
-criterion = "0.6.0"
+criterion = "0.7.0"
 
 [features]
 default = ["binary", "asm"]
