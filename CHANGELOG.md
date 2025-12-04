@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.19.0
+
+- Add `ffms2` feature for using ffms2 as a decoder
+
 ## Version 0.18.0
 
 - Update `av_decoders` crate to `0.5.0` for ffmpeg 8.0 support
