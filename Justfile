@@ -11,4 +11,5 @@ precommit:
     cargo clippy -- -D warnings
     cargo clippy --features ffmpeg -- -D warnings
     cargo clippy --features vapoursynth -- -D warnings
+    cargo clippy --features ffms2 -- -D warnings
     just lcov

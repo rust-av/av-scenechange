@@ -119,8 +119,8 @@ cargo build --release --features vapoursynth  # VapourSynth input support
 # Install the latest version (automatically uses release optimizations)
 cargo install av-scenechange
 
-# Install with ffmpeg and vapoursynth input support
-cargo install av-scenechange --features ffmpeg,vapoursynth
+# Install with ffmpeg, ffms2, and vapoursynth input support
+cargo install av-scenechange --features ffmpeg,ffms2,vapoursynth
 ```
 
 This will install the binary to `~/.cargo/bin/av-scenechange`.
@@ -130,6 +130,7 @@ This will install the binary to `~/.cargo/bin/av-scenechange`.
 - `binary` (default): Enables command-line interface
 - `asm` (default): Enables optimized assembly code (requires NASM)
 - `serialize`: Enables JSON serialization support
+- `ffms2`: Adds FFMS2 decoder support
 - `ffmpeg`: Adds FFmpeg decoder support
 - `vapoursynth`: Adds VapourSynth decoder support
 - `devel`: Development features (logging, console output)

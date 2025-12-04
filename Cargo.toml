@@ -1,6 +1,6 @@
 [package]
 name = "av-scenechange"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
 edition = "2024"
 rust-version = "1.86"
@@ -14,7 +14,7 @@ exclude = [".github/*", "benches", "test_files"]
 aligned = "0.4.2"
 anyhow = "1.0.100"
 arrayvec = "0.7.6"
-av-decoders = { version = "0.5.0" }
+av-decoders = "0.6.0"
 cfg-if = "1.0.4"
 clap = { version = "4.5.53", optional = true, features = ["derive"] }
 console = { version = "0.16.1", optional = true }
@@ -46,6 +46,7 @@ default = ["binary", "asm"]
 binary = ["clap", "serialize"]
 serialize = ["serde", "serde_json"]
 devel = ["console", "fern"]
+ffms2 = ["av-decoders/ffms2"]
 ffmpeg = ["av-decoders/ffmpeg"]
 vapoursynth = ["av-decoders/vapoursynth"]
 tracing = ["tracing-subscriber", "tracing-chrome", "dep:tracing"]
