@@ -134,9 +134,9 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "av-decoders"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cbe67c5c9c576b844f5b4c3b85c6764228444f26c627b6a9070649e9154e932"
+checksum = "05af8a92949909a463c6328326ecdb27f594b14dae1b6f544a6d5fd36750b075"
 dependencies = [
  "ffmpeg-the-third",
  "ffms2-sys",

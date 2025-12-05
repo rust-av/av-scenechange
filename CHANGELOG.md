@@ -1,6 +1,10 @@
 # Changelog
 
-## Version 0.19.0
+## Version 0.19.1
+
+- Use fixed ffms2 implementation
+
+## Version 0.19.0 [yanked]
 
 - Add `ffms2` feature for using ffms2 as a decoder
 
