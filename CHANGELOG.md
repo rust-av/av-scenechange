@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.19.2
+
+- Significantly improve threading performance by decoding on a separate thread
+
 ## Version 0.19.1
 
 - Use fixed ffms2 implementation
