@@ -11,7 +11,11 @@ mod data;
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    sync::Arc,
+    sync::{
+        Arc,
+        mpsc::{channel, sync_channel},
+    },
+    thread,
     time::Instant,
 };
 
@@ -20,6 +24,8 @@ pub use num_rational::Rational32;
 use v_frame::pixel::Pixel;
 
 pub use crate::analyze::{SceneChangeDetector, ScenecutResult};
+
+const FRAME_PREFETCH_DEPTH: usize = 8;
 
 /// Options determining how to run scene change detection.
 #[derive(Debug, Clone, Copy)]
@@ -128,77 +134,130 @@ pub fn detect_scene_changes<T: Pixel>(
 ) -> anyhow::Result<DetectionResults> {
     assert!(opts.lookahead_distance >= 1);
 
-    let mut detector = new_detector::<T>(dec, opts)?;
-    let mut frame_queue = BTreeMap::new();
-    let mut keyframes = BTreeSet::new();
-    keyframes.insert(0);
-    let mut scores = BTreeMap::new();
+    let detector = new_detector::<T>(dec, opts)?;
+    let (frame_tx, frame_rx) = sync_channel(FRAME_PREFETCH_DEPTH);
+    let (progress_tx, progress_rx) = if progress_callback.is_some() {
+        let (tx, rx) = channel();
+        (Some(tx), Some(rx))
+    } else {
+        (None, None)
+    };
 
-    let start_time = Instant::now();
-    let mut frameno = 0;
-    loop {
-        let mut next_input_frameno = frame_queue.keys().last().copied().map_or(0, |key| key + 1);
-        while next_input_frameno
-            < (frameno + opts.lookahead_distance + 1).min(frame_limit.unwrap_or(usize::MAX))
-        {
-            let frame = dec.read_video_frame();
-            if let Ok(frame) = frame {
-                frame_queue.insert(next_input_frameno, Arc::new(frame));
-                next_input_frameno += 1;
-            } else {
-                // End of input
-                break;
+    let detection_handle = {
+        let progress_tx = progress_tx;
+        thread::spawn(move || -> anyhow::Result<DetectionResults> {
+            let mut detector = detector;
+            let mut frame_queue = BTreeMap::new();
+            let mut keyframes = BTreeSet::new();
+            keyframes.insert(0);
+            let mut scores = BTreeMap::new();
+
+            let start_time = Instant::now();
+            let mut frameno = 0usize;
+            loop {
+                let mut next_input_frameno =
+                    frame_queue.keys().last().copied().map_or(0, |key| key + 1);
+                let max_needed =
+                    (frameno + opts.lookahead_distance + 1).min(frame_limit.unwrap_or(usize::MAX));
+
+                while next_input_frameno < max_needed {
+                    match frame_rx.recv() {
+                        Ok(frame) => {
+                            frame_queue.insert(next_input_frameno, frame);
+                            next_input_frameno += 1;
+                        }
+                        Err(_) => break,
+                    }
+                }
+
+                let frame_set = frame_queue
+                    .values()
+                    .take(opts.lookahead_distance + 2)
+                    .collect::<Vec<_>>();
+                if frame_set.len() < 2 {
+                    break;
+                }
+                if frameno == 0 {
+                    keyframes.insert(frameno);
+                } else {
+                    let (cut, score) = detector.analyze_next_frame(
+                        &frame_set,
+                        frameno,
+                        *keyframes
+                            .iter()
+                            .last()
+                            .expect("at least 1 keyframe should exist"),
+                    );
+                    if let Some(score) = score {
+                        scores.insert(frameno, score);
+                    }
+                    if cut {
+                        keyframes.insert(frameno);
+                    }
+                }
+
+                if frameno > 0 {
+                    frame_queue.remove(&(frameno - 1));
+                }
+
+                frameno += 1;
+                if let Some(ref progress_tx) = progress_tx {
+                    let _ = progress_tx.send((frameno, keyframes.len()));
+                }
+                if let Some(frame_limit) = frame_limit {
+                    if frameno == frame_limit {
+                        break;
+                    }
+                }
             }
-        }
 
-        // The frame_queue should start at whatever the previous frame was
-        let frame_set = frame_queue
-            .values()
-            .take(opts.lookahead_distance + 2)
-            .collect::<Vec<_>>();
-        if frame_set.len() < 2 {
-            // End of video
-            break;
-        }
-        if frameno == 0 {
-            keyframes.insert(frameno);
-        } else {
-            let (cut, score) = detector.analyze_next_frame(
-                &frame_set,
-                frameno,
-                *keyframes
-                    .iter()
-                    .last()
-                    .expect("at least 1 keyframe should exist"),
-            );
-            if let Some(score) = score {
-                scores.insert(frameno, score);
+            Ok(DetectionResults {
+                scene_changes: keyframes.into_iter().collect(),
+                frame_count: frameno,
+                speed: frameno as f64 / start_time.elapsed().as_secs_f64(),
+                scores,
+            })
+        })
+    };
+
+    let mut produced = 0usize;
+    while frame_limit.map_or_else(|| true, |limit| produced < limit) {
+        match dec.read_video_frame() {
+            Ok(frame) => {
+                produced += 1;
+                if frame_tx.send(Arc::new(frame)).is_err() {
+                    break;
+                }
             }
-            if cut {
-                keyframes.insert(frameno);
-            }
-        };
-
-        if frameno > 0 {
-            frame_queue.remove(&(frameno - 1));
+            Err(_) => break,
         }
 
-        frameno += 1;
-        if let Some(progress_fn) = progress_callback {
-            progress_fn(frameno, keyframes.len());
-        }
-        if let Some(frame_limit) = frame_limit {
-            if frameno == frame_limit {
-                break;
+        if let (Some(progress_rx), Some(progress_fn)) = (&progress_rx, progress_callback) {
+            while let Ok((frames, keyframe_count)) = progress_rx.try_recv() {
+                progress_fn(frames, keyframe_count);
             }
         }
     }
-    Ok(DetectionResults {
-        scene_changes: keyframes.into_iter().collect(),
-        frame_count: frameno,
-        speed: frameno as f64 / start_time.elapsed().as_secs_f64(),
-        scores,
-    })
+
+    drop(frame_tx);
+
+    if let (Some(progress_rx), Some(progress_fn)) = (&progress_rx, progress_callback) {
+        while let Ok((frames, keyframe_count)) = progress_rx.try_recv() {
+            progress_fn(frames, keyframe_count);
+        }
+    }
+
+    let results = detection_handle
+        .join()
+        .map_err(|_| anyhow::anyhow!("scene detection thread panicked"))??;
+
+    if let (Some(progress_rx), Some(progress_fn)) = (&progress_rx, progress_callback) {
+        while let Ok((frames, keyframe_count)) = progress_rx.try_recv() {
+            progress_fn(frames, keyframe_count);
+        }
+    }
+
+    Ok(results)
 }
 
 /// Specifies the scene detection algorithm to use
