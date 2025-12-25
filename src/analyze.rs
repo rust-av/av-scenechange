@@ -1,15 +1,22 @@
-use std::{cmp, collections::BTreeMap, num::NonZeroUsize, sync::Arc};
+use std::{
+    cmp,
+    collections::BTreeMap,
+    num::{NonZeroU8, NonZeroUsize},
+    sync::Arc,
+};
 
 use log::debug;
 use num_rational::Rational32;
-use v_frame::{
-    frame::Frame,
-    pixel::{ChromaSampling, Pixel},
-    plane::Plane,
-};
+use v_frame::{chroma::ChromaSubsampling, frame::Frame, pixel::Pixel, plane::Plane};
 
 use self::fast::{FAST_THRESHOLD, detect_scale_factor};
-use crate::{SceneDetectionSpeed, data::motion::RefMEStats};
+use crate::{
+    SceneDetectionSpeed,
+    data::{
+        motion::RefMEStats,
+        plane::{downscale, downscale_in_place},
+    },
+};
 
 mod fast;
 mod importance;
@@ -29,7 +36,7 @@ pub(crate) fn fast_idiv(n: usize, d: NonZeroUsize) -> usize {
 
 struct ScaleFunction<T: Pixel> {
     downscale_in_place: fn(/* &self: */ &Plane<T>, /* in_plane: */ &mut Plane<T>),
-    downscale: fn(/* &self: */ &Plane<T>) -> Plane<T>,
+    downscale: fn(/* &self: */ &Plane<T>, /* bit_depth */ NonZeroU8) -> Plane<T>,
     factor: NonZeroUsize,
 }
 
@@ -41,9 +48,9 @@ impl<T: Pixel> ScaleFunction<T> {
         );
 
         Self {
-            downscale: Plane::downscale::<SCALE>,
-            downscale_in_place: Plane::downscale_in_place::<SCALE>,
-            factor: NonZeroUsize::new(SCALE).unwrap(),
+            downscale: downscale::<T, SCALE>,
+            downscale_in_place: downscale_in_place::<T, SCALE>,
+            factor: NonZeroUsize::new(SCALE).expect("scale must not be zero"),
         }
     }
 }
@@ -75,7 +82,7 @@ pub struct SceneChangeDetector<T: Pixel> {
     /// The frame rate of the video.
     frame_rate: Rational32,
     /// The chroma subsampling of the video.
-    chroma_sampling: ChromaSampling,
+    chroma_sampling: ChromaSubsampling,
     /// Number of pixels in scaled frame for fast mode
     scaled_pixels: usize,
     /// Downscaling function for fast scene detection
@@ -105,11 +112,12 @@ impl<T: Pixel> SceneChangeDetector<T> {
     #[allow(clippy::too_many_arguments)]
     #[allow(clippy::missing_panics_doc)]
     #[inline]
+    #[must_use]
     pub fn new(
         resolution: (usize, usize),
         bit_depth: usize,
         frame_rate: Rational32,
-        chroma_sampling: ChromaSampling,
+        chroma_sampling: ChromaSubsampling,
         lookahead_distance: usize,
         scene_detection_mode: SceneDetectionSpeed,
         min_key_frame_interval: usize,
@@ -195,7 +203,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
         }
 
         if self.scene_detection_mode == SceneDetectionSpeed::None {
-            if let Some(true) = self.handle_min_max_intervals(distance) {
+            if self.handle_min_max_intervals(distance) == Some(true) {
                 return (true, None);
             };
             return (false, None);
@@ -217,8 +225,8 @@ impl<T: Pixel> SceneChangeDetector<T> {
         // Decrease deque offset if there is no new frames
         if frame_set.len() > self.deque_offset + 1 {
             self.run_comparison(
-                frame_set[self.deque_offset].clone(),
-                frame_set[self.deque_offset + 1].clone(),
+                frame_set[self.deque_offset],
+                frame_set[self.deque_offset + 1],
                 input_frameno + self.deque_offset,
             );
         } else {
@@ -248,7 +256,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
         (scenecut, Some(score))
     }
 
-    fn handle_min_max_intervals(&mut self, distance: usize) -> Option<bool> {
+    fn handle_min_max_intervals(&self, distance: usize) -> Option<bool> {
         // Handle minimum and maximum keyframe intervals.
         if distance < self.min_key_frame_interval {
             return Some(false);
@@ -267,11 +275,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
         init_len: usize,
     ) {
         for x in 0..init_len {
-            self.run_comparison(
-                frame_set[x].clone(),
-                frame_set[x + 1].clone(),
-                input_frameno + x,
-            );
+            self.run_comparison(frame_set[x], frame_set[x + 1], input_frameno + x);
         }
     }
 
@@ -279,8 +283,8 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// Insert result to start of score deque
     fn run_comparison(
         &mut self,
-        frame1: Arc<Frame<T>>,
-        frame2: Arc<Frame<T>>,
+        frame1: &Arc<Frame<T>>,
+        frame2: &Arc<Frame<T>>,
         input_frameno: usize,
     ) {
         let mut result = match self.scene_detection_mode {
@@ -337,7 +341,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// Value of current frame is offset by lookahead, if lookahead >=5
     ///
     /// Returns true if current scene score is higher than adapted threshold
-    fn adaptive_scenecut(&mut self) -> (bool, ScenecutResult) {
+    fn adaptive_scenecut(&self) -> (bool, ScenecutResult) {
         let score = self.score_deque[self.deque_offset];
 
         // We use the importance block algorithm's cost metrics as a secondary algorithm

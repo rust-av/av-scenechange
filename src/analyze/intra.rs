@@ -9,20 +9,16 @@ mod ssse3;
 #[cfg(test)]
 mod tests;
 
-use std::mem::{MaybeUninit, transmute};
+use std::mem::MaybeUninit;
 
 use aligned::{A64, Aligned};
 use cfg_if::cfg_if;
-use v_frame::{
-    frame::Frame,
-    pixel::Pixel,
-    plane::{Plane, PlaneOffset},
-};
+use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
 use super::importance::IMPORTANCE_BLOCK_SIZE;
 use crate::data::{
     block::{BlockSize, MAX_TX_SIZE, TxSize},
-    plane::{Area, AsRegion, PlaneRegion, PlaneRegionMut, Rect},
+    plane::{Area, AsRegion, PlaneOffset, PlaneRegion, PlaneRegionMut, Rect},
     prediction::PredictionVariant,
     satd::get_satd,
     slice_assume_init_mut,
@@ -37,14 +33,14 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(
     frame: &Frame<T>,
     bit_depth: usize,
 ) -> Box<[u32]> {
-    let plane = &frame.planes[0];
+    let plane = &frame.y_plane;
     let plane_after_prediction = temp_plane;
 
     let bsize = BlockSize::from_width_and_height(IMPORTANCE_BLOCK_SIZE, IMPORTANCE_BLOCK_SIZE);
     let tx_size = bsize.tx_size();
 
-    let h_in_imp_b = plane.cfg.height / IMPORTANCE_BLOCK_SIZE;
-    let w_in_imp_b = plane.cfg.width / IMPORTANCE_BLOCK_SIZE;
+    let h_in_imp_b = plane.height().get() / IMPORTANCE_BLOCK_SIZE;
+    let w_in_imp_b = plane.width().get() / IMPORTANCE_BLOCK_SIZE;
     let mut intra_costs = Vec::with_capacity(h_in_imp_b * w_in_imp_b);
 
     for y in 0..h_in_imp_b {
@@ -138,11 +134,11 @@ pub fn get_intra_edges<'a, T: Pixel>(
         let rect_w = dst
             .rect()
             .width
-            .min(dst.plane_cfg.width - dst.rect().x as usize);
+            .min(dst.plane_cfg.width.get() - dst.rect().x as usize);
         let rect_h = dst
             .rect()
             .height
-            .min(dst.plane_cfg.height - dst.rect().y as usize);
+            .min(dst.plane_cfg.height.get() - dst.rect().y as usize);
 
         // Needs left
         if needs_left {
@@ -166,7 +162,7 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 let val = if y != 0 {
                     dst[y - 1][0]
                 } else {
-                    T::cast_from(base + 1)
+                    T::from(base + 1).expect("value should fit in Pixel")
                 };
                 for v in left[2 * MAX_TX_SIZE - tx_size.height()..].iter_mut() {
                     v.write(val);
@@ -185,7 +181,10 @@ pub fn get_intra_edges<'a, T: Pixel>(
             if y != 0 {
                 above[..txw].copy_from_slice(
                     // SAFETY: &[T] and &[MaybeUninit<T>] have the same layout
-                    unsafe { transmute::<&[T], &[MaybeUninit<T>]>(&dst[y - 1][x..x + txw]) },
+                    unsafe {
+                        &*(&dst[y - 1][x..x + txw] as *const [T]
+                            as *const [std::mem::MaybeUninit<T>])
+                    },
                 );
                 if txw < tx_size.width() {
                     let val = dst[y - 1][x + txw - 1];
@@ -197,7 +196,7 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 let val = if x != 0 {
                     dst[0][x - 1]
                 } else {
-                    T::cast_from(base - 1)
+                    T::from(base - 1).expect("value should fit in Pixel")
                 };
                 for v in &mut above[..tx_size.width()] {
                     v.write(val);
@@ -206,7 +205,7 @@ pub fn get_intra_edges<'a, T: Pixel>(
             init_above += tx_size.width();
         }
 
-        top_left[0].write(T::cast_from(base));
+        top_left[0].write(T::from(base).expect("value should fit in Pixel"));
     }
     IntraEdge::new(edge_buf, init_left, init_above)
 }
@@ -233,12 +232,15 @@ pub fn predict_dc_intra<T: Pixel>(
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx512icl() {
+                // SAFETY: call to SIMD function
                 unsafe { avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
                 return;
             } else if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 unsafe { avx2::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
                 return;
             } else if crate::cpu::has_ssse3() {
+                // SAFETY: call to SIMD function
                 unsafe { ssse3::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
                 return;
             }

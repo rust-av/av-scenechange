@@ -1,7 +1,4 @@
-use v_frame::{
-    pixel::{Pixel, PixelType},
-    plane::Plane,
-};
+use v_frame::{pixel::Pixel, plane::Plane};
 
 unsafe extern "C" {
     fn avsc_sad_plane_8bpc_avx2(
@@ -15,23 +12,23 @@ unsafe extern "C" {
 
 #[target_feature(enable = "avx2")]
 pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
-    use std::mem;
+    assert_eq!(src.geometry().width, dst.geometry().width);
+    assert_eq!(src.geometry().stride, dst.geometry().stride);
+    assert_eq!(src.geometry().height, dst.geometry().height);
+    assert!(src.geometry().width <= src.geometry().stride);
 
-    assert_eq!(src.cfg.width, dst.cfg.width);
-    assert_eq!(src.cfg.stride, dst.cfg.stride);
-    assert_eq!(src.cfg.height, dst.cfg.height);
-    assert!(src.cfg.width <= src.cfg.stride);
-
-    match T::type_enum() {
-        PixelType::U8 => unsafe {
+    match size_of::<T>() {
+        // SAFETY: call to SIMD function
+        1 => unsafe {
             avsc_sad_plane_8bpc_avx2(
-                mem::transmute::<*const T, *const u8>(src.data_origin().as_ptr()),
-                mem::transmute::<*const T, *const u8>(dst.data_origin().as_ptr()),
-                src.cfg.stride,
-                src.cfg.width,
-                src.cfg.height,
+                src.data().as_ptr().add(src.data_origin()).cast::<u8>(),
+                dst.data().as_ptr().add(dst.data_origin()).cast::<u8>(),
+                (size_of::<T>() * src.geometry().stride.get()) as libc::size_t,
+                src.width().get(),
+                src.height().get(),
             )
         },
-        PixelType::U16 => super::sse2::sad_plane_internal(src, dst),
+        2 => super::sse2::sad_plane_internal(src, dst),
+        _ => unreachable!(),
     }
 }

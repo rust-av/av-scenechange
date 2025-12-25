@@ -1,12 +1,12 @@
-use v_frame::{
-    math::msb,
-    pixel::{CastFromPrimitive, Pixel},
-};
+use v_frame::pixel::Pixel;
 
-use crate::data::{
-    hadamard::{hadamard4x4, hadamard8x8},
-    plane::{Area, PlaneRegion, Rect},
-    sad::get_sad,
+use crate::{
+    data::{
+        hadamard::{hadamard4x4, hadamard8x8},
+        plane::{Area, PlaneRegion, Rect},
+        sad::get_sad,
+    },
+    math::msb,
 };
 
 /// Sum of absolute transformed differences over a block.
@@ -62,7 +62,9 @@ pub(super) fn get_satd_internal<T: Pixel>(
                 .zip(chunk_org.rows_iter().zip(chunk_ref.rows_iter()))
             {
                 for (diff, (a, b)) in row_diff.iter_mut().zip(row_org.iter().zip(row_ref.iter())) {
-                    *diff = i32::cast_from(*a) - i32::cast_from(*b);
+                    let a = a.to_i32().expect("value should fit in i32");
+                    let b = b.to_i32().expect("value should fit in i32");
+                    *diff = a - b;
                 }
             }
 

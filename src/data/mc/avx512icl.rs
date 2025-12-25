@@ -1,11 +1,7 @@
-use v_frame::{
-    pixel::{Pixel, PixelType},
-    plane::PlaneSlice,
-};
+use v_frame::pixel::Pixel;
 
-use crate::data::plane::PlaneRegionMut;
+use crate::data::plane::{PlaneRegionMut, PlaneSlice};
 
-#[allow(clippy::too_many_arguments)]
 // TODO: change this when Rust supports avx512 as a target feature
 #[target_feature(enable = "avx2")]
 pub fn put_8tap_internal<T: Pixel>(
@@ -30,20 +26,21 @@ pub fn put_8tap_internal<T: Pixel>(
         assert!(src.accessible(width + 4, height + 4));
         assert!(src.accessible_neg(3, 3));
 
-        match T::type_enum() {
-            PixelType::U8 => avsc_put_8tap_regular_8bpc_avx512icl(
+        match size_of::<T>() {
+            1 => avsc_put_8tap_regular_8bpc_avx512icl(
                 dst.data_ptr_mut() as *mut _,
-                T::to_asm_stride(dst.plane_cfg.stride),
+                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
-                T::to_asm_stride(src.plane.cfg.stride),
+                (size_of::<T>() * src.plane.geometry().stride.get()) as isize,
                 width as i32,
                 height as i32,
                 col_frac,
                 row_frac,
             ),
-            PixelType::U16 => super::avx2::put_8tap_internal(
+            2 => super::avx2::put_8tap_internal(
                 dst, src, width, height, col_frac, row_frac, bit_depth,
             ),
+            _ => unreachable!(),
         }
     }
 }

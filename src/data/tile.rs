@@ -1,18 +1,22 @@
 use std::iter::FusedIterator;
 
-use v_frame::{
-    frame::Frame,
-    math::Fixed,
-    pixel::Pixel,
-    plane::{Plane, PlaneOffset},
-};
+use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
-use crate::data::{
-    block::BlockOffset,
-    frame::{FrameState, MAX_PLANES},
-    motion::{FrameMEStats, TileMEStatsMut, WriteGuardMEStats},
-    plane::{PlaneBlockOffset, PlaneRegion, Rect},
-    superblock::{MI_SIZE, MI_SIZE_LOG2, PlaneSuperBlockOffset, SB_SIZE_LOG2, SuperBlockOffset},
+use crate::{
+    data::{
+        block::BlockOffset,
+        frame::FrameState,
+        motion::{FrameMEStats, TileMEStatsMut, WriteGuardMEStats},
+        plane::{PlaneBlockOffset, PlaneOffset, PlaneRegion, Rect},
+        superblock::{
+            MI_SIZE,
+            MI_SIZE_LOG2,
+            PlaneSuperBlockOffset,
+            SB_SIZE_LOG2,
+            SuperBlockOffset,
+        },
+    },
+    math::Fixed,
 };
 
 pub const MAX_TILE_WIDTH: usize = 4096;
@@ -24,7 +28,7 @@ pub const MAX_TILE_RATE: f64 = 4096f64 * 2176f64 * 60f64 * 1.1;
 /// Tiled view of a frame
 #[derive(Debug)]
 pub struct Tile<'a, T: Pixel> {
-    pub planes: [PlaneRegion<'a, T>; MAX_PLANES],
+    pub y_plane: PlaneRegion<'a, T>,
 }
 
 // common impl for Tile and TileMut
@@ -40,24 +44,11 @@ macro_rules! tile_common {
         frame: &'a $($opt_mut)? Frame<T>,
         luma_rect: TileRect,
       ) -> Self {
-        let mut planes_iter = frame.planes.$iter();
         Self {
-          planes: [
-            {
-              let plane = planes_iter.next().unwrap();
-              $pr_type::new(plane, luma_rect.into())
-            },
-            {
-              let plane = planes_iter.next().unwrap();
-              let rect = luma_rect.decimated(plane.cfg.xdec, plane.cfg.ydec);
-              $pr_type::new(plane, rect.into())
-            },
-            {
-              let plane = planes_iter.next().unwrap();
-              let rect = luma_rect.decimated(plane.cfg.xdec, plane.cfg.ydec);
-              $pr_type::new(plane, rect.into())
-            },
-          ],
+          y_plane: {
+            let plane = &frame.y_plane;
+            $pr_type::new(plane, luma_rect.into())
+          }
         }
       }
     }
@@ -78,15 +69,6 @@ pub struct TileRect {
 }
 
 impl TileRect {
-    pub const fn decimated(self, xdec: usize, ydec: usize) -> Self {
-        Self {
-            x: self.x >> xdec,
-            y: self.y >> ydec,
-            width: self.width >> xdec,
-            height: self.height >> ydec,
-        }
-    }
-
     pub const fn to_frame_plane_offset(self, tile_po: PlaneOffset) -> PlaneOffset {
         PlaneOffset {
             x: self.x as isize + tile_po.x,
@@ -126,7 +108,6 @@ impl From<TileRect> for Rect {
 ///
 /// Some others (like `rec`) are written tile-wise, but must be accessible
 /// frame-wise once the tile views vanish (e.g. for deblocking).
-#[derive(Debug)]
 pub struct TileStateMut<'a, T: Pixel> {
     pub sbo: PlaneSuperBlockOffset,
     pub sb_width: usize,
@@ -136,14 +117,14 @@ pub struct TileStateMut<'a, T: Pixel> {
     pub width: usize,
     pub height: usize,
     pub input_tile: Tile<'a, T>, // the current tile
-    pub input_hres: &'a Plane<T>,
-    pub input_qres: &'a Plane<T>,
+    pub input_hres: Option<&'a Plane<T>>,
+    pub input_qres: Option<&'a Plane<T>>,
     pub me_stats: Vec<TileMEStatsMut<'a>>,
 }
 
 impl<'a, T: Pixel> TileStateMut<'a, T> {
     pub fn new(
-        fs: &'a mut FrameState<T>,
+        fs: &'a FrameState<T>,
         sbo: PlaneSuperBlockOffset,
         width: usize,
         height: usize,
@@ -179,8 +160,8 @@ impl<'a, T: Pixel> TileStateMut<'a, T> {
             width,
             height,
             input_tile: Tile::new(&fs.input, luma_rect),
-            input_hres: &fs.input_hres,
-            input_qres: &fs.input_qres,
+            input_hres: fs.input_hres.as_deref(),
+            input_qres: fs.input_qres.as_deref(),
             me_stats: frame_me_stats
                 .iter_mut()
                 .map(|fmvs| {
@@ -264,11 +245,15 @@ impl TilingInfo {
         // these are bitstream-defined values and must not be changed
         let max_tile_width_sb = MAX_TILE_WIDTH >> SB_SIZE_LOG2;
         let max_tile_area_sb = MAX_TILE_AREA >> (2 * SB_SIZE_LOG2);
-        let min_tile_cols_log2 = Self::tile_log2(max_tile_width_sb, sb_cols).unwrap();
-        let max_tile_cols_log2 = Self::tile_log2(1, sb_cols.min(MAX_TILE_COLS)).unwrap();
-        let max_tile_rows_log2 = Self::tile_log2(1, sb_rows.min(MAX_TILE_ROWS)).unwrap();
-        let min_tiles_log2 =
-            min_tile_cols_log2.max(Self::tile_log2(max_tile_area_sb, sb_cols * sb_rows).unwrap());
+        let min_tile_cols_log2 =
+            Self::tile_log2(max_tile_width_sb, sb_cols).expect("invalid tile_log2 count");
+        let max_tile_cols_log2 =
+            Self::tile_log2(1, sb_cols.min(MAX_TILE_COLS)).expect("invalid tile_log2 count");
+        let max_tile_rows_log2 =
+            Self::tile_log2(1, sb_rows.min(MAX_TILE_ROWS)).expect("invalid tile_log2 count");
+        let min_tiles_log2 = min_tile_cols_log2.max(
+            Self::tile_log2(max_tile_area_sb, sb_cols * sb_rows).expect("invalid tile_log2 count"),
+        );
 
         // Implements restriction in Annex A of the spec.
         // Unlike the other restrictions, this one does not change
@@ -304,7 +289,7 @@ impl TilingInfo {
         let cols = frame_width_sb.div_ceil(tile_width_sb);
 
         // Adjust tile_cols_log2 in case of rounding tile_width_sb to even.
-        let tile_cols_log2 = Self::tile_log2(1, cols).unwrap();
+        let tile_cols_log2 = Self::tile_log2(1, cols).expect("invalid tile_log2 count");
         assert!(tile_cols_log2 >= min_tile_cols_log2);
 
         let min_tile_rows_log2 = min_tiles_log2.saturating_sub(tile_cols_log2);
@@ -341,8 +326,9 @@ impl TilingInfo {
     /// Split frame-level structures into tiles
     ///
     /// Provide mutable tiled views of frame-level structures.
+    #[expect(clippy::needless_pass_by_ref_mut)]
     pub fn tile_iter_mut<'a, T: Pixel>(
-        &self,
+        &mut self,
         fs: &'a mut FrameState<T>,
     ) -> TileContextIterMut<'a, T> {
         let afs = fs as *mut _;
@@ -368,7 +354,7 @@ impl<'a, T: Pixel> Iterator for TileContextIterMut<'a, T> {
     type Item = TileContextMut<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next < self.ti.rows * self.ti.cols {
+        (self.next < self.ti.rows * self.ti.cols).then(|| {
             let tile_col = self.next % self.ti.cols;
             let tile_row = self.next / self.ti.cols;
             let ctx = TileContextMut {
@@ -397,10 +383,8 @@ impl<'a, T: Pixel> Iterator for TileContextIterMut<'a, T> {
                 },
             };
             self.next += 1;
-            Some(ctx)
-        } else {
-            None
-        }
+            ctx
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

@@ -26,10 +26,13 @@ pub(crate) fn get_satd<T: Pixel>(
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 unsafe { return avx2::get_satd_internal(src, dst, w, h, bit_depth); }
             } else if crate::cpu::has_sse4() {
+                // SAFETY: call to SIMD function
                 unsafe { return sse4::get_satd_internal(src, dst, w, h, bit_depth); }
             } else if crate::cpu::has_ssse3() {
+                // SAFETY: call to SIMD function
                 unsafe { return ssse3::get_satd_internal(src, dst, w, h, bit_depth); }
             }
         } else if #[cfg(asm_neon)] {

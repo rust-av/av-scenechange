@@ -1,7 +1,4 @@
-use v_frame::{
-    pixel::{Pixel, PixelType},
-    plane::PlaneSlice,
-};
+use v_frame::pixel::Pixel;
 
 use crate::data::plane::PlaneRegionMut;
 
@@ -29,27 +26,28 @@ pub fn put_8tap_internal<T: Pixel>(
         assert!(src.accessible(width + 4, height + 4));
         assert!(src.accessible_neg(3, 3));
 
-        match T::type_enum() {
-            PixelType::U8 => avsc_put_8tap_regular_8bpc_neon(
+        match size_of::<T>() {
+            1 => avsc_put_8tap_regular_8bpc_neon(
                 dst.data_ptr_mut() as *mut _,
-                T::to_asm_stride(dst.plane_cfg.stride),
+                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
-                T::to_asm_stride(src.plane.cfg.stride),
+                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
                 width as i32,
                 height as i32,
                 col_frac,
                 row_frac,
             ),
-            PixelType::U16 => avsc_put_8tap_regular_16bpc_neon(
+            2 => avsc_put_8tap_regular_16bpc_neon(
                 dst.data_ptr_mut() as *mut _,
-                T::to_asm_stride(dst.plane_cfg.stride),
+                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
-                T::to_asm_stride(src.plane.cfg.stride),
+                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
                 width as i32,
                 height as i32,
                 col_frac,
                 row_frac,
             ),
+            _ => unreachable!(),
         }
     }
 }

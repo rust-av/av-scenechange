@@ -1,37 +1,81 @@
+use std::num::{NonZeroU8, NonZeroUsize};
+
 use cfg_if::cfg_if;
-use v_frame::{pixel::Pixel, plane::Plane};
+use v_frame::{chroma::ChromaSubsampling, frame::FrameBuilder, pixel::Pixel, plane::Plane};
 
 use crate::data::{
     plane::{Area, AsRegion},
     sad::get_sad,
 };
 
+/// Helper function to create a test plane with padding
+fn create_padded_plane<T: Pixel>(width: usize, height: usize, padding: usize) -> Plane<T> {
+    let width_nz = NonZeroUsize::new(width).expect("width must be non-zero");
+    let height_nz = NonZeroUsize::new(height).expect("height must be non-zero");
+
+    // Determine bit depth based on pixel type
+    let bit_depth = if std::mem::size_of::<T>() == 1 {
+        NonZeroU8::new(8).expect("8 is non-zero")
+    } else {
+        NonZeroU8::new(10).expect("10 is non-zero")
+    };
+
+    // Create a monochrome frame with padding and extract the y_plane
+    let frame = FrameBuilder::new(
+        width_nz,
+        height_nz,
+        ChromaSubsampling::Monochrome,
+        bit_depth,
+    )
+    .luma_padding_left(padding)
+    .luma_padding_right(padding)
+    .luma_padding_top(padding)
+    .luma_padding_bottom(padding)
+    .build::<T>()
+    .expect("Failed to build frame");
+
+    frame.y_plane
+}
+
+/// Helper function to create a simple test plane without padding
+fn create_test_plane<T: Pixel>(width: usize, height: usize) -> Plane<T> {
+    create_padded_plane(width, height, 0)
+}
+
 // Generate plane data for get_sad tests
 fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
-    // Two planes with different strides
-    let mut input_plane = Plane::new(640, 480, 0, 0, 128 + 8, 128 + 8);
-    let mut rec_plane = Plane::new(640, 480, 0, 0, 2 * 128 + 8, 2 * 128 + 8);
+    // Two planes with different padding
+    let mut input_plane = create_padded_plane::<T>(640, 480, 128 + 8);
+    let mut rec_plane = create_padded_plane::<T>(640, 480, 2 * 128 + 8);
 
     // Make the test pattern robust to data alignment
-    let xpad_off = (input_plane.cfg.xorigin - input_plane.cfg.xpad) as i32 - 8i32;
+    let input_geom = input_plane.geometry();
+    let rec_geom = rec_plane.geometry();
+    // In the old API, xpad_off was calculated as (xorigin - xpad) - 8
+    // With the way padding worked in the old API, this ended up being -8
+    let xpad_off = -8i32;
 
     for (i, row) in input_plane
-        .data
-        .chunks_mut(input_plane.cfg.stride)
+        .data_mut()
+        .chunks_mut(input_geom.stride.get())
         .enumerate()
     {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = ((j + i) as i32 - xpad_off) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
-    for (i, row) in rec_plane.data.chunks_mut(rec_plane.cfg.stride).enumerate() {
+    for (i, row) in rec_plane
+        .data_mut()
+        .chunks_mut(rec_geom.stride.get())
+        .enumerate()
+    {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = (j as i32 - i as i32 - xpad_off) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
@@ -41,26 +85,33 @@ fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
 // Generate plane data for sad_plane_internal tests
 fn setup_equal_stride_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
     // Two planes with same stride for sad_plane_internal testing
-    let mut input_plane = Plane::new(320, 240, 0, 0, 0, 0);
-    let mut rec_plane = Plane::new(320, 240, 0, 0, 0, 0);
+    let mut input_plane = create_test_plane::<T>(320, 240);
+    let mut rec_plane = create_test_plane::<T>(320, 240);
+
+    let input_geom = input_plane.geometry();
+    let rec_geom = rec_plane.geometry();
 
     for (i, row) in input_plane
-        .data
-        .chunks_mut(input_plane.cfg.stride)
+        .data_mut()
+        .chunks_mut(input_geom.stride.get())
         .enumerate()
     {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = ((j + i) as i32) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
-    for (i, row) in rec_plane.data.chunks_mut(rec_plane.cfg.stride).enumerate() {
+    for (i, row) in rec_plane
+        .data_mut()
+        .chunks_mut(rec_geom.stride.get())
+        .enumerate()
+    {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = (j as i32 - i as i32) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
@@ -134,27 +185,34 @@ fn sad_plane_same_inner<T: Pixel>() {
     let _sad_value = sad_plane_verify_asm(&input_plane, &rec_plane);
 
     // Test with smaller planes to ensure the algorithm works correctly
-    let mut small_input = Plane::new(16, 16, 0, 0, 0, 0);
-    let mut small_rec = Plane::new(16, 16, 0, 0, 0, 0);
+    let mut small_input = create_test_plane::<T>(16, 16);
+    let mut small_rec = create_test_plane::<T>(16, 16);
+
+    let small_input_geom = small_input.geometry();
+    let small_rec_geom = small_rec.geometry();
 
     // Initialize the small planes with test data
     for (i, row) in small_input
-        .data
-        .chunks_mut(small_input.cfg.stride)
+        .data_mut()
+        .chunks_mut(small_input_geom.stride.get())
         .enumerate()
     {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = ((j + i) as i32) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
-    for (i, row) in small_rec.data.chunks_mut(small_rec.cfg.stride).enumerate() {
+    for (i, row) in small_rec
+        .data_mut()
+        .chunks_mut(small_rec_geom.stride.get())
+        .enumerate()
+    {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = (j as i32 - i as i32) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 

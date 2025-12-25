@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use v_frame::{frame::Frame, math::Fixed, pixel::Pixel};
+use v_frame::{frame::Frame, pixel::Pixel};
 
 use super::{SceneChangeDetector, ScenecutResult};
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
         intra::estimate_intra_costs,
     },
     data::motion::FrameMEStats,
+    math::Fixed,
 };
 
 impl<T: Pixel> SceneChangeDetector<T> {
@@ -21,14 +22,10 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// and use all three metrics.
     pub(super) fn cost_scenecut(
         &mut self,
-        frame1: Arc<Frame<T>>,
-        frame2: Arc<Frame<T>>,
+        frame1: &Arc<Frame<T>>,
+        frame2: &Arc<Frame<T>>,
         input_frameno: usize,
     ) -> ScenecutResult {
-        let frame2_inter_ref = Arc::clone(&frame2);
-        let frame1_imp_ref = Arc::clone(&frame1);
-        let frame2_imp_ref = Arc::clone(&frame2);
-
         let mut intra_cost = 0.0;
         let mut mv_inter_cost = 0.0;
         let mut imp_block_cost = 0.0;
@@ -49,9 +46,9 @@ impl<T: Pixel> SceneChangeDetector<T> {
             s.spawn(|_| {
                 let temp_plane = self
                     .temp_plane
-                    .get_or_insert_with(|| frame2.planes[0].clone());
+                    .get_or_insert_with(|| frame2.y_plane.clone());
 
-                let intra_costs = estimate_intra_costs(temp_plane, &*frame2, self.bit_depth);
+                let intra_costs = estimate_intra_costs(temp_plane, frame2, self.bit_depth);
                 if let Some(ref mut intra_cache) = self.intra_costs {
                     intra_cache.insert(input_frameno, intra_costs.clone());
                 }
@@ -61,7 +58,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
             });
             s.spawn(|_| {
                 mv_inter_cost = estimate_inter_costs(
-                    frame2_inter_ref,
+                    frame2,
                     frame1,
                     self.bit_depth,
                     self.frame_rate,
@@ -70,8 +67,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
                 );
             });
             s.spawn(|_| {
-                imp_block_cost =
-                    estimate_importance_block_difference(frame2_imp_ref, frame1_imp_ref);
+                imp_block_cost = estimate_importance_block_difference(frame2, frame1);
             });
         });
 

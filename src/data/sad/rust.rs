@@ -1,20 +1,21 @@
-use v_frame::{
-    pixel::{CastFromPrimitive, Pixel},
-    plane::Plane,
-};
+use v_frame::{pixel::Pixel, plane::Plane};
 
 use crate::data::plane::{Area, PlaneRegion, Rect};
 
 pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
-    assert_eq!(src.cfg.width, dst.cfg.width);
-    assert_eq!(src.cfg.height, dst.cfg.height);
+    assert_eq!(src.width(), dst.width());
+    assert_eq!(src.height(), dst.height());
 
-    src.rows_iter()
-        .zip(dst.rows_iter())
+    src.rows()
+        .zip(dst.rows())
         .map(|(src, dst)| {
             src.iter()
                 .zip(dst.iter())
-                .map(|(&p1, &p2)| i32::cast_from(p1).abs_diff(i32::cast_from(p2)))
+                .map(|(&p1, &p2)| {
+                    let p1 = p1.to_i32().expect("value should fit in i32");
+                    let p2 = p2.to_i32().expect("value should fit in i32");
+                    p1.abs_diff(p2)
+                })
                 .sum::<u32>() as u64
         })
         .sum()
@@ -47,7 +48,11 @@ pub(super) fn get_sad_internal<T: Pixel>(
         .map(|(src, dst)| {
             src.iter()
                 .zip(dst)
-                .map(|(&p1, &p2)| i32::cast_from(p1).abs_diff(i32::cast_from(p2)))
+                .map(|(&p1, &p2)| {
+                    let p1 = p1.to_i32().expect("value should fit in i32");
+                    let p2 = p2.to_i32().expect("value should fit in i32");
+                    p1.abs_diff(p2)
+                })
                 .sum::<u32>()
         })
         .sum()

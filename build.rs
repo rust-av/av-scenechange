@@ -1,5 +1,7 @@
 //! Build script for av-scenechange
 
+#![allow(clippy::unwrap_used, reason = "build script")]
+
 use std::{
     env,
     fs,
@@ -235,11 +237,11 @@ fn main() {
     {
         if arch == "x86_64" {
             println!("cargo:rustc-cfg=asm_x86_64");
-            build_nasm_files()
+            build_nasm_files();
         }
         if arch == "aarch64" {
             println!("cargo:rustc-cfg=asm_neon");
-            build_neon_asm_files()
+            build_neon_asm_files();
         }
     }
 

@@ -1,19 +1,20 @@
 use std::sync::Arc;
 
-use v_frame::{frame::Frame, math::Fixed, pixel::Pixel, plane::Plane};
+use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
-use crate::data::motion::{RefMEStats, ReferenceFramesSet};
-
-pub const MAX_PLANES: usize = 3;
+use crate::{
+    data::motion::{RefMEStats, ReferenceFramesSet},
+    math::Fixed,
+};
 
 pub const ALLOWED_REF_FRAMES: &[RefType] = &[RefType::LAST_FRAME];
 pub const INTER_REFS_PER_FRAME: usize = 7;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FrameState<T: Pixel> {
     pub input: Arc<Frame<T>>,
-    pub input_hres: Arc<Plane<T>>, // half-resolution version of input luma
-    pub input_qres: Arc<Plane<T>>, // quarter-resolution version of input luma
+    pub input_hres: Option<Arc<Plane<T>>>, // half-resolution version of input luma
+    pub input_qres: Option<Arc<Plane<T>>>, // quarter-resolution version of input luma
     pub frame_me_stats: RefMEStats,
 }
 
@@ -26,15 +27,11 @@ impl<T: Pixel> FrameState<T> {
     /// it does not create hres or qres versions of `frame` as downscaling is
     /// somewhat expensive and are not needed for [`estimate_inter_costs`].
     pub fn new_with_frame_and_me_stats_and_rec(frame: Arc<Frame<T>>, me_stats: RefMEStats) -> Self {
-        let hres = Plane::new(0, 0, 0, 0, 0, 0);
-        let qres = Plane::new(0, 0, 0, 0, 0, 0);
-
         Self {
             input: frame,
-            input_hres: Arc::new(hres),
-            input_qres: Arc::new(qres),
+            input_hres: None,
+            input_qres: None,
             frame_me_stats: me_stats,
-            // enc_stats: Default::default(),
         }
     }
 }
@@ -62,7 +59,7 @@ impl RefType {
     ///
     /// - If the ref type is a None or Intra frame
     pub fn to_index(self) -> usize {
-        use self::RefType::*;
+        use self::RefType::{INTRA_FRAME, NONE_FRAME};
 
         match self {
             NONE_FRAME => {
@@ -77,8 +74,7 @@ impl RefType {
 }
 
 // Frame Invariants are invariant inside a frame
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FrameInvariants<T: Pixel> {
     pub w_in_b: usize,
     pub h_in_b: usize,
