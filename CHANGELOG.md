@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.20.0
+
+- Update decoders for Vapoursynth R73 compatibility
+
 ## Version 0.19.2
 
 - Significantly improve threading performance by decoding on a separate thread

@@ -98,9 +98,8 @@ pub fn new_detector<T: Pixel>(
             1
         },
         opts.analysis_speed,
-        opts.min_scenecut_distance.map_or(0, |val| val),
-        opts.max_scenecut_distance
-            .map_or_else(|| u32::MAX as usize, |val| val),
+        opts.min_scenecut_distance.unwrap_or(0),
+        opts.max_scenecut_distance.unwrap_or(u32::MAX as usize),
     ))
 }
 
