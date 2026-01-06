@@ -1,7 +1,13 @@
-use num_traits::AsPrimitive;
-use v_frame::{math::round_shift, pixel::Pixel, plane::PlaneSlice};
+use num_traits::ToPrimitive;
+use v_frame::pixel::Pixel;
 
-use crate::data::{mc::FilterMode, plane::PlaneRegionMut};
+use crate::{
+    data::{
+        mc::FilterMode,
+        plane::{PlaneRegionMut, PlaneSlice},
+    },
+    math::round_shift,
+};
 
 const SUBPEL_FILTER_SIZE: usize = 8;
 
@@ -121,7 +127,6 @@ const SUBPEL_FILTERS: [[[i32; SUBPEL_FILTER_SIZE]; 16]; 6] = [
     cold
 )]
 #[cfg_attr(asm_neon, cold)]
-#[allow(clippy::too_many_arguments)]
 pub fn put_8tap_internal<T: Pixel>(
     dst: &mut PlaneRegionMut<'_, T>,
     src: PlaneSlice<'_, T>,
@@ -135,7 +140,7 @@ pub fn put_8tap_internal<T: Pixel>(
     assert_eq!(height & 1, 0);
     assert!(width.is_power_of_two() && (2..=128).contains(&width));
 
-    let ref_stride = src.plane.cfg.stride;
+    let ref_stride = src.plane.geometry().stride.get();
     let y_filter = get_filter(row_frac, height);
     let x_filter = get_filter(col_frac, width);
     let max_sample_val = (1 << bit_depth) - 1;
@@ -154,7 +159,7 @@ pub fn put_8tap_internal<T: Pixel>(
                 let src_slice = &offset_slice[r];
                 let dst_slice = &mut dst[r];
                 for c in 0..width {
-                    dst_slice[c] = T::cast_from(
+                    dst_slice[c] = T::from(
                         round_shift(
                             // SAFETY: We pass this a raw pointer, but it's created from a
                             // checked slice, so we are safe.
@@ -162,7 +167,8 @@ pub fn put_8tap_internal<T: Pixel>(
                             7,
                         )
                         .clamp(0, max_sample_val),
-                    );
+                    )
+                    .expect("value should fit in Pixel");
                 }
             }
         }
@@ -172,7 +178,7 @@ pub fn put_8tap_internal<T: Pixel>(
                 let src_slice = &offset_slice[r];
                 let dst_slice = &mut dst[r];
                 for c in 0..width {
-                    dst_slice[c] = T::cast_from(
+                    dst_slice[c] = T::from(
                         round_shift(
                             round_shift(
                                 // SAFETY: We pass this a raw pointer, but it's created from a
@@ -183,7 +189,8 @@ pub fn put_8tap_internal<T: Pixel>(
                             intermediate_bits,
                         )
                         .clamp(0, max_sample_val),
-                    );
+                    )
+                    .expect("value should fit in Pixel");
                 }
             }
         }
@@ -207,7 +214,7 @@ pub fn put_8tap_internal<T: Pixel>(
                 for r in 0..height {
                     let dst_slice = &mut dst[r];
                     for c in cg..(cg + 8).min(width) {
-                        dst_slice[c] = T::cast_from(
+                        dst_slice[c] = T::from(
                             round_shift(
                                 // SAFETY: We pass this a raw pointer, but it's created from a
                                 // checked slice, so we are safe.
@@ -217,7 +224,8 @@ pub fn put_8tap_internal<T: Pixel>(
                                 7 + intermediate_bits,
                             )
                             .clamp(0, max_sample_val),
-                        );
+                        )
+                        .expect("value should fit in Pixel");
                     }
                 }
             }
@@ -236,13 +244,17 @@ fn get_filter(frac: i32, length: usize) -> [i32; SUBPEL_FILTER_SIZE] {
     SUBPEL_FILTERS[filter_idx][frac as usize]
 }
 
-unsafe fn run_filter<T: AsPrimitive<i32>>(src: *const T, stride: usize, filter: [i32; 8]) -> i32 {
+/// SAFETY: caller must validate that `stride * filter.len() <= src.len()`
+unsafe fn run_filter<T: ToPrimitive>(src: *const T, stride: usize, filter: [i32; 8]) -> i32 {
     filter
         .iter()
         .enumerate()
         .map(|(i, f)| {
-            let p = src.add(i * stride);
-            f * (*p).as_()
+            // SAFETY: caller must validate that `stride * filter.len() <= src.len()`
+            unsafe {
+                let p = src.add(i * stride);
+                f * (*p).to_i32().expect("value should fit in i32")
+            }
         })
         .sum::<i32>()
 }

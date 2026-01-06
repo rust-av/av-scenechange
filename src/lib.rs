@@ -8,6 +8,7 @@ mod analyze;
 #[macro_use]
 mod cpu;
 mod data;
+mod math;
 
 use std::{
     collections::{BTreeMap, BTreeSet},

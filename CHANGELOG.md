@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.21.0
+
+- [Breaking] update to `v_frame` 0.4
+
 ## Version 0.20.0
 
 - Update decoders for Vapoursynth R73 compatibility

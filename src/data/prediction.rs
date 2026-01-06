@@ -1,21 +1,21 @@
 use v_frame::{
     pixel::Pixel,
-    plane::{Plane, PlaneConfig, PlaneOffset, PlaneSlice},
+    plane::{Plane, PlaneGeometry},
 };
 
 use crate::data::{
     frame::{FrameInvariants, RefType},
     mc::put_8tap,
     motion::MotionVector,
-    plane::PlaneRegionMut,
+    plane::{PlaneOffset, PlaneRegionMut, PlaneSlice, plane_to_plane_slice},
     tile::TileRect,
 };
 
 // There are more modes than in the spec because every allowed
 // drl index for NEAR modes is considered its own mode.
-#[allow(non_camel_case_types)]
-#[allow(clippy::upper_case_acronyms)]
-#[allow(dead_code)]
+#[expect(non_camel_case_types)]
+#[expect(clippy::upper_case_acronyms)]
+#[expect(dead_code)]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord, Default)]
 pub enum PredictionMode {
     #[default]
@@ -66,7 +66,7 @@ impl PredictionMode {
     /// # Panics
     ///
     /// - If called on an intra `PredictionMode`
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn predict_inter_single<T: Pixel>(
         self,
         fi: &FrameInvariants<T>,
@@ -84,8 +84,21 @@ impl PredictionMode {
         let frame_po = tile_rect.to_frame_plane_offset(po);
 
         if let Some(ref rec) = fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize] {
-            let (row_frac, col_frac, src) =
-                PredictionMode::get_mv_params(&rec.frame.planes[p], frame_po, mv);
+            let rec_plane = match p {
+                0 => &rec.frame.y_plane,
+                1 => rec
+                    .frame
+                    .u_plane
+                    .as_ref()
+                    .expect("called with p > 0 on a monochrome frame"),
+                2 => rec
+                    .frame
+                    .v_plane
+                    .as_ref()
+                    .expect("called with p > 0 on a monochrome frame"),
+                _ => unreachable!(),
+            };
+            let (row_frac, col_frac, src) = PredictionMode::get_mv_params(rec_plane, frame_po, mv);
             put_8tap(dst, src, width, height, col_frac, row_frac, bit_depth);
         }
     }
@@ -97,11 +110,17 @@ impl PredictionMode {
         po: PlaneOffset,
         mv: MotionVector,
     ) -> (i32, i32, PlaneSlice<'_, T>) {
-        let &PlaneConfig { xdec, ydec, .. } = &rec_plane.cfg;
-        let row_offset = mv.row as i32 >> (3 + ydec);
-        let col_offset = mv.col as i32 >> (3 + xdec);
-        let row_frac = ((mv.row as i32) << (1 - ydec)) & 0xf;
-        let col_frac = ((mv.col as i32) << (1 - xdec)) & 0xf;
+        let PlaneGeometry {
+            subsampling_x,
+            subsampling_y,
+            ..
+        } = rec_plane.geometry();
+        let ss_x = subsampling_x.get() >> 1;
+        let ss_y = subsampling_y.get() >> 1;
+        let row_offset = mv.row as i32 >> (3 + ss_y);
+        let col_offset = mv.col as i32 >> (3 + ss_x);
+        let row_frac = ((mv.row as i32) << (1 - ss_y)) & 0xf;
+        let col_frac = ((mv.col as i32) << (1 - ss_x)) & 0xf;
         let qo = PlaneOffset {
             x: po.x + col_offset as isize - 3,
             y: po.y + row_offset as isize - 3,
@@ -109,13 +128,13 @@ impl PredictionMode {
         (
             row_frac,
             col_frac,
-            rec_plane.slice(qo).clamp().subslice(3, 3),
+            plane_to_plane_slice(rec_plane, qo).clamp().subslice(3, 3),
         )
     }
 }
 
 #[derive(Copy, Clone, Debug)]
-#[allow(clippy::upper_case_acronyms)]
+#[expect(clippy::upper_case_acronyms)]
 pub enum PredictionVariant {
     NONE,
     LEFT,

@@ -1,14 +1,17 @@
-use std::sync::Arc;
+use std::{
+    num::{NonZeroU8, NonZeroUsize},
+    sync::Arc,
+};
 
 use aligned::{A64, Aligned};
 use arrayvec::ArrayVec;
 use num_rational::Rational32;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use v_frame::{
+    chroma::ChromaSubsampling,
     frame::Frame,
-    math::{ILog, clamp},
-    pixel::{ChromaSampling, Pixel},
-    plane::{Plane, PlaneConfig, PlaneOffset},
+    pixel::Pixel,
+    plane::{Plane, PlaneGeometry},
 };
 
 use super::importance::{
@@ -16,33 +19,36 @@ use super::importance::{
     IMP_BLOCK_SIZE_IN_MV_UNITS,
     IMPORTANCE_BLOCK_SIZE,
 };
-use crate::data::{
-    block::{BlockOffset, BlockSize, MIB_SIZE_LOG2},
-    frame::{ALLOWED_REF_FRAMES, FrameInvariants, FrameState, RefType},
-    motion::{
-        MEStats,
-        MV_LOW,
-        MV_UPP,
-        MVSamplingMode,
-        MotionEstimationSubsets,
-        MotionVector,
-        ReadGuardMEStats,
-        RefMEStats,
-        TileMEStats,
+use crate::{
+    data::{
+        block::{BlockOffset, BlockSize, MIB_SIZE_LOG2},
+        frame::{ALLOWED_REF_FRAMES, FrameInvariants, FrameState, RefType},
+        motion::{
+            MEStats,
+            MV_LOW,
+            MV_UPP,
+            MVSamplingMode,
+            MotionEstimationSubsets,
+            MotionVector,
+            ReadGuardMEStats,
+            RefMEStats,
+            TileMEStats,
+        },
+        plane::{Area, AsRegion, PlaneBlockOffset, PlaneOffset, PlaneRegion, PlaneRegionMut, Rect},
+        prediction::PredictionMode,
+        sad::get_sad,
+        satd::get_satd,
+        superblock::{
+            MAX_SB_SIZE_LOG2,
+            MI_SIZE,
+            MI_SIZE_LOG2,
+            SB_SIZE,
+            SuperBlockOffset,
+            TileSuperBlockOffset,
+        },
+        tile::{TileBlockOffset, TileRect, TileStateMut, TilingInfo},
     },
-    plane::{Area, AsRegion, PlaneBlockOffset, PlaneRegion, PlaneRegionMut, Rect},
-    prediction::PredictionMode,
-    sad::get_sad,
-    satd::get_satd,
-    superblock::{
-        MAX_SB_SIZE_LOG2,
-        MI_SIZE,
-        MI_SIZE_LOG2,
-        SB_SIZE,
-        SuperBlockOffset,
-        TileSuperBlockOffset,
-    },
-    tile::{TileBlockOffset, TileRect, TileStateMut, TilingInfo},
+    math::{ILog, clamp},
 };
 
 /// Declares an array of motion vectors in structure of arrays syntax.
@@ -151,34 +157,35 @@ const SQUARE_REFINE_PATTERN: [MotionVector; 8] = search_pattern!(
 );
 
 pub(crate) fn estimate_inter_costs<T: Pixel>(
-    frame: Arc<Frame<T>>,
-    ref_frame: Arc<Frame<T>>,
+    frame: &Arc<Frame<T>>,
+    ref_frame: &Arc<Frame<T>>,
     bit_depth: usize,
     frame_rate: Rational32,
-    chroma_sampling: ChromaSampling,
+    chroma_sampling: ChromaSubsampling,
     buffer: RefMEStats,
 ) -> f64 {
     let last_fi =
-        FrameInvariants::new_key_frame(frame.planes[0].cfg.width, frame.planes[0].cfg.height);
+        FrameInvariants::new_key_frame(frame.y_plane.width().get(), frame.y_plane.height().get());
+    #[expect(clippy::unwrap_used)]
     let fi = FrameInvariants::new_inter_frame(&last_fi, 1).unwrap();
 
     // Compute the motion vectors.
-    let mut fs = FrameState::new_with_frame_and_me_stats_and_rec(Arc::clone(&frame), buffer);
+    let mut fs = FrameState::new_with_frame_and_me_stats_and_rec(Arc::clone(frame), buffer);
     let mut tiling = TilingInfo::from_target_tiles(
-        frame.planes[0].cfg.width,
-        frame.planes[0].cfg.height,
+        frame.y_plane.width().get(),
+        frame.y_plane.height().get(),
         *frame_rate.numer() as f64 / *frame_rate.denom() as f64,
-        TilingInfo::tile_log2(1, 0).unwrap(),
-        TilingInfo::tile_log2(1, 0).unwrap(),
-        chroma_sampling == ChromaSampling::Cs422,
+        TilingInfo::tile_log2(1, 0).expect("invalid tile_log2 count"),
+        TilingInfo::tile_log2(1, 0).expect("invalid tile_log2 count"),
+        chroma_sampling == ChromaSubsampling::Yuv422,
     );
     compute_motion_vectors(&fi, &mut fs, &mut tiling, bit_depth);
 
     // Estimate inter costs
-    let plane_org = &frame.planes[0];
-    let plane_ref = &ref_frame.planes[0];
-    let h_in_imp_b = plane_org.cfg.height / IMPORTANCE_BLOCK_SIZE;
-    let w_in_imp_b = plane_org.cfg.width / IMPORTANCE_BLOCK_SIZE;
+    let plane_org = &frame.y_plane;
+    let plane_ref = &ref_frame.y_plane;
+    let h_in_imp_b = plane_org.height().get() / IMPORTANCE_BLOCK_SIZE;
+    let w_in_imp_b = plane_org.width().get() / IMPORTANCE_BLOCK_SIZE;
     let stats = &fs.frame_me_stats.read().expect("poisoned lock")[0];
     let bsize = BlockSize::from_width_and_height(IMPORTANCE_BLOCK_SIZE, IMPORTANCE_BLOCK_SIZE);
 
@@ -252,11 +259,7 @@ fn estimate_tile_motion<T: Pixel>(
             _ => 0,
         };
 
-        let new_subsampling = if let Some(prev) = prev_ssdec {
-            prev != ssdec
-        } else {
-            false
-        };
+        let new_subsampling = prev_ssdec.is_some_and(|prev| prev != ssdec);
         prev_ssdec = Some(ssdec);
 
         // 0.5 and 0.125 are a fudge factors
@@ -305,7 +308,7 @@ fn estimate_tile_motion<T: Pixel>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn refine_subsampled_sb_motion<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &mut TileStateMut<'_, T>,
@@ -350,7 +353,7 @@ fn refine_subsampled_sb_motion<T: Pixel>(
 }
 
 /// Refine motion estimation that was computed one level of subsampling up.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn refine_subsampled_motion_estimate<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &TileStateMut<'_, T>,
@@ -362,61 +365,70 @@ fn refine_subsampled_motion_estimate<T: Pixel>(
     lambda: u32,
     bit_depth: usize,
 ) -> Option<MotionSearchResult> {
-    if let Some(ref rec) = fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize] {
-        let frame_bo = ts.to_frame_block_offset(tile_bo);
-        let (mvx_min, mvx_max, mvy_min, mvy_max) =
-            get_mv_range(fi.w_in_b, fi.h_in_b, frame_bo, w << ssdec, h << ssdec);
+    fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize]
+        .as_ref()
+        .map(|rec| {
+            let frame_bo = ts.to_frame_block_offset(tile_bo);
+            let (mvx_min, mvx_max, mvy_min, mvy_max) =
+                get_mv_range(fi.w_in_b, fi.h_in_b, frame_bo, w << ssdec, h << ssdec);
 
-        let pmv = [MotionVector { row: 0, col: 0 }; 2];
+            let pmv = [MotionVector { row: 0, col: 0 }; 2];
 
-        let po = frame_bo.to_luma_plane_offset();
-        let (mvx_min, mvx_max, mvy_min, mvy_max) = (
-            mvx_min >> ssdec,
-            mvx_max >> ssdec,
-            mvy_min >> ssdec,
-            mvy_max >> ssdec,
-        );
-        let po = PlaneOffset {
-            x: po.x >> ssdec,
-            y: po.y >> ssdec,
-        };
-        let p_ref = match ssdec {
-            0 => &rec.frame.planes[0],
-            1 => &rec.input_hres,
-            2 => &rec.input_qres,
-            _ => unimplemented!(),
-        };
+            let po = frame_bo.to_luma_plane_offset();
+            let (mvx_min, mvx_max, mvy_min, mvy_max) = (
+                mvx_min >> ssdec,
+                mvx_max >> ssdec,
+                mvy_min >> ssdec,
+                mvy_max >> ssdec,
+            );
+            let po = PlaneOffset {
+                x: po.x >> ssdec,
+                y: po.y >> ssdec,
+            };
+            let p_ref = match ssdec {
+                0 => &rec.frame.y_plane,
+                1 => &rec.input_hres,
+                2 => &rec.input_qres,
+                _ => unimplemented!(),
+            };
 
-        let org_region = &match ssdec {
-            0 => ts.input_tile.planes[0].subregion(Area::BlockStartingAt { bo: tile_bo.0 }),
-            1 => ts.input_hres.region(Area::StartingAt { x: po.x, y: po.y }),
-            2 => ts.input_qres.region(Area::StartingAt { x: po.x, y: po.y }),
-            _ => unimplemented!(),
-        };
+            let org_region = &match ssdec {
+                0 => ts
+                    .input_tile
+                    .y_plane
+                    .subregion(Area::BlockStartingAt { bo: tile_bo.0 }),
+                1 => ts
+                    .input_hres
+                    .expect("input must have hres")
+                    .region(Area::StartingAt { x: po.x, y: po.y }),
+                2 => ts
+                    .input_qres
+                    .expect("input must have qres")
+                    .region(Area::StartingAt { x: po.x, y: po.y }),
+                _ => unimplemented!(),
+            };
 
-        let mv = ts.me_stats[ref_frame.to_index()][tile_bo.0.y][tile_bo.0.x].mv >> ssdec;
+            let mv = ts.me_stats[ref_frame.to_index()][tile_bo.0.y][tile_bo.0.x].mv >> ssdec;
 
-        // Given a motion vector at 0 at higher subsampling:
-        // |  -1   |   0   |   1   |
-        // then the vectors at -1 to 2 should be tested at the current subsampling.
-        //      |-------------|
-        // | -2 -1 |  0  1 |  2  3 |
-        // This corresponds to a 4x4 full search.
-        let x_lo = po.x + (mv.col as isize / 8 - 1).max(mvx_min / 8);
-        let x_hi = po.x + (mv.col as isize / 8 + 2).min(mvx_max / 8);
-        let y_lo = po.y + (mv.row as isize / 8 - 1).max(mvy_min / 8);
-        let y_hi = po.y + (mv.row as isize / 8 + 2).min(mvy_max / 8);
-        let mut results = full_search(
-            x_lo, x_hi, y_lo, y_hi, w, h, org_region, p_ref, po, 1, lambda, pmv, bit_depth,
-        );
+            // Given a motion vector at 0 at higher subsampling:
+            // |  -1   |   0   |   1   |
+            // then the vectors at -1 to 2 should be tested at the current subsampling.
+            //      |-------------|
+            // | -2 -1 |  0  1 |  2  3 |
+            // This corresponds to a 4x4 full search.
+            let x_lo = po.x + (mv.col as isize / 8 - 1).max(mvx_min / 8);
+            let x_hi = po.x + (mv.col as isize / 8 + 2).min(mvx_max / 8);
+            let y_lo = po.y + (mv.row as isize / 8 - 1).max(mvy_min / 8);
+            let y_hi = po.y + (mv.row as isize / 8 + 2).min(mvy_max / 8);
+            let mut results = full_search(
+                x_lo, x_hi, y_lo, y_hi, w, h, org_region, p_ref, po, 1, lambda, pmv, bit_depth,
+            );
 
-        // Scale motion vectors to full res size
-        results.mv = results.mv << ssdec;
+            // Scale motion vectors to full res size
+            results.mv = results.mv << ssdec;
 
-        Some(results)
-    } else {
-        None
-    }
+            results
+        })
 }
 
 fn get_mv_range(
@@ -446,7 +458,7 @@ fn get_mv_range(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn full_search<T: Pixel>(
     x_lo: isize,
     x_hi: isize,
@@ -504,7 +516,7 @@ fn full_search<T: Pixel>(
 }
 
 /// Compute the rate distortion stats for a motion vector.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn compute_mv_rd<T: Pixel>(
     pmv: [MotionVector; 2],
     lambda: u32,
@@ -610,7 +622,7 @@ fn save_me_stats<T: Pixel>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn estimate_sb_motion<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &mut TileStateMut<'_, T>,
@@ -679,7 +691,7 @@ fn estimate_sb_motion<T: Pixel>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn estimate_motion<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &TileStateMut<'_, T>,
@@ -694,84 +706,93 @@ fn estimate_motion<T: Pixel>(
     lambda: Option<u32>,
     bit_depth: usize,
 ) -> Option<MotionSearchResult> {
-    if let Some(ref rec) = fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize] {
-        let frame_bo = ts.to_frame_block_offset(tile_bo);
-        let (mvx_min, mvx_max, mvy_min, mvy_max) =
-            get_mv_range(fi.w_in_b, fi.h_in_b, frame_bo, w << ssdec, h << ssdec);
+    fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize]
+        .as_ref()
+        .map(|rec| {
+            let frame_bo = ts.to_frame_block_offset(tile_bo);
+            let (mvx_min, mvx_max, mvy_min, mvy_max) =
+                get_mv_range(fi.w_in_b, fi.h_in_b, frame_bo, w << ssdec, h << ssdec);
 
-        let lambda = lambda.unwrap_or(0);
+            let lambda = lambda.unwrap_or(0);
 
-        let global_mv = [MotionVector { row: 0, col: 0 }; 2];
+            let global_mv = [MotionVector { row: 0, col: 0 }; 2];
 
-        let po = frame_bo.to_luma_plane_offset();
-        let (mvx_min, mvx_max, mvy_min, mvy_max) = (
-            mvx_min >> ssdec,
-            mvx_max >> ssdec,
-            mvy_min >> ssdec,
-            mvy_max >> ssdec,
-        );
-        let po = PlaneOffset {
-            x: po.x >> ssdec,
-            y: po.y >> ssdec,
-        };
-        let p_ref = match ssdec {
-            0 => &rec.frame.planes[0],
-            1 => &rec.input_hres,
-            2 => &rec.input_qres,
-            _ => unimplemented!(),
-        };
+            let po = frame_bo.to_luma_plane_offset();
+            let (mvx_min, mvx_max, mvy_min, mvy_max) = (
+                mvx_min >> ssdec,
+                mvx_max >> ssdec,
+                mvy_min >> ssdec,
+                mvy_max >> ssdec,
+            );
+            let po = PlaneOffset {
+                x: po.x >> ssdec,
+                y: po.y >> ssdec,
+            };
+            let p_ref = match ssdec {
+                0 => &rec.frame.y_plane,
+                1 => &rec.input_hres,
+                2 => &rec.input_qres,
+                _ => unimplemented!(),
+            };
 
-        let org_region = &match ssdec {
-            0 => ts.input_tile.planes[0].subregion(Area::BlockStartingAt { bo: tile_bo.0 }),
-            1 => ts.input_hres.region(Area::StartingAt { x: po.x, y: po.y }),
-            2 => ts.input_qres.region(Area::StartingAt { x: po.x, y: po.y }),
-            _ => unimplemented!(),
-        };
+            let org_region = &match ssdec {
+                0 => ts
+                    .input_tile
+                    .y_plane
+                    .subregion(Area::BlockStartingAt { bo: tile_bo.0 }),
+                1 => ts
+                    .input_hres
+                    .expect("input must have hres")
+                    .region(Area::StartingAt { x: po.x, y: po.y }),
+                2 => ts
+                    .input_qres
+                    .expect("input must have qres")
+                    .region(Area::StartingAt { x: po.x, y: po.y }),
+                _ => unimplemented!(),
+            };
 
-        let mut best: MotionSearchResult = full_pixel_me(
-            fi,
-            ts,
-            org_region,
-            p_ref,
-            tile_bo,
-            po,
-            lambda,
-            pmv.unwrap_or(global_mv),
-            w,
-            h,
-            mvx_min,
-            mvx_max,
-            mvy_min,
-            mvy_max,
-            ref_frame,
-            corner,
-            extensive_search,
-            ssdec,
-            bit_depth,
-        );
-
-        if let Some(pmv) = pmv {
-            best.rd = get_fullpel_mv_rd(
-                po, org_region, p_ref, bit_depth, pmv, lambda, true, mvx_min, mvx_max, mvy_min,
-                mvy_max, w, h, best.mv,
+            let mut best: MotionSearchResult = full_pixel_me(
+                fi,
+                ts,
+                org_region,
+                p_ref,
+                tile_bo,
+                po,
+                lambda,
+                pmv.unwrap_or(global_mv),
+                w,
+                h,
+                mvx_min,
+                mvx_max,
+                mvy_min,
+                mvy_max,
+                ref_frame,
+                corner,
+                extensive_search,
+                ssdec,
+                bit_depth,
             );
 
-            sub_pixel_me(
-                fi, po, org_region, p_ref, lambda, pmv, mvx_min, mvx_max, mvy_min, mvy_max, w, h,
-                true, &mut best, ref_frame, bit_depth,
-            );
-        }
+            if let Some(pmv) = pmv {
+                best.rd = get_fullpel_mv_rd(
+                    po, org_region, p_ref, bit_depth, pmv, lambda, true, mvx_min, mvx_max, mvy_min,
+                    mvy_max, w, h, best.mv,
+                );
 
-        // Scale motion vectors to full res size
-        best.mv = best.mv << ssdec;
+                sub_pixel_me(
+                    fi, po, org_region, p_ref, lambda, pmv, mvx_min, mvx_max, mvy_min, mvy_max, w,
+                    h, true, &mut best, ref_frame, bit_depth,
+                );
+            }
 
-        Some(best)
-    } else {
-        None
-    }
+            // Scale motion vectors to full res size
+            best.mv = best.mv << ssdec;
+
+            best
+        })
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn full_pixel_me<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &TileStateMut<'_, T>,
@@ -883,7 +904,7 @@ fn full_pixel_me<T: Pixel>(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn sub_pixel_me<T: Pixel>(
     fi: &FrameInvariants<T>,
     po: PlaneOffset,
@@ -913,7 +934,7 @@ fn sub_pixel_me<T: Pixel>(
 /// For each step size, candidate motion vectors are examined for improvement
 /// to the current search location. The search location is moved to the best
 /// candidate (if any). This is repeated until the search location stops moving.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn subpel_diamond_search<T: Pixel>(
     fi: &FrameInvariants<T>,
     po: PlaneOffset,
@@ -937,15 +958,25 @@ fn subpel_diamond_search<T: Pixel>(
     let mc_h = (h + 1) & !1;
 
     // Metadata for subpel scratch pad.
-    let cfg = PlaneConfig::new(mc_w, mc_h, 0, 0, 0, 0, std::mem::size_of::<T>());
+    let cfg = PlaneGeometry {
+        width: NonZeroUsize::new(mc_w).expect("width must not be zero"),
+        height: NonZeroUsize::new(mc_h).expect("height must not be zero"),
+        stride: NonZeroUsize::new(mc_w).expect("stride must not be zero"),
+        pad_left: 0,
+        pad_right: 0,
+        pad_top: 0,
+        pad_bottom: 0,
+        subsampling_x: NonZeroU8::new(1).expect("non-zero const"),
+        subsampling_y: NonZeroU8::new(1).expect("non-zero const"),
+    };
     // Stack allocation for subpel scratch pad.
     // SAFETY: We write to the array below before reading from it.
-    let mut buf: Aligned<A64, [T; 128 * 128]> = Aligned([T::cast_from(0); 128 * 128]);
-    let mut tmp_region = PlaneRegionMut::from_slice(buf.as_mut(), &cfg, Rect {
+    let mut buf: Aligned<A64, [T; 128 * 128]> = Aligned([T::zero(); 128 * 128]);
+    let mut tmp_region = PlaneRegionMut::from_slice(buf.as_mut(), cfg, Rect {
         x: 0,
         y: 0,
-        width: cfg.width,
-        height: cfg.height,
+        width: cfg.width.get(),
+        height: cfg.height.get(),
     });
 
     // start at 1/2 pel and end at 1/4 or 1/8 pel
@@ -997,7 +1028,7 @@ fn subpel_diamond_search<T: Pixel>(
     assert!(!current.is_empty());
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn get_subpel_mv_rd<T: Pixel>(
     fi: &FrameInvariants<T>,
     po: PlaneOffset,
@@ -1055,7 +1086,7 @@ fn get_subpel_mv_rd<T: Pixel>(
 /// the output for the final search results.
 ///
 /// `me_range` parameter determines how far these stages can search.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn uneven_multi_hex_search<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
@@ -1201,7 +1232,7 @@ fn uneven_multi_hex_search<T: Pixel>(
     );
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn get_subset_predictors(
     tile_bo: TileBlockOffset,
     tile_me_stats: &TileMEStats<'_>,
@@ -1374,7 +1405,7 @@ fn get_subset_predictors(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn get_best_predictor<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
@@ -1407,7 +1438,7 @@ fn get_best_predictor<T: Pixel>(
     best
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn get_fullpel_mv_rd<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
@@ -1456,7 +1487,7 @@ fn get_fullpel_mv_rd<T: Pixel>(
 ///
 /// `current` provides the initial search location and serves as
 /// the output for the final search results.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn hexagon_search<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
@@ -1555,7 +1586,7 @@ fn hexagon_search<T: Pixel>(
 /// For each step size, candidate motion vectors are examined for improvement
 /// to the current search location. The search location is moved to the best
 /// candidate (if any). This is repeated until the search location stops moving.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn fullpel_diamond_search<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,

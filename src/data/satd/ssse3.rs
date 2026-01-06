@@ -1,4 +1,4 @@
-use v_frame::pixel::{Pixel, PixelType};
+use v_frame::pixel::Pixel;
 
 use crate::data::{block::BlockSize, plane::PlaneRegion};
 
@@ -27,14 +27,15 @@ pub(super) fn get_satd_internal<T: Pixel>(
 ) -> u32 {
     let bsize_opt = BlockSize::from_width_and_height_opt(w, h);
 
-    match (bsize_opt, T::type_enum()) {
-        (Ok(bsize), PixelType::U8) => unsafe {
+    match (bsize_opt, size_of::<T>()) {
+        // SAFETY: call to SIMD function
+        (Ok(bsize), 1) => unsafe {
             match bsize {
                 BlockSize::BLOCK_8X8 => avsc_satd_8x8_ssse3(
                     src.data_ptr() as *const _,
-                    T::to_asm_stride(src.plane_cfg.stride),
+                    (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
                     dst.data_ptr() as *const _,
-                    T::to_asm_stride(dst.plane_cfg.stride),
+                    (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 ),
                 _ => super::rust::get_satd_internal(src, dst, w, h, bit_depth),
             }

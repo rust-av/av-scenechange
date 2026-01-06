@@ -20,9 +20,10 @@ pub(crate) fn sad_plane<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 unsafe { avx2::sad_plane_internal(src, dst) }
             } else {
-                // All x86_64 CPUs have SSE2
+                // SAFETY: All x86_64 CPUs have SSE2
                 unsafe { sse2::sad_plane_internal(src, dst) }
             }
         } else {

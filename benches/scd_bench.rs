@@ -47,7 +47,7 @@ fn y4m_benchmark(c: &mut Criterion) {
                 };
             },
             criterion::BatchSize::LargeInput,
-        )
+        );
     });
 }
 
@@ -74,7 +74,7 @@ fn y4m_long_benchmark(c: &mut Criterion) {
                 };
             },
             criterion::BatchSize::LargeInput,
-        )
+        );
     });
     group.finish();
 }

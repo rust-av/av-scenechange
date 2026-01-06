@@ -1,4 +1,4 @@
-use v_frame::pixel::{Pixel, PixelType};
+use v_frame::pixel::Pixel;
 
 use crate::data::{block::BlockSize, plane::PlaneRegion};
 
@@ -71,9 +71,10 @@ pub(super) fn get_satd_internal<T: Pixel>(
 ) -> u32 {
     let bsize_opt = BlockSize::from_width_and_height_opt(w, h);
 
-    match (bsize_opt, T::type_enum()) {
+    match (bsize_opt, size_of::<T>()) {
         (Err(_), _) => super::rust::get_satd_internal(src, dst, w, h, bit_depth),
-        (Ok(bsize), PixelType::U8) => unsafe {
+        // SAFETY: call to SIMD function
+        (Ok(bsize), 1) => unsafe {
             (match bsize {
                 BlockSize::BLOCK_4X4 => avsc_satd4x4_neon,
                 BlockSize::BLOCK_4X8 => avsc_satd4x8_neon,
@@ -99,12 +100,13 @@ pub(super) fn get_satd_internal<T: Pixel>(
                 BlockSize::BLOCK_128X128 => avsc_satd128x128_neon,
             })(
                 src.data_ptr() as *const _,
-                T::to_asm_stride(src.plane_cfg.stride),
+                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
                 dst.data_ptr() as *const _,
-                T::to_asm_stride(dst.plane_cfg.stride),
+                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
             )
         },
-        (Ok(bsize), PixelType::U16) => unsafe {
+        // SAFETY: call to SIMD function
+        (Ok(bsize), 2) => unsafe {
             (match bsize {
                 BlockSize::BLOCK_4X4 => avsc_satd4x4_hbd_neon,
                 BlockSize::BLOCK_4X8 => avsc_satd4x8_hbd_neon,
@@ -130,10 +132,11 @@ pub(super) fn get_satd_internal<T: Pixel>(
                 BlockSize::BLOCK_128X128 => avsc_satd128x128_hbd_neon,
             })(
                 src.data_ptr() as *const _,
-                T::to_asm_stride(src.plane_cfg.stride),
+                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
                 dst.data_ptr() as *const _,
-                T::to_asm_stride(dst.plane_cfg.stride),
+                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
             )
         },
+        _ => unreachable!(),
     }
 }

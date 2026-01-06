@@ -1,34 +1,73 @@
+use std::num::{NonZeroU8, NonZeroUsize};
+
 use cfg_if::cfg_if;
-use v_frame::{pixel::Pixel, plane::Plane};
+use v_frame::{chroma::ChromaSubsampling, frame::FrameBuilder, pixel::Pixel, plane::Plane};
 
 use crate::data::plane::{Area, AsRegion, PlaneRegion};
 
+/// Helper function to create a test plane with padding
+fn create_padded_plane<T: Pixel>(width: usize, height: usize, padding: usize) -> Plane<T> {
+    let width_nz = NonZeroUsize::new(width).expect("width must be non-zero");
+    let height_nz = NonZeroUsize::new(height).expect("height must be non-zero");
+
+    // Determine bit depth based on pixel type
+    let bit_depth = if std::mem::size_of::<T>() == 1 {
+        NonZeroU8::new(8).expect("8 is non-zero")
+    } else {
+        NonZeroU8::new(10).expect("10 is non-zero")
+    };
+
+    // Create a monochrome frame with padding and extract the y_plane
+    let frame = FrameBuilder::new(
+        width_nz,
+        height_nz,
+        ChromaSubsampling::Monochrome,
+        bit_depth,
+    )
+    .luma_padding_left(padding)
+    .luma_padding_right(padding)
+    .luma_padding_top(padding)
+    .luma_padding_bottom(padding)
+    .build::<T>()
+    .expect("Failed to build frame");
+
+    frame.y_plane
+}
+
 // Generate plane data for get_sad_same()
 fn setup_planes<T: Pixel>() -> (Plane<T>, Plane<T>) {
-    // Two planes with different strides
-    let mut input_plane = Plane::new(640, 480, 0, 0, 128 + 8, 128 + 8);
-    let mut rec_plane = Plane::new(640, 480, 0, 0, 2 * 128 + 8, 2 * 128 + 8);
+    // Two planes with different padding
+    let mut input_plane = create_padded_plane::<T>(640, 480, 128 + 8);
+    let mut rec_plane = create_padded_plane::<T>(640, 480, 2 * 128 + 8);
 
     // Make the test pattern robust to data alignment
-    let xpad_off = (input_plane.cfg.xorigin - input_plane.cfg.xpad) as i32 - 8i32;
+    let input_geom = input_plane.geometry();
+    let rec_geom = rec_plane.geometry();
+    // In the old API, xpad_off was calculated as (xorigin - xpad) - 8
+    // With the way padding worked in the old API, this ended up being -8
+    let xpad_off = -8i32;
 
     for (i, row) in input_plane
-        .data
-        .chunks_mut(input_plane.cfg.stride)
+        .data_mut()
+        .chunks_mut(input_geom.stride.get())
         .enumerate()
     {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = ((j + i) as i32 - xpad_off) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
-    for (i, row) in rec_plane.data.chunks_mut(rec_plane.cfg.stride).enumerate() {
+    for (i, row) in rec_plane
+        .data_mut()
+        .chunks_mut(rec_geom.stride.get())
+        .enumerate()
+    {
         for (j, pixel) in row.iter_mut().enumerate() {
             let val = (j as i32 - i as i32 - xpad_off) & 255i32;
             assert!(val >= u8::MIN.into() && val <= u8::MAX.into());
-            *pixel = T::cast_from(val);
+            *pixel = T::from(val).expect("value should fit in Pixel");
         }
     }
 
@@ -47,18 +86,22 @@ fn get_satd_verify_asm<T: Pixel>(
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 let asm_output = unsafe { super::avx2::get_satd_internal(src, dst, w, h, bit_depth) };
                 assert_eq!(rust_output, asm_output);
             }
             if crate::cpu::has_sse4() {
+                // SAFETY: call to SIMD function
                 let asm_output = unsafe { super::sse4::get_satd_internal(src, dst, w, h, bit_depth) };
                 assert_eq!(rust_output, asm_output);
             }
             if crate::cpu::has_ssse3() {
+                // SAFETY: call to SIMD function
                 let asm_output = unsafe { super::ssse3::get_satd_internal(src, dst, w, h, bit_depth) };
                 assert_eq!(rust_output, asm_output);
             }
         } else if #[cfg(asm_neon)] {
+            // SAFETY: call to SIMD function
             let asm_output = unsafe { super::neon::get_satd_internal(src, dst, w, h, bit_depth) };
             assert_eq!(rust_output, asm_output);
         }

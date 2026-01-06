@@ -111,10 +111,10 @@ cglobal sad_plane_8bpc, 5, 9, 9, p1, p2, stride, width, rows, \
   test    widthq, widthq
   jz     .skip
 .loop:
-  mova        m4,     [p1q + widthq + 0*mmsize]
-  mova        m5,     [p1q + widthq + 1*mmsize]
-  mova        m6,     [p1q + widthq + 2*mmsize]
-  mova        m7,     [p1q + widthq + 3*mmsize]
+  movu        m4,     [p1q + widthq + 0*mmsize]
+  movu        m5,     [p1q + widthq + 1*mmsize]
+  movu        m6,     [p1q + widthq + 2*mmsize]
+  movu        m7,     [p1q + widthq + 3*mmsize]
 
   psadbw      m4, m4, [p2q + widthq + 0*mmsize]
   psadbw      m5, m5, [p2q + widthq + 1*mmsize]
@@ -131,15 +131,15 @@ cglobal sad_plane_8bpc, 5, 9, 9, p1, p2, stride, width, rows, \
 .skip:
   jmp         skip_ptrq
 .vec3:
-  mova        m6,     [p1q + 2*mmsize]
+  movu        m6,     [p1q + 2*mmsize]
   psadbw      m6, m6, [p2q + 2*mmsize]
   paddq       m2, m6
 .vec2:
-  mova        m5,     [p1q + 1*mmsize]
+  movu        m5,     [p1q + 1*mmsize]
   psadbw      m5, m5, [p2q + 1*mmsize]
   paddq       m1, m5
 .vec1:
-  mova        m4,     [p1q + 0*mmsize]
+  movu        m4,     [p1q + 0*mmsize]
   psadbw      m4, m4, [p2q + 0*mmsize]
   paddq       m0, m4
 .vec0:

@@ -141,5 +141,5 @@ fn init_logger() {
         // output to stdout
         .chain(std::io::stderr())
         .apply()
-        .unwrap();
+        .expect("should initialize logger");
 }

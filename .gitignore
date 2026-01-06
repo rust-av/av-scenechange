@@ -2,5 +2,6 @@
 **/*.rs.bk
 /.idea
 /.vscode
+CLAUDE.md
 lcov.info
 codecov.json

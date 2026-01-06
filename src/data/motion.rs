@@ -223,7 +223,11 @@ macro_rules! tile_me_stats_common {
       }
     }
 
+    // SAFETY: can be safely sent across threads
     unsafe impl Send for $name<'_> {}
+    // SAFETY: this is actually not safe to share across threads...
+    // but we do it anyway because the performance impact is large.
+    // Callers must be careful not to access overlapping portions of `data`
     unsafe impl Sync for $name<'_> {}
 
     impl Index<usize> for $name<'_> {
@@ -270,13 +274,13 @@ impl IndexMut<usize> for TileMEStatsMut<'_> {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-#[allow(clippy::upper_case_acronyms)]
+#[expect(clippy::upper_case_acronyms)]
 pub enum MVSamplingMode {
     INIT,
     CORNER { right: bool, bottom: bool },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ReferenceFrame<T: Pixel> {
     pub frame: Arc<Frame<T>>,
     pub input_hres: Arc<Plane<T>>,
@@ -284,7 +288,7 @@ pub struct ReferenceFrame<T: Pixel> {
     pub frame_me_stats: RefMEStats,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Clone, Default)]
 pub struct ReferenceFramesSet<T: Pixel> {
     pub frames: [Option<Arc<ReferenceFrame<T>>>; REF_FRAMES],
 }

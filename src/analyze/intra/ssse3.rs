@@ -1,4 +1,4 @@
-use v_frame::pixel::{Pixel, PixelType};
+use v_frame::pixel::Pixel;
 
 use super::IntraEdge;
 use crate::data::{block::TxSize, plane::PlaneRegionMut, prediction::PredictionVariant};
@@ -55,12 +55,12 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
 ) {
     // SAFETY: Calls Assembly code.
     unsafe {
-        let stride = T::to_asm_stride(dst.plane_cfg.stride) as libc::ptrdiff_t;
+        let stride = (size_of::<T>() * dst.plane_cfg.stride.get()) as libc::ptrdiff_t;
         let w = tx_size.width() as libc::c_int;
         let h = tx_size.height() as libc::c_int;
 
-        match T::type_enum() {
-            PixelType::U8 => {
+        match size_of::<T>() {
+            1 => {
                 let dst_ptr = dst.data_ptr_mut() as *mut _;
                 let edge_ptr = edge_buf.top_left_ptr() as *const _;
                 (match variant {
@@ -70,7 +70,7 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
                     PredictionVariant::BOTH => avsc_ipred_dc_8bpc_ssse3,
                 })(dst_ptr, stride, edge_ptr, w, h, 0);
             }
-            PixelType::U16 => {
+            2 => {
                 let dst_ptr = dst.data_ptr_mut() as *mut _;
                 let edge_ptr = edge_buf.top_left_ptr() as *const _;
                 let bd_max = (1 << bit_depth) - 1;
@@ -81,6 +81,7 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
                     PredictionVariant::BOTH => avsc_ipred_dc_16bpc_ssse3,
                 })(dst_ptr, stride, edge_ptr, w, h, 0, 0, 0, bd_max);
             }
+            _ => unreachable!(),
         }
     }
 }

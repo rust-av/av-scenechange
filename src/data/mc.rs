@@ -10,13 +10,13 @@ mod rust;
 mod ssse3;
 
 use cfg_if::cfg_if;
-use v_frame::{pixel::Pixel, plane::PlaneSlice};
+use v_frame::pixel::Pixel;
 
-use crate::data::plane::PlaneRegionMut;
+use crate::data::plane::{PlaneRegionMut, PlaneSlice};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd)]
-#[allow(clippy::upper_case_acronyms)]
-#[allow(dead_code)]
+#[expect(clippy::upper_case_acronyms)]
+#[expect(dead_code)]
 pub enum FilterMode {
     REGULAR = 0,
     SMOOTH = 1,
@@ -25,7 +25,6 @@ pub enum FilterMode {
     SWITCHABLE = 4,
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn put_8tap<T: Pixel>(
     dst: &mut PlaneRegionMut<'_, T>,
     src: PlaneSlice<'_, T>,
@@ -38,16 +37,20 @@ pub fn put_8tap<T: Pixel>(
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx512icl() {
+                // SAFETY: call to SIMD function
                 unsafe { avx512icl::put_8tap_internal(dst, src, width, height, col_frac, row_frac, bit_depth); }
                 return;
             } else if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 unsafe { avx2::put_8tap_internal(dst, src, width, height, col_frac, row_frac, bit_depth); }
                 return;
             } else if crate::cpu::has_ssse3() {
+                // SAFETY: call to SIMD function
                 unsafe { ssse3::put_8tap_internal(dst, src, width, height, col_frac, row_frac, bit_depth); }
                 return;
             }
         } else if #[cfg(asm_neon)] {
+            // SAFETY: call to SIMD function
             unsafe { neon::put_8tap_internal(dst, src, width, height, col_frac, row_frac, bit_depth); }
         }
     }

@@ -1,10 +1,17 @@
+// SAFETY: The length of data must be 16.
 pub unsafe fn hadamard4x4(data: &mut [i32]) {
-    hadamard2d::<{ 4 * 4 }, 4, 4>(&mut *(data.as_mut_ptr() as *mut [i32; 16]));
+    hadamard2d::<{ 4 * 4 }, 4, 4>({
+        // SAFETY: caller must validate `data` has sufficient length
+        unsafe { &mut *(data.as_mut_ptr() as *mut [i32; 16]) }
+    });
 }
 
 // SAFETY: The length of data must be 64.
 pub unsafe fn hadamard8x8(data: &mut [i32]) {
-    hadamard2d::<{ 8 * 8 }, 8, 8>(&mut *(data.as_mut_ptr() as *mut [i32; 64]));
+    hadamard2d::<{ 8 * 8 }, 8, 8>({
+        // SAFETY: caller must validate `data` has sufficient length
+        unsafe { &mut *(data.as_mut_ptr() as *mut [i32; 64]) }
+    });
 }
 
 fn hadamard2d<const LEN: usize, const W: usize, const H: usize>(data: &mut [i32; LEN]) {
@@ -25,8 +32,8 @@ fn hadamard2d<const LEN: usize, const W: usize, const H: usize>(data: &mut [i32;
     horz_func(data);
 }
 
-#[allow(clippy::erasing_op)]
-#[allow(clippy::identity_op)]
+#[expect(clippy::erasing_op)]
+#[expect(clippy::identity_op)]
 fn hadamard4_1d<const LEN: usize, const N: usize, const STRIDE0: usize, const STRIDE1: usize>(
     data: &mut [i32; LEN],
 ) {
@@ -43,8 +50,8 @@ fn hadamard4_1d<const LEN: usize, const N: usize, const STRIDE0: usize, const ST
     }
 }
 
-#[allow(clippy::erasing_op)]
-#[allow(clippy::identity_op)]
+#[expect(clippy::erasing_op)]
+#[expect(clippy::identity_op)]
 fn hadamard8_1d<const LEN: usize, const N: usize, const STRIDE0: usize, const STRIDE1: usize>(
     data: &mut [i32; LEN],
 ) {

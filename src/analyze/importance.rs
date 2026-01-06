@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use v_frame::{
-    frame::Frame,
-    pixel::{CastFromPrimitive, Pixel},
-};
+use v_frame::{frame::Frame, pixel::Pixel};
 
 use super::intra::BLOCK_TO_PLANE_SHIFT;
 use crate::data::plane::{Area, AsRegion, PlaneRegion, Rect};
@@ -17,13 +14,13 @@ pub const IMP_BLOCK_SIZE_IN_MV_UNITS: i64 =
     IMPORTANCE_BLOCK_SIZE as i64 * IMP_BLOCK_MV_UNITS_PER_PIXEL;
 
 pub(crate) fn estimate_importance_block_difference<T: Pixel>(
-    frame: Arc<Frame<T>>,
-    ref_frame: Arc<Frame<T>>,
+    frame: &Arc<Frame<T>>,
+    ref_frame: &Arc<Frame<T>>,
 ) -> f64 {
-    let plane_org = &frame.planes[0];
-    let plane_ref = &ref_frame.planes[0];
-    let h_in_imp_b = plane_org.cfg.height / IMPORTANCE_BLOCK_SIZE;
-    let w_in_imp_b = plane_org.cfg.width / IMPORTANCE_BLOCK_SIZE;
+    let plane_org = &frame.y_plane;
+    let plane_ref = &ref_frame.y_plane;
+    let h_in_imp_b = plane_org.height().get() / IMPORTANCE_BLOCK_SIZE;
+    let w_in_imp_b = plane_org.width().get() / IMPORTANCE_BLOCK_SIZE;
 
     let mut imp_block_costs = 0;
 
@@ -52,7 +49,9 @@ pub(crate) fn estimate_importance_block_difference<T: Pixel>(
                         // 16-bit precision is sufficient for an 8 px row,
                         // as `IMPORTANCE_BLOCK_SIZE * (2^12 - 1) < 2^16 - 1`,
                         // so overflow is not possible
-                        row.iter().map(|pixel| u16::cast_from(*pixel)).sum::<u16>() as i64
+                        row.iter()
+                            .map(|pixel| pixel.to_u16().expect("value should fit in u16"))
+                            .sum::<u16>() as i64
                     })
                     .sum::<i64>()
             };
