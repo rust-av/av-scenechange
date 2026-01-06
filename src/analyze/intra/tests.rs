@@ -27,16 +27,19 @@ fn predict_dc_intra_internal_verify_asm<T: Pixel + std::fmt::Debug>(
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx512icl() {
+                // SAFETY: call to SIMD function
                 unsafe { super::avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
                 let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
                 assert_eq!(rust_output, asm_output);
             }
             if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 unsafe { super::avx2::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
                 let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
                 assert_eq!(rust_output, asm_output);
             }
             if crate::cpu::has_ssse3() {
+                // SAFETY: call to SIMD function
                 unsafe { super::ssse3::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
                 let asm_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
                 assert_eq!(rust_output, asm_output);
@@ -105,7 +108,7 @@ fn create_test_edge_buf<'a, T: Pixel>(
 }
 
 #[test]
-fn test_predict_dc_intra_variant_none_u8() {
+fn predict_dc_intra_variant_none_u8() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -141,7 +144,7 @@ fn test_predict_dc_intra_variant_none_u8() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_none_u16() {
+fn predict_dc_intra_variant_none_u16() {
     let bit_depth = 10;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -176,7 +179,7 @@ fn test_predict_dc_intra_variant_none_u16() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_left() {
+fn predict_dc_intra_variant_left() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -213,7 +216,7 @@ fn test_predict_dc_intra_variant_left() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_top() {
+fn predict_dc_intra_variant_top() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -250,7 +253,7 @@ fn test_predict_dc_intra_variant_top() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_both() {
+fn predict_dc_intra_variant_both() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -289,7 +292,7 @@ fn test_predict_dc_intra_variant_both() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_left_u16() {
+fn predict_dc_intra_variant_left_u16() {
     let bit_depth = 16;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -326,7 +329,7 @@ fn test_predict_dc_intra_variant_left_u16() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_top_u16() {
+fn predict_dc_intra_variant_top_u16() {
     let bit_depth = 16;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -363,7 +366,7 @@ fn test_predict_dc_intra_variant_top_u16() {
 }
 
 #[test]
-fn test_predict_dc_intra_variant_both_u16() {
+fn predict_dc_intra_variant_both_u16() {
     let bit_depth = 16;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -402,7 +405,7 @@ fn test_predict_dc_intra_variant_both_u16() {
 }
 
 #[test]
-fn test_predict_dc_intra_different_sizes() {
+fn predict_dc_intra_different_sizes() {
     let bit_depth = 8;
 
     // Test various block sizes
@@ -459,7 +462,7 @@ fn test_predict_dc_intra_different_sizes() {
 }
 
 #[test]
-fn test_predict_dc_intra_edge_cases() {
+fn predict_dc_intra_edge_cases() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -509,7 +512,7 @@ fn test_predict_dc_intra_edge_cases() {
 }
 
 #[test]
-fn test_predict_dc_intra_rounding() {
+fn predict_dc_intra_rounding() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_4X4;
     let width = tx_size.width();
@@ -548,7 +551,7 @@ fn test_predict_dc_intra_rounding() {
 }
 
 #[test]
-fn test_predict_dc_intra_larger_blocks() {
+fn predict_dc_intra_larger_blocks() {
     let bit_depth = 8;
     let tx_size = TxSize::TX_16X16;
     let width = tx_size.width();
@@ -590,7 +593,7 @@ fn test_predict_dc_intra_larger_blocks() {
 }
 
 #[test]
-fn test_predict_dc_intra_rectangular_blocks() {
+fn predict_dc_intra_rectangular_blocks() {
     let bit_depth = 8;
 
     // Test rectangular blocks

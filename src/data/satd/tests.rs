@@ -86,14 +86,17 @@ fn get_satd_verify_asm<T: Pixel>(
     cfg_if! {
         if #[cfg(asm_x86_64)] {
             if crate::cpu::has_avx2() {
+                // SAFETY: call to SIMD function
                 let asm_output = unsafe { super::avx2::get_satd_internal(src, dst, w, h, bit_depth) };
                 assert_eq!(rust_output, asm_output);
             }
             if crate::cpu::has_sse4() {
+                // SAFETY: call to SIMD function
                 let asm_output = unsafe { super::sse4::get_satd_internal(src, dst, w, h, bit_depth) };
                 assert_eq!(rust_output, asm_output);
             }
             if crate::cpu::has_ssse3() {
+                // SAFETY: call to SIMD function
                 let asm_output = unsafe { super::ssse3::get_satd_internal(src, dst, w, h, bit_depth) };
                 assert_eq!(rust_output, asm_output);
             }
