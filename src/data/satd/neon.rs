@@ -73,6 +73,7 @@ pub(super) fn get_satd_internal<T: Pixel>(
 
     match (bsize_opt, size_of::<T>()) {
         (Err(_), _) => super::rust::get_satd_internal(src, dst, w, h, bit_depth),
+        // SAFETY: call to SIMD function
         (Ok(bsize), 1) => unsafe {
             (match bsize {
                 BlockSize::BLOCK_4X4 => avsc_satd4x4_neon,
@@ -104,6 +105,7 @@ pub(super) fn get_satd_internal<T: Pixel>(
                 (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
             )
         },
+        // SAFETY: call to SIMD function
         (Ok(bsize), 2) => unsafe {
             (match bsize {
                 BlockSize::BLOCK_4X4 => avsc_satd4x4_hbd_neon,

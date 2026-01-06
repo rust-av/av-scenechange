@@ -36,6 +36,7 @@ pub(crate) fn get_satd<T: Pixel>(
                 unsafe { return ssse3::get_satd_internal(src, dst, w, h, bit_depth); }
             }
         } else if #[cfg(asm_neon)] {
+            // SAFETY: call to SIMD function
             unsafe { neon::get_satd_internal(src, dst, w, h, bit_depth) }
         }
     }

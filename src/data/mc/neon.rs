@@ -1,6 +1,6 @@
 use v_frame::pixel::Pixel;
 
-use crate::data::plane::PlaneRegionMut;
+use crate::data::plane::{PlaneRegionMut, PlaneSlice};
 
 #[allow(clippy::too_many_arguments)]
 #[target_feature(enable = "neon")]
@@ -31,7 +31,7 @@ pub fn put_8tap_internal<T: Pixel>(
                 dst.data_ptr_mut() as *mut _,
                 (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
-                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * src.plane.geometry().stride.get()) as isize,
                 width as i32,
                 height as i32,
                 col_frac,
@@ -41,7 +41,7 @@ pub fn put_8tap_internal<T: Pixel>(
                 dst.data_ptr_mut() as *mut _,
                 (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
-                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * src.plane.geometry().stride.get()) as isize,
                 width as i32,
                 height as i32,
                 col_frac,

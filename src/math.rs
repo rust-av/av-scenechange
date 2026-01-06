@@ -72,6 +72,7 @@ pub fn msb(x: i32) -> i32 {
 }
 
 #[inline]
+#[allow(dead_code)]
 pub const fn round_shift(value: i32, bit: usize) -> i32 {
     (value + (1 << bit >> 1)) >> bit
 }
@@ -81,42 +82,43 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_floor_log2() {
+    fn floor_log2() {
         assert_eq!(123usize.floor_log2(4), 112);
         assert_eq!(16usize.floor_log2(4), 16);
         assert_eq!(0usize.floor_log2(4), 0);
     }
 
     #[test]
-    fn test_ceil_log2() {
+    fn ceil_log2() {
         assert_eq!(123usize.ceil_log2(4), 128);
         assert_eq!(16usize.ceil_log2(4), 16);
         assert_eq!(0usize.ceil_log2(4), 0);
     }
 
     #[test]
-    fn test_align_power_of_two() {
+    fn align_power_of_two() {
         assert_eq!(123usize.align_power_of_two(4), 128);
         assert_eq!(16usize.align_power_of_two(4), 16);
         assert_eq!(0usize.align_power_of_two(4), 0);
     }
 
     #[test]
-    fn test_align_power_of_two_and_shift() {
+    fn align_power_of_two_and_shift() {
         assert_eq!(123usize.align_power_of_two_and_shift(4), 8);
         assert_eq!(16usize.align_power_of_two_and_shift(4), 1);
         assert_eq!(0usize.align_power_of_two_and_shift(4), 0);
     }
 
     #[test]
-    fn test_clamp() {
+    fn clamp() {
+        use super::clamp;
         assert_eq!(clamp(5, 0, 10), 5);
         assert_eq!(clamp(-1, 0, 10), 0);
         assert_eq!(clamp(11, 0, 10), 10);
     }
 
     #[test]
-    fn test_ilog() {
+    fn ilog() {
         assert_eq!(ILog::ilog(0i32), 0);
         assert_eq!(ILog::ilog(1i32), 1);
         assert_eq!(ILog::ilog(2i32), 2);
@@ -125,7 +127,8 @@ mod tests {
     }
 
     #[test]
-    fn test_msb() {
+    fn msb() {
+        use super::msb;
         assert_eq!(msb(1), 0);
         assert_eq!(msb(2), 1);
         assert_eq!(msb(3), 1);
@@ -133,7 +136,8 @@ mod tests {
     }
 
     #[test]
-    fn test_round_shift() {
+    fn round_shift() {
+        use super::round_shift;
         assert_eq!(round_shift(7, 2), 2);
         assert_eq!(round_shift(8, 2), 2);
         assert_eq!(round_shift(9, 2), 2);

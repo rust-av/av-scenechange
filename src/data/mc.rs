@@ -50,6 +50,7 @@ pub fn put_8tap<T: Pixel>(
                 return;
             }
         } else if #[cfg(asm_neon)] {
+            // SAFETY: call to SIMD function
             unsafe { neon::put_8tap_internal(dst, src, width, height, col_frac, row_frac, bit_depth); }
         }
     }
