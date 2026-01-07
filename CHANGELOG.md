@@ -1,6 +1,10 @@
 # Changelog
 
-## Version 0.21.0
+## Version 0.21.1
+
+- Update to `v_frame` 0.5. This fixes breakages that occurred on HBD with some decoders.
+
+## Version 0.21.0 [yanked]
 
 - [Breaking] update to `v_frame` 0.4
 
