@@ -229,7 +229,10 @@ pub fn detect_scene_changes<T: Pixel>(
                     break;
                 }
             }
-            Err(_) => break,
+            Err(av_decoders::DecoderError::EndOfFile) => break,
+            Err(e) => {
+                return Err(e.into());
+            }
         }
 
         if let (Some(progress_rx), Some(progress_fn)) = (&progress_rx, progress_callback) {
