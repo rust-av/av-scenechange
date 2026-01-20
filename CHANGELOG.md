@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 0.21.2
+
+- fix: Avoid an edge case in predict_dc_intra SIMD
+- perf: Use NonZeroUsize to elide many unneeded div by zero checks
+- perf: Eliminate some unneeded bounds checking
+
 ## Version 0.21.1
 
 - Update to `v_frame` 0.5. This fixes breakages that occurred on HBD with some decoders.
