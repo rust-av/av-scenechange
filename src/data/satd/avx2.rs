@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use v_frame::pixel::Pixel;
 
 use crate::data::{block::BlockSize, plane::PlaneRegion};
@@ -65,11 +67,11 @@ declare_asm_dist_fn![
 pub(super) fn get_satd_internal<T: Pixel>(
     src: &PlaneRegion<'_, T>,
     dst: &PlaneRegion<'_, T>,
-    w: usize,
-    h: usize,
-    bit_depth: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
+    bit_depth: NonZeroUsize,
 ) -> u32 {
-    let bsize_opt = BlockSize::from_width_and_height_opt(w, h);
+    let bsize_opt = BlockSize::from_width_and_height_opt(w.get(), h.get());
 
     match (bsize_opt, size_of::<T>()) {
         (Err(_), _) => super::rust::get_satd_internal(src, dst, w, h, bit_depth),

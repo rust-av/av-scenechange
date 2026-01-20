@@ -81,6 +81,9 @@ fn get_satd_verify_asm<T: Pixel>(
     h: usize,
     bit_depth: usize,
 ) -> u32 {
+    let w = NonZeroUsize::new(w).expect("cannot be zero");
+    let h = NonZeroUsize::new(h).expect("cannot be zero");
+    let bit_depth = NonZeroUsize::new(bit_depth).expect("cannot be zero");
     let rust_output = super::rust::get_satd_internal(src, dst, w, h, bit_depth);
 
     cfg_if! {

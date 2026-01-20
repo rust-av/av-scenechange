@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use v_frame::pixel::Pixel;
 
 use super::IntraEdge;
@@ -50,14 +52,14 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
     variant: PredictionVariant,
     dst: &mut PlaneRegionMut<'_, T>,
     tx_size: TxSize,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     edge_buf: &IntraEdge<T>,
 ) {
     // SAFETY: Calls Assembly code.
     unsafe {
         let stride = (size_of::<T>() * dst.plane_cfg.stride.get()) as libc::ptrdiff_t;
-        let w = tx_size.width() as libc::c_int;
-        let h = tx_size.height() as libc::c_int;
+        let w = tx_size.width().get() as libc::c_int;
+        let h = tx_size.height().get() as libc::c_int;
 
         match size_of::<T>() {
             1 => {
@@ -73,7 +75,7 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
             2 => {
                 let dst_ptr = dst.data_ptr_mut() as *mut _;
                 let edge_ptr = edge_buf.top_left_ptr() as *const _;
-                let bd_max = (1 << bit_depth) - 1;
+                let bd_max = (1 << bit_depth.get()) - 1;
                 (match variant {
                     PredictionVariant::NONE => avsc_ipred_dc_128_16bpc_ssse3,
                     PredictionVariant::LEFT => avsc_ipred_dc_left_16bpc_ssse3,

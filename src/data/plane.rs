@@ -42,7 +42,7 @@ pub struct PlaneRegion<'a, T: Pixel> {
 pub struct PlaneRegionMut<'a, T: Pixel> {
     data: *mut T, // points to (plane_cfg.x, plane_cfg.y)
     pub plane_cfg: PlaneGeometry,
-    rect: Rect,
+    pub rect: Rect,
     phantom: PhantomData<&'a mut T>,
 }
 
@@ -53,28 +53,14 @@ macro_rules! plane_region_common {
   // $opt_mut: nothing or mut
   ($name:ident, $as_ptr:ident $(,$opt_mut:tt)?) => {
     impl<'a, T: Pixel> $name<'a, T> {
-      #[cold]
-      #[allow(dead_code)]
-      pub fn empty(plane_cfg: PlaneGeometry) -> Self {
-        return Self {
-          // SAFETY: This is actually pretty unsafe.
-          // This means we need to ensure that no other method on this struct
-          // can access data if the dimensions are 0.
-          data: std::ptr::null_mut::<T>(),
-          plane_cfg,
-          rect: Rect::default(),
-          phantom: PhantomData,
-        }
-      }
-
       /// # Panics
       ///
       /// - If the configured dimensions are invalid
       pub fn from_slice(data: &'a $($opt_mut)? [T], cfg: PlaneGeometry, rect: Rect) -> Self {
         assert!(rect.x >= -(cfg.pad_left as isize));
         assert!(rect.y >= -(cfg.pad_top as isize));
-        assert!(cfg.pad_left as isize + rect.x + rect.width as isize <= cfg.stride.get() as isize);
-        assert!(cfg.pad_top as isize + rect.y + rect.height as isize <= cfg.alloc_height().get() as isize);
+        assert!(cfg.pad_left as isize + rect.x + rect.width.get() as isize <= cfg.stride.get() as isize);
+        assert!(cfg.pad_top as isize + rect.y + rect.height.get() as isize <= cfg.alloc_height().get() as isize);
 
         // SAFETY: The above asserts ensure we do not go OOB.
         unsafe { Self::from_slice_unsafe(data, cfg, rect)}
@@ -104,19 +90,19 @@ macro_rules! plane_region_common {
       pub fn rows_iter(&self) -> PlaneRegionRowsIter<'_, T> {
         PlaneRegionRowsIter {
           data: self.data,
-          stride: self.plane_cfg.stride.get(),
+          stride: self.plane_cfg.stride,
           width: self.rect.width,
-          remaining: self.rect.height,
+          remaining: self.rect.height.get(),
           phantom: PhantomData,
         }
       }
 
       #[allow(dead_code)]
-      pub fn vert_windows(&self, h: usize) -> VertWindows<'_, T> {
+      pub fn vert_windows(&self, h: NonZeroUsize) -> VertWindows<'_, T> {
         VertWindows {
           data: self.data,
           plane_cfg: self.plane_cfg,
-          remaining: (self.rect.height as isize - h as isize + 1).max(0) as usize,
+          remaining: (self.rect.height.get() as isize - h.get() as isize + 1).max(0) as usize,
           output_rect: Rect {
             x: self.rect.x,
             y: self.rect.y,
@@ -128,11 +114,11 @@ macro_rules! plane_region_common {
       }
 
       #[allow(dead_code)]
-      pub fn horz_windows(&self, w: usize) -> HorzWindows<'_, T> {
+      pub fn horz_windows(&self, w: NonZeroUsize) -> HorzWindows<'_, T> {
         HorzWindows {
           data: self.data,
           plane_cfg: self.plane_cfg,
-          remaining: (self.rect.width as isize - w as isize + 1).max(0) as usize,
+          remaining: (self.rect.width.get() as isize - w.get() as isize + 1).max(0) as usize,
           output_rect: Rect {
             x: self.rect.x,
             y: self.rect.y,
@@ -175,7 +161,7 @@ macro_rules! plane_region_common {
       #[allow(dead_code)]
       pub fn subregion(&self, area: Area) -> PlaneRegion<'_, T> {
         if self.data.is_null() {
-          return PlaneRegion::empty(self.plane_cfg);
+          unreachable!("DO NOT construct a subregion when data is null");
         }
         let rect = area.to_rect(
           self.plane_cfg.subsampling_x.get() as usize >> 1,
@@ -183,8 +169,8 @@ macro_rules! plane_region_common {
           self.rect.width,
           self.rect.height,
         );
-        assert!(rect.x >= 0 && rect.x as usize <= self.rect.width);
-        assert!(rect.y >= 0 && rect.y as usize <= self.rect.height);
+        assert!(rect.x >= 0 && rect.x as usize <= self.rect.width.get());
+        assert!(rect.y >= 0 && rect.y as usize <= self.rect.height.get());
         // SAFETY: The above asserts ensure we do not go outside the original rectangle.
         let data = unsafe {
           self.data.add(rect.y as usize * self.plane_cfg.stride.get() + rect.x as usize)
@@ -215,11 +201,11 @@ macro_rules! plane_region_common {
       type Output = [T];
 
       fn index(&self, index: usize) -> &Self::Output {
-        assert!(index < self.rect.height);
+        assert!(index < self.rect.height.get());
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
           let ptr = self.data.add(index * self.plane_cfg.stride.get());
-          slice::from_raw_parts(ptr, self.rect.width)
+          slice::from_raw_parts(ptr, self.rect.width.get())
         }
       }
     }
@@ -240,8 +226,10 @@ impl<'a, T: Pixel> PlaneRegion<'a, T> {
         let rect = Rect {
             x: 0,
             y: 0,
-            width: geometry.stride.get() - geometry.pad_left,
-            height: geometry.alloc_height().get() - geometry.pad_top,
+            width: NonZeroUsize::new(geometry.stride.get() - geometry.pad_left)
+                .expect("cannot be zero"),
+            height: NonZeroUsize::new(geometry.alloc_height().get() - geometry.pad_top)
+                .expect("cannot be zero"),
         };
 
         // SAFETY: Area::StartingAt{}.to_rect is guaranteed to be the entire plane
@@ -264,9 +252,9 @@ impl<'a, T: Pixel> PlaneRegionMut<'a, T> {
     pub fn rows_iter_mut(&mut self) -> PlaneRegionRowsIterMut<'_, T> {
         PlaneRegionRowsIterMut {
             data: self.data,
-            stride: self.plane_cfg.stride.get(),
+            stride: self.plane_cfg.stride,
             width: self.rect.width,
-            remaining: self.rect.height,
+            remaining: self.rect.height.get(),
             phantom: PhantomData,
         }
     }
@@ -283,11 +271,11 @@ impl<'a, T: Pixel> PlaneRegionMut<'a, T> {
 
 impl<T: Pixel> IndexMut<usize> for PlaneRegionMut<'_, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        assert!(index < self.rect.height);
+        assert!(index < self.rect.height.get());
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
             let ptr = self.data.add(index * self.plane_cfg.stride.get());
-            slice::from_raw_parts_mut(ptr, self.rect.width)
+            slice::from_raw_parts_mut(ptr, self.rect.width.get())
         }
     }
 }
@@ -295,8 +283,8 @@ impl<T: Pixel> IndexMut<usize> for PlaneRegionMut<'_, T> {
 /// Iterator over plane region rows
 pub struct PlaneRegionRowsIter<'a, T: Pixel> {
     data: *const T,
-    stride: usize,
-    width: usize,
+    stride: NonZeroUsize,
+    width: NonZeroUsize,
     remaining: usize,
     phantom: PhantomData<&'a T>,
 }
@@ -309,8 +297,8 @@ impl<'a, T: Pixel> Iterator for PlaneRegionRowsIter<'a, T> {
             // SAFETY: struct ensures we do not overflow bounds
             let row = unsafe {
                 let ptr = self.data;
-                self.data = self.data.add(self.stride);
-                slice::from_raw_parts(ptr, self.width)
+                self.data = self.data.add(self.stride.get());
+                slice::from_raw_parts(ptr, self.width.get())
             };
             self.remaining -= 1;
             row
@@ -325,8 +313,8 @@ impl<'a, T: Pixel> Iterator for PlaneRegionRowsIter<'a, T> {
 /// Mutable iterator over plane region rows
 pub struct PlaneRegionRowsIterMut<'a, T: Pixel> {
     data: *mut T,
-    stride: usize,
-    width: usize,
+    stride: NonZeroUsize,
+    width: NonZeroUsize,
     remaining: usize,
     phantom: PhantomData<&'a mut T>,
 }
@@ -339,8 +327,8 @@ impl<'a, T: Pixel> Iterator for PlaneRegionRowsIterMut<'a, T> {
             // SAFETY: struct ensures we do not overflow bounds
             let row = unsafe {
                 let ptr = self.data;
-                self.data = self.data.add(self.stride);
-                slice::from_raw_parts_mut(ptr, self.width)
+                self.data = self.data.add(self.stride.get());
+                slice::from_raw_parts_mut(ptr, self.width.get())
             };
             self.remaining -= 1;
             row
@@ -449,13 +437,13 @@ impl<T: Pixel> FusedIterator for HorzWindows<'_, T> {
 }
 
 /// Rectangle of a plane region, in pixels
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rect {
     // coordinates relative to the plane origin (pad_left, pad_top)
     pub x: isize,
     pub y: isize,
-    pub width: usize,
-    pub height: usize,
+    pub width: NonZeroUsize,
+    pub height: NonZeroUsize,
 }
 
 // Structure to describe a rectangle area in several ways
@@ -493,16 +481,18 @@ impl Area {
         self,
         xdec: usize,
         ydec: usize,
-        parent_width: usize,
-        parent_height: usize,
+        parent_width: NonZeroUsize,
+        parent_height: NonZeroUsize,
     ) -> Rect {
         match self {
             Area::Rect(rect) => rect,
             Area::StartingAt { x, y } => Rect {
                 x,
                 y,
-                width: (parent_width as isize - x) as usize,
-                height: (parent_height as isize - y) as usize,
+                width: NonZeroUsize::new((parent_width.get() as isize - x) as usize)
+                    .expect("cannot be zero"),
+                height: NonZeroUsize::new((parent_height.get() as isize - y) as usize)
+                    .expect("cannot be zero"),
             },
             Area::BlockStartingAt { bo } => {
                 let x = (bo.x >> xdec << BLOCK_TO_PLANE_SHIFT) as isize;
@@ -510,8 +500,10 @@ impl Area {
                 Rect {
                     x,
                     y,
-                    width: (parent_width as isize - x) as usize,
-                    height: (parent_height as isize - y) as usize,
+                    width: NonZeroUsize::new((parent_width.get() as isize - x) as usize)
+                        .expect("cannot be zero"),
+                    height: NonZeroUsize::new((parent_height.get() as isize - y) as usize)
+                        .expect("cannot be zero"),
                 }
             }
         }
@@ -534,8 +526,9 @@ impl<T: Pixel> AsRegion<T> for Plane<T> {
         let rect = area.to_rect(
             geometry.subsampling_x.get() as usize >> 1,
             geometry.subsampling_y.get() as usize >> 1,
-            geometry.stride.get() - geometry.pad_left,
-            geometry.alloc_height().get() - geometry.pad_top,
+            NonZeroUsize::new(geometry.stride.get() - geometry.pad_left).expect("cannot be zero"),
+            NonZeroUsize::new(geometry.alloc_height().get() - geometry.pad_top)
+                .expect("cannot be zero"),
         );
         PlaneRegion::new(self, rect)
     }
@@ -545,8 +538,9 @@ impl<T: Pixel> AsRegion<T> for Plane<T> {
         let rect = area.to_rect(
             geometry.subsampling_x.get() as usize >> 1,
             geometry.subsampling_y.get() as usize >> 1,
-            geometry.stride.get() - geometry.pad_left,
-            geometry.alloc_height().get() - geometry.pad_top,
+            NonZeroUsize::new(geometry.stride.get() - geometry.pad_left).expect("cannot be zero"),
+            NonZeroUsize::new(geometry.alloc_height().get() - geometry.pad_top)
+                .expect("cannot be zero"),
         );
         PlaneRegionMut::new(self, rect)
     }

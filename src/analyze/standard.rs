@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{num::NonZeroUsize, sync::Arc};
 
 use v_frame::{frame::Frame, pixel::Pixel};
 
@@ -30,8 +30,10 @@ impl<T: Pixel> SceneChangeDetector<T> {
         let mut mv_inter_cost = 0.0;
         let mut imp_block_cost = 0.0;
 
-        let cols = 2 * self.resolution.0.align_power_of_two_and_shift(3);
-        let rows = 2 * self.resolution.1.align_power_of_two_and_shift(3);
+        let cols = NonZeroUsize::new(2 * self.resolution.0.align_power_of_two_and_shift(3))
+            .expect("cannot be zero");
+        let rows = NonZeroUsize::new(2 * self.resolution.1.align_power_of_two_and_shift(3))
+            .expect("cannot be zero");
 
         let buffer = if let Some(buffer) = &self.frame_me_stats_buffer {
             Arc::clone(buffer)
@@ -48,7 +50,11 @@ impl<T: Pixel> SceneChangeDetector<T> {
                     .temp_plane
                     .get_or_insert_with(|| frame2.y_plane.clone());
 
-                let intra_costs = estimate_intra_costs(temp_plane, frame2, self.bit_depth);
+                let intra_costs = estimate_intra_costs(
+                    temp_plane,
+                    frame2,
+                    NonZeroUsize::new(self.bit_depth).expect("bit depth cannot be 0"),
+                );
                 if let Some(ref mut intra_cache) = self.intra_costs {
                     intra_cache.insert(input_frameno, intra_costs.clone());
                 }
@@ -60,7 +66,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
                 mv_inter_cost = estimate_inter_costs(
                     frame2,
                     frame1,
-                    self.bit_depth,
+                    NonZeroUsize::new(self.bit_depth).expect("bit depth cannot be 0"),
                     self.frame_rate,
                     self.chroma_sampling,
                     buffer,

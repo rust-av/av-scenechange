@@ -1,4 +1,4 @@
-use std::iter::FusedIterator;
+use std::{iter::FusedIterator, num::NonZeroUsize};
 
 use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
@@ -64,8 +64,8 @@ tile_common!(Tile, PlaneRegion, iter);
 pub struct TileRect {
     pub x: usize,
     pub y: usize,
-    pub width: usize,
-    pub height: usize,
+    pub width: NonZeroUsize,
+    pub height: NonZeroUsize,
 }
 
 impl TileRect {
@@ -110,12 +110,12 @@ impl From<TileRect> for Rect {
 /// frame-wise once the tile views vanish (e.g. for deblocking).
 pub struct TileStateMut<'a, T: Pixel> {
     pub sbo: PlaneSuperBlockOffset,
-    pub sb_width: usize,
-    pub sb_height: usize,
-    pub mi_width: usize,
-    pub mi_height: usize,
-    pub width: usize,
-    pub height: usize,
+    pub sb_width: NonZeroUsize,
+    pub sb_height: NonZeroUsize,
+    pub mi_width: NonZeroUsize,
+    pub mi_height: NonZeroUsize,
+    pub width: NonZeroUsize,
+    pub height: NonZeroUsize,
     pub input_tile: Tile<'a, T>, // the current tile
     pub input_hres: Option<&'a Plane<T>>,
     pub input_qres: Option<&'a Plane<T>>,
@@ -126,21 +126,23 @@ impl<'a, T: Pixel> TileStateMut<'a, T> {
     pub fn new(
         fs: &'a FrameState<T>,
         sbo: PlaneSuperBlockOffset,
-        width: usize,
-        height: usize,
+        width: NonZeroUsize,
+        height: NonZeroUsize,
         frame_me_stats: &'a mut [FrameMEStats],
     ) -> Self {
         debug_assert!(
-            width % MI_SIZE == 0,
+            width.get() % MI_SIZE == 0,
             "Tile width must be a multiple of MI_SIZE"
         );
         debug_assert!(
-            height % MI_SIZE == 0,
+            height.get() % MI_SIZE == 0,
             "Tile width must be a multiple of MI_SIZE"
         );
 
-        let sb_rounded_width = width.align_power_of_two(SB_SIZE_LOG2);
-        let sb_rounded_height = height.align_power_of_two(SB_SIZE_LOG2);
+        let sb_rounded_width = NonZeroUsize::new(width.get().align_power_of_two(SB_SIZE_LOG2))
+            .expect("cannot be zero");
+        let sb_rounded_height = NonZeroUsize::new(height.get().align_power_of_two(SB_SIZE_LOG2))
+            .expect("cannot be zero");
 
         let luma_rect = TileRect {
             x: sbo.0.x << SB_SIZE_LOG2,
@@ -148,15 +150,20 @@ impl<'a, T: Pixel> TileStateMut<'a, T> {
             width: sb_rounded_width,
             height: sb_rounded_height,
         };
-        let sb_width = width.align_power_of_two_and_shift(SB_SIZE_LOG2);
-        let sb_height = height.align_power_of_two_and_shift(SB_SIZE_LOG2);
+        let sb_width = NonZeroUsize::new(width.get().align_power_of_two_and_shift(SB_SIZE_LOG2))
+            .expect("cannot be zero");
+        let sb_height = NonZeroUsize::new(height.get().align_power_of_two_and_shift(SB_SIZE_LOG2))
+            .expect("cannot be zero");
+
+        let mi_width = NonZeroUsize::new(width.get() >> MI_SIZE_LOG2).expect("cannot be zero");
+        let mi_height = NonZeroUsize::new(height.get() >> MI_SIZE_LOG2).expect("cannot be zero");
 
         Self {
             sbo,
             sb_width,
             sb_height,
-            mi_width: width >> MI_SIZE_LOG2,
-            mi_height: height >> MI_SIZE_LOG2,
+            mi_width,
+            mi_height,
             width,
             height,
             input_tile: Tile::new(&fs.input, luma_rect),
@@ -169,8 +176,8 @@ impl<'a, T: Pixel> TileStateMut<'a, T> {
                         fmvs,
                         sbo.0.x << (SB_SIZE_LOG2 - MI_SIZE_LOG2),
                         sbo.0.y << (SB_SIZE_LOG2 - MI_SIZE_LOG2),
-                        width >> MI_SIZE_LOG2,
-                        height >> MI_SIZE_LOG2,
+                        mi_width,
+                        mi_height,
                     )
                 })
                 .collect(),
@@ -377,8 +384,10 @@ impl<'a, T: Pixel> Iterator for TileContextIterMut<'a, T> {
                     let y = sbo.0.y << SB_SIZE_LOG2;
                     let tile_width = self.ti.tile_width_sb << SB_SIZE_LOG2;
                     let tile_height = self.ti.tile_height_sb << SB_SIZE_LOG2;
-                    let width = tile_width.min(self.ti.frame_width - x);
-                    let height = tile_height.min(self.ti.frame_height - y);
+                    let width = NonZeroUsize::new(tile_width.min(self.ti.frame_width - x))
+                        .expect("cannot be zero");
+                    let height = NonZeroUsize::new(tile_height.min(self.ti.frame_height - y))
+                        .expect("cannot be zero");
                     TileStateMut::new(fs, sbo, width, height, frame_me_stats)
                 },
             };

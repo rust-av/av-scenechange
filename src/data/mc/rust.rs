@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use num_traits::ToPrimitive;
 use v_frame::pixel::Pixel;
 
@@ -130,14 +132,18 @@ const SUBPEL_FILTERS: [[[i32; SUBPEL_FILTER_SIZE]; 16]; 6] = [
 pub fn put_8tap_internal<T: Pixel>(
     dst: &mut PlaneRegionMut<'_, T>,
     src: PlaneSlice<'_, T>,
-    width: usize,
-    height: usize,
+    width: NonZeroUsize,
+    height: NonZeroUsize,
     col_frac: i32,
     row_frac: i32,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
+    let width = width.get();
+    let height = height.get();
+    let bit_depth = bit_depth.get();
+
     // The assembly only supports even heights and valid uncropped widths
-    assert_eq!(height & 1, 0);
+    assert!(height % 2 == 0);
     assert!(width.is_power_of_two() && (2..=128).contains(&width));
 
     let ref_stride = src.plane.geometry().stride.get();

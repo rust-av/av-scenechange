@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{num::NonZeroUsize, sync::Arc};
 
 use v_frame::{frame::Frame, pixel::Pixel};
 
@@ -31,15 +31,15 @@ pub(crate) fn estimate_importance_block_difference<T: Pixel>(
             let region_org = plane_org.region(Area::Rect(Rect {
                 x: (x * IMPORTANCE_BLOCK_SIZE) as isize,
                 y: (y * IMPORTANCE_BLOCK_SIZE) as isize,
-                width: IMPORTANCE_BLOCK_SIZE,
-                height: IMPORTANCE_BLOCK_SIZE,
+                width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
             }));
 
             let region_ref = plane_ref.region(Area::Rect(Rect {
                 x: (x * IMPORTANCE_BLOCK_SIZE) as isize,
                 y: (y * IMPORTANCE_BLOCK_SIZE) as isize,
-                width: IMPORTANCE_BLOCK_SIZE,
-                height: IMPORTANCE_BLOCK_SIZE,
+                width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
             }));
 
             let sum_8x8_block = |region: &PlaneRegion<T>| {

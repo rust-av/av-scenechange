@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{num::NonZeroUsize, sync::Arc};
 
 use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
@@ -76,16 +76,20 @@ impl RefType {
 // Frame Invariants are invariant inside a frame
 #[derive(Clone)]
 pub struct FrameInvariants<T: Pixel> {
-    pub w_in_b: usize,
-    pub h_in_b: usize,
+    pub w_in_b: NonZeroUsize,
+    pub h_in_b: NonZeroUsize,
     pub ref_frames: [u8; INTER_REFS_PER_FRAME],
     pub rec_buffer: ReferenceFramesSet<T>,
 }
 
 impl<T: Pixel> FrameInvariants<T> {
-    pub fn new(width: usize, height: usize) -> Self {
-        let w_in_b = 2 * width.align_power_of_two_and_shift(3); // MiCols, ((width+7)/8)<<3 >> MI_SIZE_LOG2
-        let h_in_b = 2 * height.align_power_of_two_and_shift(3); // MiRows, ((height+7)/8)<<3 >> MI_SIZE_LOG2
+    pub fn new(width: NonZeroUsize, height: NonZeroUsize) -> Self {
+        // MiCols, ((width+7)/8)<<3 >> MI_SIZE_LOG2
+        let w_in_b = NonZeroUsize::new(2 * width.get().align_power_of_two_and_shift(3))
+            .expect("cannot be zero");
+        // MiRows, ((height+7)/8)<<3 >> MI_SIZE_LOG2
+        let h_in_b = NonZeroUsize::new(2 * height.get().align_power_of_two_and_shift(3))
+            .expect("cannot be zero");
 
         Self {
             w_in_b,
@@ -95,7 +99,7 @@ impl<T: Pixel> FrameInvariants<T> {
         }
     }
 
-    pub fn new_key_frame(width: usize, height: usize) -> Self {
+    pub fn new_key_frame(width: NonZeroUsize, height: NonZeroUsize) -> Self {
         Self::new(width, height)
     }
 

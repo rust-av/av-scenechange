@@ -9,7 +9,7 @@ mod ssse3;
 #[cfg(test)]
 mod tests;
 
-use std::mem::MaybeUninit;
+use std::{mem::MaybeUninit, num::NonZeroUsize};
 
 use aligned::{A64, Aligned};
 use cfg_if::cfg_if;
@@ -31,7 +31,7 @@ pub const BLOCK_TO_PLANE_SHIFT: usize = MI_SIZE_LOG2;
 pub(crate) fn estimate_intra_costs<T: Pixel>(
     temp_plane: &mut Plane<T>,
     frame: &Frame<T>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) -> Box<[u32]> {
     let plane = &frame.y_plane;
     let plane_after_prediction = temp_plane;
@@ -48,8 +48,8 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(
             let plane_org = plane.region(Area::Rect(Rect {
                 x: (x * IMPORTANCE_BLOCK_SIZE) as isize,
                 y: (y * IMPORTANCE_BLOCK_SIZE) as isize,
-                width: IMPORTANCE_BLOCK_SIZE,
-                height: IMPORTANCE_BLOCK_SIZE,
+                width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
             }));
 
             // For scene detection, we are only going to support DC_PRED
@@ -69,16 +69,16 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(
                 plane_after_prediction.region_mut(Area::Rect(Rect {
                     x: (x * IMPORTANCE_BLOCK_SIZE) as isize,
                     y: (y * IMPORTANCE_BLOCK_SIZE) as isize,
-                    width: IMPORTANCE_BLOCK_SIZE,
-                    height: IMPORTANCE_BLOCK_SIZE,
+                    width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                    height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
                 }));
 
             predict_dc_intra(
                 TileRect {
                     x: x * IMPORTANCE_BLOCK_SIZE,
                     y: y * IMPORTANCE_BLOCK_SIZE,
-                    width: IMPORTANCE_BLOCK_SIZE,
-                    height: IMPORTANCE_BLOCK_SIZE,
+                    width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                    height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
                 },
                 &mut plane_after_prediction_region,
                 tx_size,
@@ -89,8 +89,8 @@ pub(crate) fn estimate_intra_costs<T: Pixel>(
             let plane_after_prediction_region = plane_after_prediction.region(Area::Rect(Rect {
                 x: (x * IMPORTANCE_BLOCK_SIZE) as isize,
                 y: (y * IMPORTANCE_BLOCK_SIZE) as isize,
-                width: IMPORTANCE_BLOCK_SIZE,
-                height: IMPORTANCE_BLOCK_SIZE,
+                width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
             }));
 
             let intra_cost = get_satd(
@@ -112,13 +112,13 @@ pub fn get_intra_edges<'a, T: Pixel>(
     edge_buf: &'a mut IntraEdgeBuffer<T>,
     dst: &PlaneRegion<'_, T>,
     po: PlaneOffset,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) -> IntraEdge<'a, T> {
     let tx_size = TxSize::TX_8X8;
     let mut init_left: usize = 0;
     let mut init_above: usize = 0;
 
-    let base = 128u16 << (bit_depth - 8);
+    let base = 128u16 << (bit_depth.get() - 8);
 
     {
         // left pixels are ordered from bottom to top and right-aligned
@@ -134,27 +134,29 @@ pub fn get_intra_edges<'a, T: Pixel>(
         let rect_w = dst
             .rect()
             .width
+            .get()
             .min(dst.plane_cfg.width.get() - dst.rect().x as usize);
         let rect_h = dst
             .rect()
             .height
+            .get()
             .min(dst.plane_cfg.height.get() - dst.rect().y as usize);
 
         // Needs left
         if needs_left {
-            let txh = if y + tx_size.height() > rect_h {
+            let txh = if y + tx_size.height().get() > rect_h {
                 rect_h - y
             } else {
-                tx_size.height()
+                tx_size.height().get()
             };
             if x != 0 {
                 for i in 0..txh {
                     debug_assert!(y + i < rect_h);
                     left[2 * MAX_TX_SIZE - 1 - i].write(dst[y + i][x - 1]);
                 }
-                if txh < tx_size.height() {
+                if txh < tx_size.height().get() {
                     let val = dst[y + txh - 1][x - 1];
-                    for i in txh..tx_size.height() {
+                    for i in txh..tx_size.height().get() {
                         left[2 * MAX_TX_SIZE - 1 - i].write(val);
                     }
                 }
@@ -164,19 +166,19 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 } else {
                     T::from(base + 1).expect("value should fit in Pixel")
                 };
-                for v in left[2 * MAX_TX_SIZE - tx_size.height()..].iter_mut() {
+                for v in left[2 * MAX_TX_SIZE - tx_size.height().get()..].iter_mut() {
                     v.write(val);
                 }
             }
-            init_left += tx_size.height();
+            init_left += tx_size.height().get();
         }
 
         // Needs top
         if needs_top {
-            let txw = if x + tx_size.width() > rect_w {
+            let txw = if x + tx_size.width().get() > rect_w {
                 rect_w - x
             } else {
-                tx_size.width()
+                tx_size.width().get()
             };
             if y != 0 {
                 above[..txw].copy_from_slice(
@@ -186,9 +188,9 @@ pub fn get_intra_edges<'a, T: Pixel>(
                             as *const [std::mem::MaybeUninit<T>])
                     },
                 );
-                if txw < tx_size.width() {
+                if txw < tx_size.width().get() {
                     let val = dst[y - 1][x + txw - 1];
-                    for v in &mut above[txw..tx_size.width()] {
+                    for v in &mut above[txw..tx_size.width().get()] {
                         v.write(val);
                     }
                 }
@@ -198,11 +200,11 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 } else {
                     T::from(base - 1).expect("value should fit in Pixel")
                 };
-                for v in &mut above[..tx_size.width()] {
+                for v in &mut above[..tx_size.width().get()] {
                     v.write(val);
                 }
             }
-            init_above += tx_size.width();
+            init_above += tx_size.width().get();
         }
 
         top_left[0].write(T::from(base).expect("value should fit in Pixel"));
@@ -214,7 +216,7 @@ pub fn predict_dc_intra<T: Pixel>(
     tile_rect: TileRect,
     dst: &mut PlaneRegionMut<'_, T>,
     tx_size: TxSize,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     edge_buf: &IntraEdge<T>,
 ) {
     let &Rect {
@@ -231,18 +233,22 @@ pub fn predict_dc_intra<T: Pixel>(
 
     cfg_if! {
         if #[cfg(asm_x86_64)] {
-            if crate::cpu::has_avx512icl() {
-                // SAFETY: call to SIMD function
-                unsafe { avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
-                return;
-            } else if crate::cpu::has_avx2() {
-                // SAFETY: call to SIMD function
-                unsafe { avx2::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
-                return;
-            } else if crate::cpu::has_ssse3() {
-                // SAFETY: call to SIMD function
-                unsafe { ssse3::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
-                return;
+            // There is currently a crash in the HBD ASM when the `dst` width is not mod 8.
+            // Fallback to Rust code for that case.
+            if !(size_of::<T>() == 2 && dst.plane_cfg.width.get() % 8 > 0) {
+                if crate::cpu::has_avx512icl() {
+                    // SAFETY: call to SIMD function
+                    unsafe { avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                    return;
+                } else if crate::cpu::has_avx2() {
+                    // SAFETY: call to SIMD function
+                    unsafe { avx2::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                    return;
+                } else if crate::cpu::has_ssse3() {
+                    // SAFETY: call to SIMD function
+                    unsafe { ssse3::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
+                    return;
+                }
             }
         }
     }

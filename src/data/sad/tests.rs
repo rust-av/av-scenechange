@@ -174,7 +174,13 @@ fn get_sad_same_inner<T: Pixel>() {
 
         assert_eq!(
             distortion,
-            get_sad(&input_region, &rec_region, w, h, bit_depth)
+            get_sad(
+                &input_region,
+                &rec_region,
+                NonZeroUsize::new(w).expect("cannot be zero"),
+                NonZeroUsize::new(h).expect("cannot be zero"),
+                NonZeroUsize::new(bit_depth).expect("cannot be zero")
+            )
         );
     }
 }

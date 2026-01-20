@@ -9,6 +9,8 @@ mod rust;
 #[cfg(asm_x86_64)]
 mod ssse3;
 
+use std::num::NonZeroUsize;
+
 use cfg_if::cfg_if;
 use v_frame::pixel::Pixel;
 
@@ -28,11 +30,11 @@ pub enum FilterMode {
 pub fn put_8tap<T: Pixel>(
     dst: &mut PlaneRegionMut<'_, T>,
     src: PlaneSlice<'_, T>,
-    width: usize,
-    height: usize,
+    width: NonZeroUsize,
+    height: NonZeroUsize,
     col_frac: i32,
     row_frac: i32,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
     cfg_if! {
         if #[cfg(asm_x86_64)] {

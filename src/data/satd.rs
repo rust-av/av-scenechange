@@ -11,6 +11,8 @@ mod ssse3;
 #[cfg(test)]
 mod tests;
 
+use std::num::NonZeroUsize;
+
 use cfg_if::cfg_if;
 use v_frame::pixel::Pixel;
 
@@ -19,9 +21,9 @@ use super::plane::PlaneRegion;
 pub(crate) fn get_satd<T: Pixel>(
     src: &PlaneRegion<'_, T>,
     dst: &PlaneRegion<'_, T>,
-    w: usize,
-    h: usize,
-    bit_depth: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
+    bit_depth: NonZeroUsize,
 ) -> u32 {
     cfg_if! {
         if #[cfg(asm_x86_64)] {

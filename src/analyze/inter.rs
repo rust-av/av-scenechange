@@ -159,13 +159,12 @@ const SQUARE_REFINE_PATTERN: [MotionVector; 8] = search_pattern!(
 pub(crate) fn estimate_inter_costs<T: Pixel>(
     frame: &Arc<Frame<T>>,
     ref_frame: &Arc<Frame<T>>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     frame_rate: Rational32,
     chroma_sampling: ChromaSubsampling,
     buffer: RefMEStats,
 ) -> f64 {
-    let last_fi =
-        FrameInvariants::new_key_frame(frame.y_plane.width().get(), frame.y_plane.height().get());
+    let last_fi = FrameInvariants::new_key_frame(frame.y_plane.width(), frame.y_plane.height());
     #[expect(clippy::unwrap_used)]
     let fi = FrameInvariants::new_inter_frame(&last_fi, 1).unwrap();
 
@@ -202,15 +201,15 @@ pub(crate) fn estimate_inter_costs<T: Pixel>(
             let region_org = plane_org.region(Area::Rect(Rect {
                 x: (x * IMPORTANCE_BLOCK_SIZE) as isize,
                 y: (y * IMPORTANCE_BLOCK_SIZE) as isize,
-                width: IMPORTANCE_BLOCK_SIZE,
-                height: IMPORTANCE_BLOCK_SIZE,
+                width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
             }));
 
             let region_ref = plane_ref.region(Area::Rect(Rect {
                 x: reference_x as isize / IMP_BLOCK_MV_UNITS_PER_PIXEL as isize,
                 y: reference_y as isize / IMP_BLOCK_MV_UNITS_PER_PIXEL as isize,
-                width: IMPORTANCE_BLOCK_SIZE,
-                height: IMPORTANCE_BLOCK_SIZE,
+                width: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
+                height: NonZeroUsize::new(IMPORTANCE_BLOCK_SIZE).expect("non-zero const"),
             }));
 
             inter_costs += get_satd(
@@ -229,7 +228,7 @@ fn compute_motion_vectors<T: Pixel>(
     fi: &FrameInvariants<T>,
     fs: &mut FrameState<T>,
     tiling_info: &mut TilingInfo,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
     tiling_info
         .tile_iter_mut(fs)
@@ -244,7 +243,7 @@ fn compute_motion_vectors<T: Pixel>(
 fn estimate_tile_motion<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &mut TileStateMut<'_, T>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
     let init_size = MIB_SIZE_LOG2;
 
@@ -265,8 +264,8 @@ fn estimate_tile_motion<T: Pixel>(
         // 0.5 and 0.125 are a fudge factors
         let lambda = 0;
 
-        for sby in 0..ts.sb_height {
-            for sbx in 0..ts.sb_width {
+        for sby in 0..ts.sb_height.get() {
+            for sbx in 0..ts.sb_width.get() {
                 let mut tested_frames_flags = 0;
                 for &ref_frame in ALLOWED_REF_FRAMES {
                     let frame_flag = 1 << fi.ref_frames[ref_frame.to_index()];
@@ -317,11 +316,11 @@ fn refine_subsampled_sb_motion<T: Pixel>(
     tile_bo: TileBlockOffset,
     ssdec: u8,
     lambda: u32,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
     let pix_offset = tile_bo.to_luma_plane_offset();
-    let sb_h: usize = SB_SIZE.min(ts.height - pix_offset.y as usize);
-    let sb_w: usize = SB_SIZE.min(ts.width - pix_offset.x as usize);
+    let sb_h: usize = SB_SIZE.min(ts.height.get() - pix_offset.y as usize);
+    let sb_w: usize = SB_SIZE.min(ts.width.get() - pix_offset.x as usize);
 
     let mv_size = MI_SIZE << mv_size_in_b_log2;
 
@@ -333,16 +332,18 @@ fn refine_subsampled_sb_motion<T: Pixel>(
 
             // Clamp to frame edge, rounding up in the case of subsampling.
             // The rounding makes some assumptions about how subsampling is done.
-            let w = mv_size.min(sb_w - x + (1 << ssdec) - 1) >> ssdec;
-            let h = mv_size.min(sb_h - y + (1 << ssdec) - 1) >> ssdec;
+            let w = NonZeroUsize::new(mv_size.min(sb_w - x + (1 << ssdec) - 1) >> ssdec)
+                .expect("cannot be zero");
+            let h = NonZeroUsize::new(mv_size.min(sb_h - y + (1 << ssdec) - 1) >> ssdec)
+                .expect("cannot be zero");
 
             // Refine the existing motion estimate
             if let Some(results) = refine_subsampled_motion_estimate(
                 fi, ts, w, h, sub_bo, ref_frame, ssdec, lambda, bit_depth,
             ) {
                 // normalize sad to 128x128 block
-                let sad =
-                    (((results.rd.sad as u64) << (MAX_SB_SIZE_LOG2 * 2)) / (w * h) as u64) as u32;
+                let sad = (((results.rd.sad as u64) << (MAX_SB_SIZE_LOG2 * 2))
+                    / w.saturating_mul(h).get() as u64) as u32;
                 save_me_stats(ts, mv_size_in_b_log2, sub_bo, ref_frame, MEStats {
                     mv: results.mv,
                     normalized_sad: sad,
@@ -357,20 +358,25 @@ fn refine_subsampled_sb_motion<T: Pixel>(
 fn refine_subsampled_motion_estimate<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &TileStateMut<'_, T>,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     tile_bo: TileBlockOffset,
     ref_frame: RefType,
     ssdec: u8,
     lambda: u32,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) -> Option<MotionSearchResult> {
     fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize]
         .as_ref()
         .map(|rec| {
             let frame_bo = ts.to_frame_block_offset(tile_bo);
-            let (mvx_min, mvx_max, mvy_min, mvy_max) =
-                get_mv_range(fi.w_in_b, fi.h_in_b, frame_bo, w << ssdec, h << ssdec);
+            let (mvx_min, mvx_max, mvy_min, mvy_max) = get_mv_range(
+                fi.w_in_b,
+                fi.h_in_b,
+                frame_bo,
+                NonZeroUsize::new(w.get() << ssdec).expect("cannot be zero"),
+                NonZeroUsize::new(h.get() << ssdec).expect("cannot be zero"),
+            );
 
             let pmv = [MotionVector { row: 0, col: 0 }; 2];
 
@@ -421,7 +427,19 @@ fn refine_subsampled_motion_estimate<T: Pixel>(
             let y_lo = po.y + (mv.row as isize / 8 - 1).max(mvy_min / 8);
             let y_hi = po.y + (mv.row as isize / 8 + 2).min(mvy_max / 8);
             let mut results = full_search(
-                x_lo, x_hi, y_lo, y_hi, w, h, org_region, p_ref, po, 1, lambda, pmv, bit_depth,
+                x_lo,
+                x_hi,
+                y_lo,
+                y_hi,
+                w,
+                h,
+                org_region,
+                p_ref,
+                po,
+                NonZeroUsize::new(1).expect("non-zero const"),
+                lambda,
+                pmv,
+                bit_depth,
             );
 
             // Scale motion vectors to full res size
@@ -432,20 +450,20 @@ fn refine_subsampled_motion_estimate<T: Pixel>(
 }
 
 fn get_mv_range(
-    w_in_b: usize,
-    h_in_b: usize,
+    w_in_b: NonZeroUsize,
+    h_in_b: NonZeroUsize,
     bo: PlaneBlockOffset,
-    blk_w: usize,
-    blk_h: usize,
+    blk_w: NonZeroUsize,
+    blk_h: NonZeroUsize,
 ) -> (isize, isize, isize, isize) {
-    let border_w = 128 + blk_w as isize * 8;
-    let border_h = 128 + blk_h as isize * 8;
+    let border_w = 128 + blk_w.get() as isize * 8;
+    let border_h = 128 + blk_h.get() as isize * 8;
     let mvx_min = -(bo.0.x as isize) * (8 * MI_SIZE) as isize - border_w;
-    let mvx_max = ((w_in_b - bo.0.x) as isize - (blk_w / MI_SIZE) as isize)
+    let mvx_max = ((w_in_b.get() - bo.0.x) as isize - (blk_w.get() / MI_SIZE) as isize)
         * (8 * MI_SIZE) as isize
         + border_w;
     let mvy_min = -(bo.0.y as isize) * (8 * MI_SIZE) as isize - border_h;
-    let mvy_max = ((h_in_b - bo.0.y) as isize - (blk_h / MI_SIZE) as isize)
+    let mvy_max = ((h_in_b.get() - bo.0.y) as isize - (blk_h.get() / MI_SIZE) as isize)
         * (8 * MI_SIZE) as isize
         + border_h;
 
@@ -464,28 +482,28 @@ fn full_search<T: Pixel>(
     x_hi: isize,
     y_lo: isize,
     y_hi: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     org_region: &PlaneRegion<T>,
     p_ref: &Plane<T>,
     po: PlaneOffset,
-    step: usize,
+    step: NonZeroUsize,
     lambda: u32,
     pmv: [MotionVector; 2],
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) -> MotionSearchResult {
     let search_region = p_ref.region(Area::Rect(Rect {
         x: x_lo,
         y: y_lo,
-        width: (x_hi - x_lo) as usize + w,
-        height: (y_hi - y_lo) as usize + h,
+        width: NonZeroUsize::new((x_hi - x_lo) as usize + w.get()).expect("cannot be zero"),
+        height: NonZeroUsize::new((y_hi - y_lo) as usize + h.get()).expect("cannot be zero"),
     }));
 
     let mut best: MotionSearchResult = MotionSearchResult::empty();
 
     // Select rectangular regions within search region with vert+horz windows
-    for vert_window in search_region.vert_windows(h).step_by(step) {
-        for ref_window in vert_window.horz_windows(w).step_by(step) {
+    for vert_window in search_region.vert_windows(h).step_by(step.get()) {
+        for ref_window in vert_window.horz_windows(w).step_by(step.get()) {
             let &Rect { x, y, .. } = ref_window.rect();
 
             let mv = MotionVector {
@@ -521,9 +539,9 @@ fn compute_mv_rd<T: Pixel>(
     pmv: [MotionVector; 2],
     lambda: u32,
     use_satd: bool,
-    bit_depth: usize,
-    w: usize,
-    h: usize,
+    bit_depth: NonZeroUsize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     cand_mv: MotionVector,
     plane_org: &PlaneRegion<'_, T>,
     plane_ref: &PlaneRegion<'_, T>,
@@ -613,8 +631,8 @@ fn save_me_stats<T: Pixel>(
 ) {
     let size_in_b = 1 << mv_size_in_b_log2;
     let tile_me_stats = &mut ts.me_stats[ref_frame.to_index()];
-    let tile_bo_x_end = (tile_bo.0.x + size_in_b).min(ts.mi_width);
-    let tile_bo_y_end = (tile_bo.0.y + size_in_b).min(ts.mi_height);
+    let tile_bo_x_end = (tile_bo.0.x + size_in_b).min(ts.mi_width.get());
+    let tile_bo_y_end = (tile_bo.0.y + size_in_b).min(ts.mi_height.get());
     for mi_y in tile_bo.0.y..tile_bo_y_end {
         for a in tile_me_stats[mi_y][tile_bo.0.x..tile_bo_x_end].iter_mut() {
             *a = stats;
@@ -632,11 +650,11 @@ fn estimate_sb_motion<T: Pixel>(
     init: bool,
     ssdec: u8,
     lambda: u32,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
     let pix_offset = tile_bo.to_luma_plane_offset();
-    let sb_h: usize = SB_SIZE.min(ts.height - pix_offset.y as usize);
-    let sb_w: usize = SB_SIZE.min(ts.width - pix_offset.x as usize);
+    let sb_h: usize = SB_SIZE.min(ts.height.get() - pix_offset.y as usize);
+    let sb_w: usize = SB_SIZE.min(ts.width.get() - pix_offset.x as usize);
 
     let mv_size = MI_SIZE << mv_size_in_b_log2;
 
@@ -659,8 +677,10 @@ fn estimate_sb_motion<T: Pixel>(
 
             // Clamp to frame edge, rounding up in the case of subsampling.
             // The rounding makes some assumptions about how subsampling is done.
-            let w = mv_size.min(sb_w - x + (1 << ssdec) - 1) >> ssdec;
-            let h = mv_size.min(sb_h - y + (1 << ssdec) - 1) >> ssdec;
+            let w = NonZeroUsize::new(mv_size.min(sb_w - x + (1 << ssdec) - 1) >> ssdec)
+                .expect("cannot be zero");
+            let h = NonZeroUsize::new(mv_size.min(sb_h - y + (1 << ssdec) - 1) >> ssdec)
+                .expect("cannot be zero");
 
             // Run motion estimation.
             // Note that the initial search (init) instructs the called function to
@@ -680,8 +700,8 @@ fn estimate_sb_motion<T: Pixel>(
                 bit_depth,
             ) {
                 // normalize sad to 128x128 block
-                let sad =
-                    (((results.rd.sad as u64) << (MAX_SB_SIZE_LOG2 * 2)) / (w * h) as u64) as u32;
+                let sad = (((results.rd.sad as u64) << (MAX_SB_SIZE_LOG2 * 2))
+                    / w.saturating_mul(h).get() as u64) as u32;
                 save_me_stats(ts, mv_size_in_b_log2, sub_bo, ref_frame, MEStats {
                     mv: results.mv,
                     normalized_sad: sad,
@@ -695,8 +715,8 @@ fn estimate_sb_motion<T: Pixel>(
 fn estimate_motion<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &TileStateMut<'_, T>,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     tile_bo: TileBlockOffset,
     ref_frame: RefType,
     pmv: Option<[MotionVector; 2]>,
@@ -704,14 +724,19 @@ fn estimate_motion<T: Pixel>(
     extensive_search: bool,
     ssdec: u8,
     lambda: Option<u32>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) -> Option<MotionSearchResult> {
     fi.rec_buffer.frames[fi.ref_frames[ref_frame.to_index()] as usize]
         .as_ref()
         .map(|rec| {
             let frame_bo = ts.to_frame_block_offset(tile_bo);
-            let (mvx_min, mvx_max, mvy_min, mvy_max) =
-                get_mv_range(fi.w_in_b, fi.h_in_b, frame_bo, w << ssdec, h << ssdec);
+            let (mvx_min, mvx_max, mvy_min, mvy_max) = get_mv_range(
+                fi.w_in_b,
+                fi.h_in_b,
+                frame_bo,
+                NonZeroUsize::new(w.get() << ssdec).expect("cannot be zero"),
+                NonZeroUsize::new(h.get() << ssdec).expect("cannot be zero"),
+            );
 
             let lambda = lambda.unwrap_or(0);
 
@@ -802,8 +827,8 @@ fn full_pixel_me<T: Pixel>(
     po: PlaneOffset,
     lambda: u32,
     pmv: [MotionVector; 2],
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
@@ -812,7 +837,7 @@ fn full_pixel_me<T: Pixel>(
     corner: MVSamplingMode,
     extensive_search: bool,
     ssdec: u8,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) -> MotionSearchResult {
     let ref_frame_id = ref_frame.to_index();
     let tile_me_stats = &ts.me_stats[ref_frame_id].as_const();
@@ -870,7 +895,8 @@ fn full_pixel_me<T: Pixel>(
         // from the previous frame. Stop once a candidate with a sad less than a
         // threshold is found.
 
-        let thresh = (subsets.min_sad as f32 * 1.2) as u32 + (((w * h) as u32) << (bit_depth - 8));
+        let thresh = (subsets.min_sad as f32 * 1.2) as u32
+            + ((w.saturating_mul(h).get() as u32) << (bit_depth.get() - 8));
 
         if let Some(median) = subsets.median {
             try_cands(&[median], &mut best);
@@ -916,12 +942,12 @@ fn sub_pixel_me<T: Pixel>(
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     use_satd: bool,
     best: &mut MotionSearchResult,
     ref_frame: RefType,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
 ) {
     subpel_diamond_search(
         fi, po, org_region, p_ref, bit_depth, pmv, lambda, mvx_min, mvx_max, mvy_min, mvy_max, w,
@@ -940,22 +966,22 @@ fn subpel_diamond_search<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
     _p_ref: &Plane<T>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     use_satd: bool,
     current: &mut MotionSearchResult,
     ref_frame: RefType,
 ) {
     // Motion compensation assembly has special requirements for edges
-    let mc_w = w.next_power_of_two();
-    let mc_h = (h + 1) & !1;
+    let mc_w = w.get().next_power_of_two();
+    let mc_h = (h.get() + 1) & !1;
 
     // Metadata for subpel scratch pad.
     let cfg = PlaneGeometry {
@@ -975,8 +1001,8 @@ fn subpel_diamond_search<T: Pixel>(
     let mut tmp_region = PlaneRegionMut::from_slice(buf.as_mut(), cfg, Rect {
         x: 0,
         y: 0,
-        width: cfg.width.get(),
-        height: cfg.height.get(),
+        width: cfg.width,
+        height: cfg.height,
     });
 
     // start at 1/2 pel and end at 1/4 or 1/8 pel
@@ -1033,7 +1059,7 @@ fn get_subpel_mv_rd<T: Pixel>(
     fi: &FrameInvariants<T>,
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     use_satd: bool,
@@ -1041,8 +1067,8 @@ fn get_subpel_mv_rd<T: Pixel>(
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     cand_mv: MotionVector,
     tmp_region: &mut PlaneRegionMut<T>,
     ref_frame: RefType,
@@ -1092,15 +1118,15 @@ fn uneven_multi_hex_search<T: Pixel>(
     org_region: &PlaneRegion<T>,
     p_ref: &Plane<T>,
     current: &mut MotionSearchResult,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     me_range: i16,
 ) {
     assert!(!current.is_empty());
@@ -1238,8 +1264,8 @@ fn get_subset_predictors(
     tile_me_stats: &TileMEStats<'_>,
     frame_ref_opt: Option<ReadGuardMEStats<'_>>,
     ref_frame_id: usize,
-    pix_w: usize,
-    pix_h: usize,
+    pix_w: NonZeroUsize,
+    pix_h: NonZeroUsize,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
@@ -1252,13 +1278,13 @@ fn get_subset_predictors(
     let mut subset_c = ArrayVec::<MotionVector, 5>::new();
 
     // rounded up width in blocks
-    let w = ((pix_w << ssdec) + MI_SIZE - 1) >> MI_SIZE_LOG2;
-    let h = ((pix_h << ssdec) + MI_SIZE - 1) >> MI_SIZE_LOG2;
+    let w = ((pix_w.get() << ssdec) + MI_SIZE - 1) >> MI_SIZE_LOG2;
+    let h = ((pix_h.get() << ssdec) + MI_SIZE - 1) >> MI_SIZE_LOG2;
 
     // Get predictors from the same frame.
 
-    let clipped_half_w = (w >> 1).min(tile_me_stats.cols() - 1 - tile_bo.0.x);
-    let clipped_half_h = (h >> 1).min(tile_me_stats.rows() - 1 - tile_bo.0.y);
+    let clipped_half_w = (w >> 1).min(tile_me_stats.cols().get() - 1 - tile_bo.0.x);
+    let clipped_half_h = (h >> 1).min(tile_me_stats.rows().get() - 1 - tile_bo.0.y);
 
     let mut process_cand = |stats: MEStats| -> MotionVector {
         min_sad = min_sad.min(stats.normalized_sad);
@@ -1297,7 +1323,7 @@ fn get_subset_predictors(
         bottom: _,
     } = corner
     {
-        if tile_bo.0.x + w < tile_me_stats.cols() {
+        if tile_bo.0.x + w < tile_me_stats.cols().get() {
             subset_b.push(process_cand(
                 tile_me_stats[tile_bo.0.y + clipped_half_h][tile_bo.0.x + w],
             ));
@@ -1309,7 +1335,7 @@ fn get_subset_predictors(
         bottom: true,
     } = corner
     {
-        if tile_bo.0.y + h < tile_me_stats.rows() {
+        if tile_bo.0.y + h < tile_me_stats.rows().get() {
             subset_b.push(process_cand(
                 tile_me_stats[tile_bo.0.y + h][tile_bo.0.x + clipped_half_w],
             ));
@@ -1349,8 +1375,8 @@ fn get_subset_predictors(
             x: tile_me_stats.x() + tile_bo.0.x,
             y: tile_me_stats.y() + tile_bo.0.y,
         });
-        let clipped_half_w = (w >> 1).min(prev_frame.cols - 1 - frame_bo.0.x);
-        let clipped_half_h = (h >> 1).min(prev_frame.rows - 1 - frame_bo.0.y);
+        let clipped_half_w = (w >> 1).min(prev_frame.cols.get() - 1 - frame_bo.0.x);
+        let clipped_half_h = (h >> 1).min(prev_frame.rows.get() - 1 - frame_bo.0.y);
 
         // left
         if frame_bo.0.x > 0 {
@@ -1365,13 +1391,13 @@ fn get_subset_predictors(
             ));
         }
         // right
-        if frame_bo.0.x + w < prev_frame.cols {
+        if frame_bo.0.x + w < prev_frame.cols.get() {
             subset_c.push(process_cand(
                 prev_frame[frame_bo.0.y + clipped_half_h][frame_bo.0.x + w],
             ));
         }
         // bottom
-        if frame_bo.0.y + h < prev_frame.rows {
+        if frame_bo.0.y + h < prev_frame.rows.get() {
             subset_c.push(process_cand(
                 prev_frame[frame_bo.0.y + h][frame_bo.0.x + clipped_half_w],
             ));
@@ -1383,7 +1409,8 @@ fn get_subset_predictors(
     }
 
     // Undo normalization to 128x128 block size
-    let min_sad = ((min_sad as u64 * (pix_w * pix_h) as u64) >> (MAX_SB_SIZE_LOG2 * 2)) as u32;
+    let min_sad = ((min_sad as u64 * pix_w.saturating_mul(pix_h).get() as u64)
+        >> (MAX_SB_SIZE_LOG2 * 2)) as u32;
 
     let dec_mv = |mv: MotionVector| MotionVector {
         col: mv.col >> ssdec,
@@ -1411,15 +1438,15 @@ fn get_best_predictor<T: Pixel>(
     org_region: &PlaneRegion<T>,
     p_ref: &Plane<T>,
     predictors: &[MotionVector],
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
 ) -> MotionSearchResult {
     let mut best: MotionSearchResult = MotionSearchResult::empty();
 
@@ -1443,7 +1470,7 @@ fn get_fullpel_mv_rd<T: Pixel>(
     po: PlaneOffset,
     org_region: &PlaneRegion<T>,
     p_ref: &Plane<T>,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     use_satd: bool,
@@ -1451,8 +1478,8 @@ fn get_fullpel_mv_rd<T: Pixel>(
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
     cand_mv: MotionVector,
 ) -> MVCandidateRD {
     if (cand_mv.col as isize) < mvx_min
@@ -1493,15 +1520,15 @@ fn hexagon_search<T: Pixel>(
     org_region: &PlaneRegion<T>,
     p_ref: &Plane<T>,
     current: &mut MotionSearchResult,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
 ) {
     // The first iteration of hexagon search is implemented separate from
     // subsequent iterations, which overlap with previous iterations.
@@ -1592,15 +1619,15 @@ fn fullpel_diamond_search<T: Pixel>(
     org_region: &PlaneRegion<T>,
     p_ref: &Plane<T>,
     current: &mut MotionSearchResult,
-    bit_depth: usize,
+    bit_depth: NonZeroUsize,
     pmv: [MotionVector; 2],
     lambda: u32,
     mvx_min: isize,
     mvx_max: isize,
     mvy_min: isize,
     mvy_max: isize,
-    w: usize,
-    h: usize,
+    w: NonZeroUsize,
+    h: NonZeroUsize,
 ) {
     // Define the initial and the final scale (log2) of the diamond.
     let (mut diamond_radius_log2, diamond_radius_end_log2) = (1u8, 0u8);
