@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.22.0
+
+- chore!: bump for breaking change in av-decoders
+
 ## Version 0.21.2
 
 - fix: Avoid an edge case in predict_dc_intra SIMD

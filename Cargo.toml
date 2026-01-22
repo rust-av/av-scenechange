@@ -1,28 +1,37 @@
 [package]
 name = "av-scenechange"
-version = "0.21.2"
+version = "0.22.0"
 edition = "2024"
 rust-version = "1.86"
 description = "Estimates frames in a video where a scenecut would be ideal"
-license = "MIT AND BSD-2-Clause AND ISC"
 repository = "https://github.com/rust-av/av-scenechange"
+license = "MIT AND BSD-2-Clause AND ISC"
 build = "build.rs"
 include = [
-    "/src",
-    "LICENSE",
-    "README.md",
-    "Cargo.lock",
-    "Cargo.toml",
-    "build.rs",
+  "/src",
+  "Cargo.lock",
+  "Cargo.toml",
+  "LICENSE",
+  "README.md",
+  "build.rs",
 ]
+
+[[bin]]
+name = "av-scenechange"
+path = "src/main.rs"
+required-features = ["binary"]
+
+[[bench]]
+harness = false
+name = "scd_bench"
 
 [dependencies]
 aligned = "0.4.2"
 anyhow = "1.0.100"
 arrayvec = "0.7.6"
-av-decoders = "0.8.2"
+av-decoders = "0.9.0"
 cfg-if = "1.0.4"
-clap = { version = "4.5.53", optional = true, features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"], optional = true }
 console = { version = "0.16.1", optional = true }
 cpufeatures = "0.2.17"
 fern = { version = "0.7.1", optional = true }
@@ -32,7 +41,7 @@ num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
 pastey = "0.2.1"
 rayon = "1.11.0"
-serde = { version = "1.0.228", optional = true, features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"], optional = true }
 serde_json = { version = "1.0.145", optional = true }
 thiserror = "2.0.17"
 tracing = { version = "0.1.41", optional = true }
@@ -41,159 +50,150 @@ tracing-subscriber = { version = "0.3.20", optional = true }
 v_frame = { version = "0.5", features = ["padding_api"] }
 y4m = "0.8.0"
 
-[build-dependencies]
-cc = { version = "1.2.47", optional = true, features = ["parallel"] }
-nasm-rs = { version = "0.3.1", optional = true, features = ["parallel"] }
-
 [dev-dependencies]
 criterion = "0.7.0"
 
+[build-dependencies]
+cc = { version = "1.2.47", features = ["parallel"], optional = true }
+nasm-rs = { version = "0.3.1", features = ["parallel"], optional = true }
+
 [features]
-default = ["binary", "asm"]
+default = ["asm", "binary"]
+asm = ["cc", "libc", "nasm-rs"]
 binary = ["clap", "serialize"]
-serialize = ["serde", "serde_json"]
 devel = ["console", "fern"]
-ffms2 = ["av-decoders/ffms2"]
 ffmpeg = ["av-decoders/ffmpeg"]
+ffms2 = ["av-decoders/ffms2"]
+serialize = ["serde", "serde_json"]
+tracing = ["dep:tracing", "tracing-chrome", "tracing-subscriber"]
 vapoursynth = ["av-decoders/vapoursynth"]
-tracing = ["tracing-subscriber", "tracing-chrome", "dep:tracing"]
-asm = ["nasm-rs", "cc", "libc"]
-
-[[bin]]
-name = "av-scenechange"
-path = "src/main.rs"
-required-features = ["binary"]
-
-[lints.rust]
-missing_docs = "warn"
 
 [lints.clippy]
-# Performance
-clear_with_drain = "warn"
-format_collect = "warn"
-format_push_string = "warn"
-imprecise_flops = "warn"
-inefficient_to_string = "warn"
-inline_always = "warn"
-iter_with_drain = "warn"
-large_include_file = "warn"
-large_types_passed_by_value = "warn"
-linkedlist = "deny"
-missing_inline_in_public_items = "warn"
-mutex_atomic = "warn"
-mutex_integer = "warn"
-naive_bytecount = "warn"
-needless_bitwise_bool = "warn"
-needless_collect = "warn"
-needless_pass_by_value = "warn"
-non_std_lazy_statics = "warn"
-non_zero_suggestions = "warn"
-or_fun_call = "warn"
-rc_buffer = "warn"
-redundant_clone = "warn"
-ref_option = "warn"
-set_contains_or_insert = "warn"
-stable_sort_primitive = "warn"
-string_lit_chars_any = "warn"
-suboptimal_flops = "warn"
-trivial_regex = "warn"
-trivially_copy_pass_by_ref = "warn"
-unnecessary_box_returns = "warn"
-unnecessary_join = "warn"
-unused_async = "warn"
-verbose_file_reads = "warn"
+# Correctness/Safety
+case_sensitive_file_extension_comparisons = "warn"
+cfg_not_test = "deny"
 # Readability/Code Intention
 checked_conversions = "warn"
+# Performance
+clear_with_drain = "warn"
 clone_on_ref_ptr = "warn"
 cloned_instead_of_copied = "warn"
+collection_is_never_read = "warn"
+create_dir = "warn"
+dbg_macro = "warn"
+debug_assert_with_mut_call = "deny"
+# Documentation
+doc_link_with_quotes = "warn"
+doc_markdown = "warn"
 enum_glob_use = "warn"
 equatable_if_let = "warn"
+expl_impl_clone_on_copy = "deny"
+filetype_is_file = "warn"
 filter_map_next = "warn"
 flat_map_option = "warn"
+format_collect = "warn"
+format_push_string = "warn"
+future_not_send = "warn"
 if_then_some_else_none = "warn"
+ignore_without_reason = "warn"
 implicit_clone = "warn"
+imprecise_flops = "warn"
 inconsistent_struct_constructor = "warn"
+inefficient_to_string = "warn"
+infinite_loop = "warn"
+inline_always = "warn"
 invalid_upcast_comparisons = "warn"
 iter_filter_is_ok = "warn"
 iter_filter_is_some = "warn"
 iter_on_empty_collections = "warn"
 iter_on_single_items = "warn"
+iter_with_drain = "warn"
+large_futures = "warn"
+large_include_file = "warn"
+large_stack_arrays = "warn"
+large_stack_frames = "warn"
+large_types_passed_by_value = "warn"
+linkedlist = "deny"
 macro_use_imports = "warn"
 manual_assert = "warn"
 manual_instant_elapsed = "warn"
 manual_is_power_of_two = "warn"
 manual_is_variant_and = "warn"
 manual_let_else = "warn"
+manual_midpoint = "warn"
 manual_string_new = "warn"
 map_unwrap_or = "warn"
 map_with_unused_argument_over_ranges = "warn"
 match_bool = "warn"
+maybe_infinite_iter = "warn"
+mem_forget = "warn"
+mismatching_type_param_order = "warn"
+missing_errors_doc = "warn"
+missing_inline_in_public_items = "warn"
+missing_safety_doc = "warn"
+mixed_read_write_in_expression = "warn"
 mod_module_files = "warn"
+must_use_candidate = "warn"
+mut_mut = "warn"
+mutex_atomic = "warn"
+mutex_integer = "warn"
+naive_bytecount = "warn"
+needless_bitwise_bool = "warn"
+needless_collect = "warn"
 needless_continue = "warn"
 needless_pass_by_ref_mut = "warn"
+needless_pass_by_value = "warn"
+non_send_fields_in_send_ty = "deny"
+non_std_lazy_statics = "warn"
+non_zero_suggestions = "warn"
 option_as_ref_cloned = "warn"
 option_if_let_else = "warn"
+or_fun_call = "warn"
+path_buf_push_overwrite = "warn"
 pathbuf_init_then_push = "warn"
 precedence_bits = "warn"
 range_minus_one = "warn"
 range_plus_one = "warn"
-redundant_test_prefix = "warn"
-ref_option_ref = "warn"
-semicolon_if_nothing_returned = "warn"
-tests_outside_test_module = "warn"
-transmute_ptr_to_ptr = "warn"
-unused_peekable = "warn"
-unused_rounding = "warn"
-verbose_bit_mask = "warn"
-zero_sized_map_values = "warn"
-# Correctness/Safety
-case_sensitive_file_extension_comparisons = "warn"
-cfg_not_test = "deny"
-collection_is_never_read = "warn"
-create_dir = "warn"
-dbg_macro = "warn"
-debug_assert_with_mut_call = "deny"
-expl_impl_clone_on_copy = "deny"
-filetype_is_file = "warn"
-future_not_send = "warn"
-ignore_without_reason = "warn"
-infinite_loop = "warn"
-large_futures = "warn"
-large_stack_arrays = "warn"
-large_stack_frames = "warn"
-manual_midpoint = "warn"
-maybe_infinite_iter = "warn"
-mem_forget = "warn"
-mismatching_type_param_order = "warn"
-mixed_read_write_in_expression = "warn"
-must_use_candidate = "warn"
-mut_mut = "warn"
-non_send_fields_in_send_ty = "deny"
-path_buf_push_overwrite = "warn"
+rc_buffer = "warn"
 rc_mutex = "warn"
 read_zero_byte_vec = "warn"
+redundant_clone = "warn"
+redundant_test_prefix = "warn"
+ref_option = "warn"
+ref_option_ref = "warn"
+semicolon_if_nothing_returned = "warn"
+set_contains_or_insert = "warn"
 significant_drop_in_scrutinee = "deny"
+stable_sort_primitive = "warn"
 str_split_at_newline = "warn"
+string_lit_chars_any = "warn"
 string_slice = "warn"
+suboptimal_flops = "warn"
 suspicious_operation_groupings = "warn"
 suspicious_xor_used_as_pow = "warn"
+tests_outside_test_module = "warn"
+transmute_ptr_to_ptr = "warn"
 transmute_undefined_repr = "warn"
+trivial_regex = "warn"
+trivially_copy_pass_by_ref = "warn"
 undocumented_unsafe_blocks = "warn"
-unnecessary_debug_formatting = "warn"
-unwrap_used = "warn"
-# Documentation
-doc_link_with_quotes = "warn"
-doc_markdown = "warn"
-missing_errors_doc = "warn"
-missing_safety_doc = "warn"
 # Annoyances
 uninlined_format_args = "allow"
+unnecessary_box_returns = "warn"
+unnecessary_debug_formatting = "warn"
+unnecessary_join = "warn"
+unused_async = "warn"
+unused_peekable = "warn"
+unused_rounding = "warn"
+unwrap_used = "warn"
+verbose_bit_mask = "warn"
+verbose_file_reads = "warn"
+zero_sized_map_values = "warn"
+
+[lints.rust]
+missing_docs = "warn"
 
 [lints.rust.unexpected_cfgs]
 level = "warn"
 # These custom cfgs are expected, so tell rustc not to output warnings for them
-check-cfg = ['cfg(asm_x86_64)', 'cfg(asm_neon)']
-
-[[bench]]
-name = "scd_bench"
-harness = false
+check-cfg = ["cfg(asm_x86_64)", "cfg(asm_neon)"]
