@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Display},
-    num::NonZeroUsize,
-};
+use std::{fmt, fmt::Display};
 
 use thiserror::Error;
 
@@ -109,11 +106,11 @@ impl BlockSize {
         Self::from_width_and_height_opt(w, h).unwrap()
     }
 
-    pub const fn width(self) -> NonZeroUsize {
-        NonZeroUsize::new(1 << self.width_log2().get()).expect("cannot be zero")
+    pub const fn width(self) -> usize {
+        1 << self.width_log2()
     }
 
-    pub const fn width_log2(self) -> NonZeroUsize {
+    pub const fn width_log2(self) -> usize {
         use crate::data::block::BlockSize::{
             BLOCK_4X4,
             BLOCK_4X8,
@@ -140,28 +137,20 @@ impl BlockSize {
         };
 
         match self {
-            BLOCK_4X4 | BLOCK_4X8 | BLOCK_4X16 => NonZeroUsize::new(2).expect("non-zero const"),
-            BLOCK_8X4 | BLOCK_8X8 | BLOCK_8X16 | BLOCK_8X32 => {
-                NonZeroUsize::new(3).expect("non-zero const")
-            }
-            BLOCK_16X4 | BLOCK_16X8 | BLOCK_16X16 | BLOCK_16X32 | BLOCK_16X64 => {
-                NonZeroUsize::new(4).expect("non-zero const")
-            }
-            BLOCK_32X8 | BLOCK_32X16 | BLOCK_32X32 | BLOCK_32X64 => {
-                NonZeroUsize::new(5).expect("non-zero const")
-            }
-            BLOCK_64X16 | BLOCK_64X32 | BLOCK_64X64 | BLOCK_64X128 => {
-                NonZeroUsize::new(6).expect("non-zero const")
-            }
-            BLOCK_128X64 | BLOCK_128X128 => NonZeroUsize::new(7).expect("non-zero const"),
+            BLOCK_4X4 | BLOCK_4X8 | BLOCK_4X16 => 2,
+            BLOCK_8X4 | BLOCK_8X8 | BLOCK_8X16 | BLOCK_8X32 => 3,
+            BLOCK_16X4 | BLOCK_16X8 | BLOCK_16X16 | BLOCK_16X32 | BLOCK_16X64 => 4,
+            BLOCK_32X8 | BLOCK_32X16 | BLOCK_32X32 | BLOCK_32X64 => 5,
+            BLOCK_64X16 | BLOCK_64X32 | BLOCK_64X64 | BLOCK_64X128 => 6,
+            BLOCK_128X64 | BLOCK_128X128 => 7,
         }
     }
 
-    pub const fn height(self) -> NonZeroUsize {
-        NonZeroUsize::new(1 << self.height_log2().get()).expect("cannot be zero")
+    pub const fn height(self) -> usize {
+        1 << self.height_log2()
     }
 
-    pub const fn height_log2(self) -> NonZeroUsize {
+    pub const fn height_log2(self) -> usize {
         use crate::data::block::BlockSize::{
             BLOCK_4X4,
             BLOCK_4X8,
@@ -188,20 +177,12 @@ impl BlockSize {
         };
 
         match self {
-            BLOCK_4X4 | BLOCK_8X4 | BLOCK_16X4 => NonZeroUsize::new(2).expect("non-zero const"),
-            BLOCK_4X8 | BLOCK_8X8 | BLOCK_16X8 | BLOCK_32X8 => {
-                NonZeroUsize::new(3).expect("non-zero const")
-            }
-            BLOCK_4X16 | BLOCK_8X16 | BLOCK_16X16 | BLOCK_32X16 | BLOCK_64X16 => {
-                NonZeroUsize::new(4).expect("non-zero const")
-            }
-            BLOCK_8X32 | BLOCK_16X32 | BLOCK_32X32 | BLOCK_64X32 => {
-                NonZeroUsize::new(5).expect("non-zero const")
-            }
-            BLOCK_16X64 | BLOCK_32X64 | BLOCK_64X64 | BLOCK_128X64 => {
-                NonZeroUsize::new(6).expect("non-zero const")
-            }
-            BLOCK_64X128 | BLOCK_128X128 => NonZeroUsize::new(7).expect("non-zero const"),
+            BLOCK_4X4 | BLOCK_8X4 | BLOCK_16X4 => 2,
+            BLOCK_4X8 | BLOCK_8X8 | BLOCK_16X8 | BLOCK_32X8 => 3,
+            BLOCK_4X16 | BLOCK_8X16 | BLOCK_16X16 | BLOCK_32X16 | BLOCK_64X16 => 4,
+            BLOCK_8X32 | BLOCK_16X32 | BLOCK_32X32 | BLOCK_64X32 => 5,
+            BLOCK_16X64 | BLOCK_32X64 | BLOCK_64X64 | BLOCK_128X64 => 6,
+            BLOCK_64X128 | BLOCK_128X128 => 7,
         }
     }
 
@@ -311,11 +292,11 @@ pub enum TxSize {
 }
 
 impl TxSize {
-    pub const fn width(self) -> NonZeroUsize {
-        NonZeroUsize::new(1 << self.width_log2().get()).expect("cannot be zero")
+    pub const fn width(self) -> usize {
+        1 << self.width_log2()
     }
 
-    pub const fn width_log2(self) -> NonZeroUsize {
+    pub const fn width_log2(self) -> usize {
         use crate::data::block::TxSize::{
             TX_4X4,
             TX_4X8,
@@ -338,23 +319,19 @@ impl TxSize {
             TX_64X64,
         };
         match self {
-            TX_4X4 | TX_4X8 | TX_4X16 => NonZeroUsize::new(2).expect("non-zero const"),
-            TX_8X8 | TX_8X4 | TX_8X16 | TX_8X32 => NonZeroUsize::new(3).expect("non-zero const"),
-            TX_16X16 | TX_16X8 | TX_16X32 | TX_16X4 | TX_16X64 => {
-                NonZeroUsize::new(4).expect("non-zero const")
-            }
-            TX_32X32 | TX_32X16 | TX_32X64 | TX_32X8 => {
-                NonZeroUsize::new(5).expect("non-zero const")
-            }
-            TX_64X64 | TX_64X32 | TX_64X16 => NonZeroUsize::new(6).expect("non-zero const"),
+            TX_4X4 | TX_4X8 | TX_4X16 => 2,
+            TX_8X8 | TX_8X4 | TX_8X16 | TX_8X32 => 3,
+            TX_16X16 | TX_16X8 | TX_16X32 | TX_16X4 | TX_16X64 => 4,
+            TX_32X32 | TX_32X16 | TX_32X64 | TX_32X8 => 5,
+            TX_64X64 | TX_64X32 | TX_64X16 => 6,
         }
     }
 
-    pub const fn height(self) -> NonZeroUsize {
-        NonZeroUsize::new(1 << self.height_log2().get()).expect("cannot be zero")
+    pub const fn height(self) -> usize {
+        1 << self.height_log2()
     }
 
-    pub const fn height_log2(self) -> NonZeroUsize {
+    pub const fn height_log2(self) -> usize {
         use crate::data::block::TxSize::{
             TX_4X4,
             TX_4X8,
@@ -377,15 +354,11 @@ impl TxSize {
             TX_64X64,
         };
         match self {
-            TX_4X4 | TX_8X4 | TX_16X4 => NonZeroUsize::new(2).expect("non-zero const"),
-            TX_8X8 | TX_4X8 | TX_16X8 | TX_32X8 => NonZeroUsize::new(3).expect("non-zero const"),
-            TX_16X16 | TX_8X16 | TX_32X16 | TX_4X16 | TX_64X16 => {
-                NonZeroUsize::new(4).expect("non-zero const")
-            }
-            TX_32X32 | TX_16X32 | TX_64X32 | TX_8X32 => {
-                NonZeroUsize::new(5).expect("non-zero const")
-            }
-            TX_64X64 | TX_32X64 | TX_16X64 => NonZeroUsize::new(6).expect("non-zero const"),
+            TX_4X4 | TX_8X4 | TX_16X4 => 2,
+            TX_8X8 | TX_4X8 | TX_16X8 | TX_32X8 => 3,
+            TX_16X16 | TX_8X16 | TX_32X16 | TX_4X16 | TX_64X16 => 4,
+            TX_32X32 | TX_16X32 | TX_64X32 | TX_8X32 => 5,
+            TX_64X64 | TX_32X64 | TX_16X64 => 6,
         }
     }
 }

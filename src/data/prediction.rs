@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use v_frame::{
     pixel::Pixel,
     plane::{Plane, PlaneGeometry},
@@ -76,11 +74,11 @@ impl PredictionMode {
         p: usize,
         po: PlaneOffset,
         dst: &mut PlaneRegionMut<'_, T>,
-        width: NonZeroUsize,
-        height: NonZeroUsize,
+        width: usize,
+        height: usize,
         ref_frame: RefType,
         mv: MotionVector,
-        bit_depth: NonZeroUsize,
+        bit_depth: usize,
     ) {
         assert!(!self.is_intra());
         let frame_po = tile_rect.to_frame_plane_offset(po);

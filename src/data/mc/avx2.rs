@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use v_frame::pixel::Pixel;
 
 use crate::data::plane::{PlaneRegionMut, PlaneSlice};
@@ -8,23 +6,23 @@ use crate::data::plane::{PlaneRegionMut, PlaneSlice};
 pub fn put_8tap_internal<T: Pixel>(
     dst: &mut PlaneRegionMut<'_, T>,
     src: PlaneSlice<'_, T>,
-    width: NonZeroUsize,
-    height: NonZeroUsize,
+    width: usize,
+    height: usize,
     col_frac: i32,
     row_frac: i32,
-    _bit_depth: NonZeroUsize,
+    _bit_depth: usize,
 ) {
     // SAFETY: The assembly only supports even heights and valid uncropped
     //         widths
     unsafe {
-        assert!(height.get() % 2 == 0);
-        assert!(width.is_power_of_two() && (2..=128).contains(&width.get()));
+        assert_eq!(height & 1, 0);
+        assert!(width.is_power_of_two() && (2..=128).contains(&width));
 
         // SAFETY: Check bounds of dst
         assert!(dst.rect().width >= width && dst.rect().height >= height);
 
         // SAFETY: Check bounds of src
-        assert!(src.accessible(width.get() + 4, height.get() + 4));
+        assert!(src.accessible(width + 4, height + 4));
         assert!(src.accessible_neg(3, 3));
 
         match size_of::<T>() {
@@ -33,8 +31,8 @@ pub fn put_8tap_internal<T: Pixel>(
                 (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
                 (size_of::<T>() * src.plane.geometry().stride.get()) as isize,
-                width.get() as i32,
-                height.get() as i32,
+                width as i32,
+                height as i32,
                 col_frac,
                 row_frac,
             ),
@@ -43,8 +41,8 @@ pub fn put_8tap_internal<T: Pixel>(
                 (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
                 src.as_ptr() as *const _,
                 (size_of::<T>() * src.plane.geometry().stride.get()) as isize,
-                width.get() as i32,
-                height.get() as i32,
+                width as i32,
+                height as i32,
                 col_frac,
                 row_frac,
             ),
