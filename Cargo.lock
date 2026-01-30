@@ -129,7 +129,7 @@ dependencies = [
 
 [[package]]
 name = "av-scenechange"
-version = "0.22.0"
+version = "0.22.1"
 dependencies = [
  "aligned",
  "anyhow",

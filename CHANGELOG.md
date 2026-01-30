@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.22.1
+
+- perf: Revert NonZeroUsize changes as these actually had a negative performance impact
+
 ## Version 0.22.0
 
 - chore!: bump for breaking change in av-decoders
