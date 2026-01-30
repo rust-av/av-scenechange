@@ -7,8 +7,6 @@ mod sse2;
 #[cfg(test)]
 mod tests;
 
-use std::num::NonZeroUsize;
-
 use cfg_if::cfg_if;
 use v_frame::{pixel::Pixel, plane::Plane};
 
@@ -37,9 +35,9 @@ pub(crate) fn sad_plane<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
 pub(crate) fn get_sad<T: Pixel>(
     plane_org: &PlaneRegion<'_, T>,
     plane_ref: &PlaneRegion<'_, T>,
-    w: NonZeroUsize,
-    h: NonZeroUsize,
-    bit_depth: NonZeroUsize,
+    w: usize,
+    h: usize,
+    bit_depth: usize,
 ) -> u32 {
     rust::get_sad_internal(plane_org, plane_ref, w, h, bit_depth)
 }

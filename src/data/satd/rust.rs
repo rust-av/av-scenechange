@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use v_frame::pixel::Pixel;
 
 use crate::{
@@ -21,16 +19,13 @@ use crate::{
 pub(super) fn get_satd_internal<T: Pixel>(
     plane_org: &PlaneRegion<'_, T>,
     plane_ref: &PlaneRegion<'_, T>,
-    w: NonZeroUsize,
-    h: NonZeroUsize,
-    bit_depth: NonZeroUsize,
+    w: usize,
+    h: usize,
+    bit_depth: usize,
 ) -> u32 {
-    let w = w.get();
-    let h = h.get();
-
     assert!(w <= 128 && h <= 128);
-    assert!(plane_org.rect().width.get() >= w && plane_org.rect().height.get() >= h);
-    assert!(plane_ref.rect().width.get() >= w && plane_ref.rect().height.get() >= h);
+    assert!(plane_org.rect().width >= w && plane_org.rect().height >= h);
+    assert!(plane_ref.rect().width >= w && plane_ref.rect().height >= h);
 
     // Size of hadamard transform should be 4x4 or 8x8
     // 4x* and *x4 use 4x4 and all other use 8x8
@@ -41,9 +36,9 @@ pub(super) fn get_satd_internal<T: Pixel>(
 
     // Loop over chunks the size of the chosen transform
     for chunk_y in (0..h).step_by(size) {
-        let chunk_h = NonZeroUsize::new((h - chunk_y).min(size)).expect("cannot be zero");
+        let chunk_h = (h - chunk_y).min(size);
         for chunk_x in (0..w).step_by(size) {
-            let chunk_w = NonZeroUsize::new((w - chunk_x).min(size)).expect("cannot be zero");
+            let chunk_w = (w - chunk_x).min(size);
             let chunk_area = Area::Rect(Rect {
                 x: chunk_x as isize,
                 y: chunk_y as isize,
@@ -54,7 +49,7 @@ pub(super) fn get_satd_internal<T: Pixel>(
             let chunk_ref = plane_ref.subregion(chunk_area);
 
             // Revert to sad on edge blocks (frame edges)
-            if chunk_w.get() != size || chunk_h.get() != size {
+            if chunk_w != size || chunk_h != size {
                 sum += get_sad(&chunk_org, &chunk_ref, chunk_w, chunk_h, bit_depth) as u64;
                 continue;
             }

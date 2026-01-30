@@ -21,8 +21,6 @@ fn predict_dc_intra_internal_verify_asm<T: Pixel + std::fmt::Debug>(
     bit_depth: usize,
     edge_buf: &IntraEdge<T>,
 ) {
-    let bit_depth = NonZeroUsize::new(bit_depth).expect("cannot be zero");
-
     super::rust::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf);
     let rust_output = dst.rows_iter().flatten().copied().collect::<Vec<_>>();
 
@@ -54,15 +52,11 @@ fn predict_dc_intra_internal_verify_asm<T: Pixel + std::fmt::Debug>(
 }
 
 /// Helper function to create a test plane for use in unit tests
-fn create_test_plane<T: Pixel>(
-    width: NonZeroUsize,
-    height: NonZeroUsize,
-    stride: NonZeroUsize,
-) -> Plane<T> {
+fn create_test_plane<T: Pixel>(width: usize, height: usize, stride: usize) -> Plane<T> {
     assert!(stride >= width, "stride must be >= width");
 
-    let width_nz = width;
-    let height_nz = height;
+    let width_nz = NonZeroUsize::new(width).expect("width must be non-zero");
+    let height_nz = NonZeroUsize::new(height).expect("height must be non-zero");
 
     // Determine bit depth based on pixel type
     // For u8, use 8-bit; for u16, use 10-bit as a reasonable default
@@ -73,7 +67,7 @@ fn create_test_plane<T: Pixel>(
     };
 
     // Calculate padding needed to achieve the desired stride
-    let padding_right = stride.get() - width.get();
+    let padding_right = stride - width;
 
     // Create a monochrome frame and extract the y_plane
     let frame = FrameBuilder::new(
@@ -142,8 +136,8 @@ fn predict_dc_intra_variant_none_u8() {
 
     // Expected value for 8-bit depth is 128
     let expected_value = 128u8;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -177,8 +171,8 @@ fn predict_dc_intra_variant_none_u16() {
 
     // Expected value for 10-bit depth is 128 << (10-8) = 512
     let expected_value = 512u16;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -214,8 +208,8 @@ fn predict_dc_intra_variant_left() {
 
     // Expected average: (200 + 100 + 150 + 50 + 2) / 4 = 125
     let expected_value = 125u8;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -251,8 +245,8 @@ fn predict_dc_intra_variant_top() {
 
     // Expected average: (80 + 120 + 160 + 240 + 2) / 4 = 150
     let expected_value = 150u8;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -290,8 +284,8 @@ fn predict_dc_intra_variant_both() {
 
     // Expected average: (100+140+180+220 + 110+130+170+190 + 4) / 8 = 155
     let expected_value = 155u8;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -327,8 +321,8 @@ fn predict_dc_intra_variant_left_u16() {
 
     // Expected average: (200 + 100 + 150 + 50 + 2) / 4 = 125
     let expected_value = 125u16;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -364,8 +358,8 @@ fn predict_dc_intra_variant_top_u16() {
 
     // Expected average: (80 + 120 + 160 + 240 + 2) / 4 = 150
     let expected_value = 150u16;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -403,8 +397,8 @@ fn predict_dc_intra_variant_both_u16() {
 
     // Expected average: (100+140+180+220 + 110+130+170+190 + 4) / 8 = 155
     let expected_value = 155u16;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -436,8 +430,8 @@ fn predict_dc_intra_different_sizes() {
         }));
 
         // Create uniform edge pixels for predictable result
-        let left_pixels = vec![100u8; height.get()];
-        let top_pixels = vec![200u8; width.get()];
+        let left_pixels = vec![100u8; height];
+        let top_pixels = vec![200u8; width];
         let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
         let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
@@ -451,12 +445,12 @@ fn predict_dc_intra_different_sizes() {
 
         // Expected average: (height*100 + width*200 + (width+height)/2) /
         // (width+height)
-        let sum = (height.get() * 100 + width.get() * 200) as u32;
-        let len = (width.get() + height.get()) as u32;
+        let sum = (height * 100 + width * 200) as u32;
+        let len = (width + height) as u32;
         let expected_value = ((sum + (len >> 1)) / len) as u8;
 
-        for y in 0..height.get() {
-            for x in 0..width.get() {
+        for y in 0..height {
+            for x in 0..width {
                 assert_eq!(
                     dst[y][x], expected_value,
                     "Mismatch at ({}, {}) for size {}x{}",
@@ -505,8 +499,8 @@ fn predict_dc_intra_edge_cases() {
 
         // Verify all pixels have the same value (DC prediction should be uniform)
         let first_pixel = dst[0][0];
-        for y in 0..height.get() {
-            for x in 0..width.get() {
+        for y in 0..height {
+            for x in 0..width {
                 assert_eq!(
                     dst[y][x], first_pixel,
                     "DC prediction should be uniform, but found different values at ({}, {})",
@@ -549,8 +543,8 @@ fn predict_dc_intra_rounding() {
 
     // Sum = 7, len = 8, (7 + 4) / 8 = 1
     let expected_value = 1u8;
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(dst[y][x], expected_value, "Mismatch at ({}, {})", x, y);
         }
     }
@@ -572,8 +566,8 @@ fn predict_dc_intra_larger_blocks() {
     }));
 
     // Create predictable gradient patterns
-    let left_pixels: Vec<u8> = (0..height.get()).map(|i| (i * 16) as u8).collect();
-    let top_pixels: Vec<u8> = (0..width.get()).map(|i| (i * 8) as u8).collect();
+    let left_pixels: Vec<u8> = (0..height).map(|i| (i * 16) as u8).collect();
+    let top_pixels: Vec<u8> = (0..width).map(|i| (i * 8) as u8).collect();
     let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
     let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
@@ -587,8 +581,8 @@ fn predict_dc_intra_larger_blocks() {
 
     // Verify uniformity
     let first_pixel = dst[0][0];
-    for y in 0..height.get() {
-        for x in 0..width.get() {
+    for y in 0..height {
+        for x in 0..width {
             assert_eq!(
                 dst[y][x], first_pixel,
                 "Large block DC prediction should be uniform at ({}, {})",
@@ -623,8 +617,8 @@ fn predict_dc_intra_rectangular_blocks() {
         }));
 
         // Use different values for left and top to ensure proper averaging
-        let left_pixels = vec![50u8; height.get()];
-        let top_pixels = vec![150u8; width.get()];
+        let left_pixels = vec![50u8; height];
+        let top_pixels = vec![150u8; width];
         let mut edge_buf = Aligned([MaybeUninit::uninit(); 4 * MAX_TX_SIZE + 1]);
         let edge = create_test_edge_buf(&mut edge_buf, &left_pixels, &top_pixels, 0u8);
 
@@ -638,8 +632,8 @@ fn predict_dc_intra_rectangular_blocks() {
 
         // Verify all pixels are uniform
         let first_pixel = dst[0][0];
-        for y in 0..height.get() {
-            for x in 0..width.get() {
+        for y in 0..height {
+            for x in 0..width {
                 assert_eq!(
                     dst[y][x], first_pixel,
                     "Rectangular block ({} x {}) DC prediction should be uniform at ({}, {})",
@@ -649,10 +643,10 @@ fn predict_dc_intra_rectangular_blocks() {
         }
 
         // The expected value should be weighted by the number of left vs top pixels
-        let left_sum = height.get() * 50;
-        let top_sum = width.get() * 150;
+        let left_sum = height * 50;
+        let top_sum = width * 150;
         let total_sum = (left_sum + top_sum) as u32;
-        let total_len = (width.get() + height.get()) as u32;
+        let total_len = (width + height) as u32;
         let expected = ((total_sum + (total_len >> 1)) / total_len) as u8;
 
         assert_eq!(

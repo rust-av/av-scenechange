@@ -1,6 +1,5 @@
 use std::{
     marker::PhantomData,
-    num::NonZeroUsize,
     ops,
     ops::{Index, IndexMut},
     slice,
@@ -94,8 +93,8 @@ pub struct MEStats {
 #[derive(Debug, Clone)]
 pub struct FrameMEStats {
     stats: Box<[MEStats]>,
-    pub cols: NonZeroUsize,
-    pub rows: NonZeroUsize,
+    pub cols: usize,
+    pub rows: usize,
 }
 
 pub const REF_FRAMES_LOG2: usize = 3;
@@ -105,16 +104,16 @@ pub type ReadGuardMEStats<'a> = RwLockReadGuard<'a, [FrameMEStats; REF_FRAMES]>;
 pub type WriteGuardMEStats<'a> = RwLockWriteGuard<'a, [FrameMEStats; REF_FRAMES]>;
 
 impl FrameMEStats {
-    pub fn new(cols: NonZeroUsize, rows: NonZeroUsize) -> Self {
+    pub fn new(cols: usize, rows: usize) -> Self {
         Self {
             // dynamic allocation: once per frame
-            stats: vec![MEStats::default(); cols.get() * rows.get()].into_boxed_slice(),
+            stats: vec![MEStats::default(); cols * rows].into_boxed_slice(),
             cols,
             rows,
         }
     }
 
-    pub fn new_arc_array(cols: NonZeroUsize, rows: NonZeroUsize) -> RefMEStats {
+    pub fn new_arc_array(cols: usize, rows: usize) -> RefMEStats {
         Arc::new(RwLock::new([
             FrameMEStats::new(cols, rows),
             FrameMEStats::new(cols, rows),
@@ -132,13 +131,13 @@ impl Index<usize> for FrameMEStats {
     type Output = [MEStats];
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.stats[index * self.cols.get()..][..self.cols.get()]
+        &self.stats[index * self.cols..(index + 1) * self.cols]
     }
 }
 
 impl IndexMut<usize> for FrameMEStats {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.stats[index * self.cols.get()..][..self.cols.get()]
+        &mut self.stats[index * self.cols..(index + 1) * self.cols]
     }
 }
 
@@ -150,10 +149,10 @@ pub struct TileMEStats<'a> {
     // private to guarantee borrowing rules
     x: usize,
     y: usize,
-    cols: NonZeroUsize,
-    rows: NonZeroUsize,
+    cols: usize,
+    rows: usize,
     /// number of cols in the underlying `FrameMEStats`
-    stride: NonZeroUsize,
+    stride: usize,
     phantom: PhantomData<&'a MotionVector>,
 }
 
@@ -165,10 +164,10 @@ pub struct TileMEStatsMut<'a> {
     // private to guarantee borrowing rules
     x: usize,
     y: usize,
-    cols: NonZeroUsize,
-    rows: NonZeroUsize,
+    cols: usize,
+    rows: usize,
     /// number of cols in the underlying `FrameMEStats`
-    stride: NonZeroUsize,
+    stride: usize,
     phantom: PhantomData<&'a mut MotionVector>,
 }
 
@@ -187,11 +186,11 @@ macro_rules! tile_me_stats_common {
         frame_mvs: &'a $($opt_mut)? FrameMEStats,
         x: usize,
         y: usize,
-        cols: NonZeroUsize,
-        rows: NonZeroUsize,
+        cols: usize,
+        rows: usize,
       ) -> Self {
-        assert!(x + cols.get() <= frame_mvs.cols.get());
-        assert!(y + rows.get() <= frame_mvs.rows.get());
+        assert!(x + cols <= frame_mvs.cols);
+        assert!(y + rows <= frame_mvs.rows);
         Self {
           data: & $($opt_mut)? frame_mvs[y][x],
           x,
@@ -214,12 +213,12 @@ macro_rules! tile_me_stats_common {
       }
 
       #[allow(dead_code)]
-      pub const fn cols(&self) -> NonZeroUsize {
+      pub const fn cols(&self) -> usize {
         self.cols
       }
 
       #[allow(dead_code)]
-      pub const fn rows(&self) -> NonZeroUsize {
+      pub const fn rows(&self) -> usize {
         self.rows
       }
     }
@@ -235,11 +234,11 @@ macro_rules! tile_me_stats_common {
       type Output = [MEStats];
 
       fn index(&self, index: usize) -> &Self::Output {
-        assert!(index < self.rows.get());
+        assert!(index < self.rows);
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
-          let ptr = self.data.add(index * self.stride.get());
-          slice::from_raw_parts(ptr, self.cols.get())
+          let ptr = self.data.add(index * self.stride);
+          slice::from_raw_parts(ptr, self.cols)
         }
       }
     }
@@ -265,11 +264,11 @@ impl TileMEStatsMut<'_> {
 
 impl IndexMut<usize> for TileMEStatsMut<'_> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        assert!(index < self.rows.get());
+        assert!(index < self.rows);
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
-            let ptr = self.data.add(index * self.stride.get());
-            slice::from_raw_parts_mut(ptr, self.cols.get())
+            let ptr = self.data.add(index * self.stride);
+            slice::from_raw_parts_mut(ptr, self.cols)
         }
     }
 }

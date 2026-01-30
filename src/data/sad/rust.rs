@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use v_frame::{pixel::Pixel, plane::Plane};
 
 use crate::data::plane::{Area, PlaneRegion, Rect};
@@ -26,11 +24,11 @@ pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u6
 pub(super) fn get_sad_internal<T: Pixel>(
     plane_org: &PlaneRegion<'_, T>,
     plane_ref: &PlaneRegion<'_, T>,
-    w: NonZeroUsize,
-    h: NonZeroUsize,
-    _bit_depth: NonZeroUsize,
+    w: usize,
+    h: usize,
+    _bit_depth: usize,
 ) -> u32 {
-    debug_assert!(w.get() <= 128 && h.get() <= 128);
+    debug_assert!(w <= 128 && h <= 128);
     let plane_org = plane_org.subregion(Area::Rect(Rect {
         x: 0,
         y: 0,
