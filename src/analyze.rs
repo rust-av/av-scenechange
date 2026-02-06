@@ -409,7 +409,7 @@ impl<T: Pixel> SceneChangeDetector<T> {
 
 /// Contains the scores for scenecut analysis on a single frame
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serialize", derive(serde::Serialize))]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 #[allow(missing_docs)]
 pub struct ScenecutResult {
     pub inter_cost: f64,
