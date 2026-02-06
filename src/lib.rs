@@ -66,7 +66,7 @@ impl Default for DetectionOptions {
 
 /// Results from a scene change detection pass.
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serialize", derive(serde::Serialize))]
+#[cfg_attr(feature = "serialize", derive(serde::Serialize, serde::Deserialize))]
 pub struct DetectionResults {
     /// The 0-indexed frame numbers where scene changes were detected.
     pub scene_changes: Vec<usize>,
