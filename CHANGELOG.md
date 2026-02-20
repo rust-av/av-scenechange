@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.22.2
+
+- feat: Make DetectionResults Deserialize
+- perf: add SSE2 for `sum_8x8_block`
+
 ## Version 0.22.1
 
 - perf: Revert NonZeroUsize changes as these actually had a negative performance impact
