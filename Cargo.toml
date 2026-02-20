@@ -197,3 +197,10 @@ missing_docs = "warn"
 level = "warn"
 # These custom cfgs are expected, so tell rustc not to output warnings for them
 check-cfg = ["cfg(asm_x86_64)", "cfg(asm_neon)"]
+
+[profile.dev]
+opt-level = 1
+
+[profile.relwithdebug]
+inherits = "release"
+debug = "full"
