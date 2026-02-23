@@ -2,8 +2,12 @@ use v_frame::pixel::Pixel;
 
 use crate::data::plane::{PlaneRegionMut, PlaneSlice};
 
-// TODO: change this when Rust supports avx512 as a target feature
-#[target_feature(enable = "avx2")]
+#[target_feature(enable = "avx512f")]
+#[target_feature(enable = "avx512cd")]
+#[target_feature(enable = "avx512bw")]
+#[target_feature(enable = "avx512dq")]
+#[target_feature(enable = "avx512vl")]
+#[target_feature(enable = "avx512ifma")]
 pub fn put_8tap_internal<T: Pixel>(
     dst: &mut PlaneRegionMut<'_, T>,
     src: PlaneSlice<'_, T>,

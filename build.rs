@@ -47,10 +47,10 @@ fn hash_changed(files: &[&str], out_dir: &str, config: &Path) -> Option<([u8; 8]
 
     let hash_path = Path::new(&out_dir).join("asm.hash");
 
-    if let Ok(old_hash) = std::fs::read(&hash_path) {
-        if old_hash == hash {
-            return None;
-        }
+    if let Ok(old_hash) = std::fs::read(&hash_path)
+        && old_hash == hash
+    {
+        return None;
     }
 
     Some((hash, hash_path))

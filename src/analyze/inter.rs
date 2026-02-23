@@ -1296,24 +1296,22 @@ fn get_subset_predictors(
         right: true,
         bottom: _,
     } = corner
+        && tile_bo.0.x + w < tile_me_stats.cols()
     {
-        if tile_bo.0.x + w < tile_me_stats.cols() {
-            subset_b.push(process_cand(
-                tile_me_stats[tile_bo.0.y + clipped_half_h][tile_bo.0.x + w],
-            ));
-        }
+        subset_b.push(process_cand(
+            tile_me_stats[tile_bo.0.y + clipped_half_h][tile_bo.0.x + w],
+        ));
     }
     // bottom
     if let MVSamplingMode::CORNER {
         right: _,
         bottom: true,
     } = corner
+        && tile_bo.0.y + h < tile_me_stats.rows()
     {
-        if tile_bo.0.y + h < tile_me_stats.rows() {
-            subset_b.push(process_cand(
-                tile_me_stats[tile_bo.0.y + h][tile_bo.0.x + clipped_half_w],
-            ));
-        }
+        subset_b.push(process_cand(
+            tile_me_stats[tile_bo.0.y + h][tile_bo.0.x + clipped_half_w],
+        ));
     }
 
     let median = if corner != MVSamplingMode::INIT {

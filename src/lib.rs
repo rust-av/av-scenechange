@@ -204,10 +204,10 @@ pub fn detect_scene_changes<T: Pixel>(
                 if let Some(ref progress_tx) = progress_tx {
                     let _ = progress_tx.send((frameno, keyframes.len()));
                 }
-                if let Some(frame_limit) = frame_limit {
-                    if frameno == frame_limit {
-                        break;
-                    }
+                if let Some(frame_limit) = frame_limit
+                    && frameno == frame_limit
+                {
+                    break;
                 }
             }
 

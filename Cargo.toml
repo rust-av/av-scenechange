@@ -1,8 +1,8 @@
 [package]
 name = "av-scenechange"
-version = "0.22.2"
+version = "0.23.0"
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.89"
 description = "Estimates frames in a video where a scenecut would be ideal"
 repository = "https://github.com/rust-av/av-scenechange"
 license = "MIT AND BSD-2-Clause AND ISC"
@@ -59,7 +59,13 @@ nasm-rs = { version = "0.3.1", features = ["parallel"], optional = true }
 
 [features]
 default = ["asm", "binary"]
+# Enable platform-specific SIMD for enhanced performance
 asm = ["cc", "libc", "nasm-rs"]
+# Statically compile only the SIMD for the targeted CPU (e.g. only AVX512 for znver4)
+# This is based on the `target-cpu` flag, so by default on x86 this targets SSE2,
+# which is why it is off by default. Without this flag, all SIMD variants are compiled,
+# and the appropriate variant is chosen at runtime.
+static_simd = ["asm"]
 binary = ["clap", "serialize"]
 devel = ["console", "fern"]
 ffmpeg = ["av-decoders/ffmpeg"]

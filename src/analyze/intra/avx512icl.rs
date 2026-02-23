@@ -23,8 +23,12 @@ decl_angular_ipred_fn! {
     avsc_ipred_dc_top_8bpc_avx512icl
 }
 
-// TODO: change this when Rust supports avx512 as a target feature
-#[target_feature(enable = "avx2")]
+#[target_feature(enable = "avx512f")]
+#[target_feature(enable = "avx512cd")]
+#[target_feature(enable = "avx512bw")]
+#[target_feature(enable = "avx512dq")]
+#[target_feature(enable = "avx512vl")]
+#[target_feature(enable = "avx512ifma")]
 pub(super) fn predict_dc_intra_internal<T: Pixel>(
     variant: PredictionVariant,
     dst: &mut PlaneRegionMut<'_, T>,

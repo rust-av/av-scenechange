@@ -131,11 +131,11 @@ impl<'a, T: Pixel> TileStateMut<'a, T> {
         frame_me_stats: &'a mut [FrameMEStats],
     ) -> Self {
         debug_assert!(
-            width % MI_SIZE == 0,
+            width.is_multiple_of(MI_SIZE),
             "Tile width must be a multiple of MI_SIZE"
         );
         debug_assert!(
-            height % MI_SIZE == 0,
+            height.is_multiple_of(MI_SIZE),
             "Tile width must be a multiple of MI_SIZE"
         );
 

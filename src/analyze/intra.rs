@@ -233,7 +233,7 @@ pub fn predict_dc_intra<T: Pixel>(
         if #[cfg(asm_x86_64)] {
             // There is currently a crash in the HBD ASM when the `dst` width is not mod 8.
             // Fallback to Rust code for that case.
-            if !(size_of::<T>() == 2 && dst.plane_cfg.width.get() % 8 > 0) {
+            if size_of::<T>() != 2 || dst.plane_cfg.width.get().is_multiple_of(8) {
                 if crate::cpu::has_avx512icl() {
                     // SAFETY: call to SIMD function
                     unsafe { avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }
