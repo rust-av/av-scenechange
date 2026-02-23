@@ -1,6 +1,6 @@
 # Changelog
 
-## Version 0.23.0 (unreleased)
+## Version 0.23.0
 
 - feat: add `static_simd` Cargo feature
 - chore!: bump MSRV to 1.89 (required for `target_feature = "avx512*"`)
