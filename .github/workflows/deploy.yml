@@ -61,9 +61,9 @@ jobs:
       - name: Handle release data and files
         id: data
         run: |
-          VERSION=$(head -n 1 CHANGELOG.md | tr -d "## Version ")
-          echo "::set-output name=version::$VERSION"
-          tail -n +2 CHANGELOG.md | sed -e '/^$/,$d' > CHANGELOG.txt
+          VERSION=$(grep -m 1 '^## Version' CHANGELOG.md | sed 's/## Version //')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          awk 'BEGIN{p=0} /^## Version/{if(p) exit; p=1; next} p{print}' CHANGELOG.md > CHANGELOG.txt
           cd av-scenechange-bins
           strip av-scenechange.exe
           mv av-scenechange.exe ..
