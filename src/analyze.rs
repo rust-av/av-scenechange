@@ -183,6 +183,10 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// to the second frame in `frame_set`.
     ///
     /// This will gracefully handle the first frame in the video as well.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(input_frameno))
+    )]
     #[inline]
     pub fn analyze_next_frame(
         &mut self,
@@ -281,6 +285,10 @@ impl<T: Pixel> SceneChangeDetector<T> {
 
     /// Runs scene change comparison between 2 given frames
     /// Insert result to start of score deque
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(input_frameno))
+    )]
     fn run_comparison(
         &mut self,
         frame1: &Arc<Frame<T>>,

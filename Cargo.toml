@@ -45,7 +45,7 @@ serde = { version = "1.0.228", features = ["derive"], optional = true }
 serde_json = { version = "1.0.145", optional = true }
 thiserror = "2.0.17"
 tracing = { version = "0.1.41", optional = true }
-tracing-chrome = { version = "0.7.2", optional = true }
+tracing-perfetto = { version = "0.1.5", optional = true }
 tracing-subscriber = { version = "0.3.20", optional = true }
 v_frame = { version = "0.5", features = ["padding_api"] }
 y4m = "0.8.0"
@@ -71,7 +71,7 @@ devel = ["console", "fern"]
 ffmpeg = ["av-decoders/ffmpeg"]
 ffms2 = ["av-decoders/ffms2"]
 serialize = ["serde", "serde_json"]
-tracing = ["dep:tracing", "tracing-chrome", "tracing-subscriber"]
+tracing = ["dep:tracing", "tracing-perfetto", "tracing-subscriber"]
 vapoursynth = ["av-decoders/vapoursynth"]
 
 [lints.clippy]

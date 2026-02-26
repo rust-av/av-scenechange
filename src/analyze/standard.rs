@@ -20,6 +20,10 @@ impl<T: Pixel> SceneChangeDetector<T> {
     /// We gather both intra and inter costs for the frames,
     /// as well as an importance-block-based difference,
     /// and use all three metrics.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(input_frameno))
+    )]
     pub(super) fn cost_scenecut(
         &mut self,
         frame1: &Arc<Frame<T>>,

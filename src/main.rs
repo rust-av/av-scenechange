@@ -43,12 +43,14 @@ fn main() -> Result<()> {
     init_logger();
 
     #[cfg(feature = "tracing")]
-    let (chrome_layer, _guard) = tracing_chrome::ChromeLayerBuilder::new().build();
+    let layer = tracing_perfetto::PerfettoLayer::new(std::sync::Mutex::new(std::fs::File::create(
+        "test.pftrace",
+    )?));
 
     #[cfg(feature = "tracing")]
     {
         use tracing_subscriber::layer::SubscriberExt;
-        tracing::subscriber::set_global_default(tracing_subscriber::registry().with(chrome_layer))
+        tracing::subscriber::set_global_default(tracing_subscriber::registry().with(layer))
             .expect("Could not initialize tracing subscriber");
     }
 

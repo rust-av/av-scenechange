@@ -125,6 +125,10 @@ pub fn new_detector<T: Pixel>(
 /// # Panics
 ///
 /// - If `opts.lookahead_distance` is 0.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(frame_limit))
+)]
 #[inline]
 pub fn detect_scene_changes<T: Pixel>(
     dec: &mut Decoder,

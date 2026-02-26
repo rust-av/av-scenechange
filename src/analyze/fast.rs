@@ -12,6 +12,7 @@ pub(super) const FAST_THRESHOLD: f64 = 18.0;
 impl<T: Pixel> SceneChangeDetector<T> {
     /// The fast algorithm detects fast cuts using a raw difference
     /// in pixel values between the scaled frames.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub(super) fn fast_scenecut(
         &mut self,
         frame1: &Arc<Frame<T>>,

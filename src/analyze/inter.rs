@@ -156,6 +156,7 @@ const SQUARE_REFINE_PATTERN: [MotionVector; 8] = search_pattern!(
   row: [  1,  1,  1,  0,  0, -1, -1, -1]
 );
 
+#[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
 pub(crate) fn estimate_inter_costs<T: Pixel>(
     frame: &Arc<Frame<T>>,
     ref_frame: &Arc<Frame<T>>,
@@ -225,6 +226,7 @@ pub(crate) fn estimate_inter_costs<T: Pixel>(
     inter_costs as f64 / (w_in_imp_b * h_in_imp_b) as f64
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
 fn compute_motion_vectors<T: Pixel>(
     fi: &FrameInvariants<T>,
     fs: &mut FrameState<T>,
@@ -241,6 +243,7 @@ fn compute_motion_vectors<T: Pixel>(
         });
 }
 
+#[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
 fn estimate_tile_motion<T: Pixel>(
     fi: &FrameInvariants<T>,
     ts: &mut TileStateMut<'_, T>,
