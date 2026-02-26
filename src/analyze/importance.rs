@@ -63,17 +63,17 @@ fn sum_8x8_block<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
 
 #[cfg(any(not(asm_x86_64), test))]
 fn sum_8x8_block_rust<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
-    use crate::data::get_dbg;
+    use crate::data::get_unchecked_rel;
 
     // Coordinates of the top-left corner of the reference block, in MV units.
     let x = x * IMPORTANCE_BLOCK_SIZE;
     let y = y * IMPORTANCE_BLOCK_SIZE;
 
-    let data = get_dbg(plane.data(), plane.data_origin()..);
+    let data = get_unchecked_rel(plane.data(), plane.data_origin()..);
     let stride = plane.geometry().stride.get();
     (y..(y + 8)).fold(0, |acc, row_idx| {
-        let row = get_dbg(
-            get_dbg(data, (x + row_idx * stride)..),
+        let row = get_unchecked_rel(
+            get_unchecked_rel(data, (x + row_idx * stride)..),
             ..IMPORTANCE_BLOCK_SIZE,
         );
         // 16-bit precision is sufficient for an 8 px row,

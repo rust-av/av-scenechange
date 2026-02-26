@@ -18,8 +18,8 @@ use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 use super::importance::IMPORTANCE_BLOCK_SIZE;
 use crate::data::{
     block::{BlockSize, MAX_TX_SIZE, TxSize},
-    get_dbg,
-    get_dbg_mut,
+    get_unchecked_mut_rel,
+    get_unchecked_rel,
     plane::{Area, AsRegion, PlaneOffset, PlaneRegion, PlaneRegionMut, Rect},
     prediction::PredictionVariant,
     satd::get_satd,
@@ -155,21 +155,24 @@ pub fn get_intra_edges<'a, T: Pixel>(
             if x != 0 {
                 for i in 0..txh {
                     debug_assert!(y + i < rect_h);
-                    get_dbg_mut(left, 2 * MAX_TX_SIZE - 1 - i).write(*get_dbg(&dst[y + i], x - 1));
+                    get_unchecked_mut_rel(left, 2 * MAX_TX_SIZE - 1 - i)
+                        .write(*get_unchecked_rel(&dst[y + i], x - 1));
                 }
                 if txh < tx_size.height() {
-                    let val = *get_dbg(&dst[y + txh - 1], x - 1);
+                    let val = *get_unchecked_rel(&dst[y + txh - 1], x - 1);
                     for i in txh..tx_size.height() {
-                        get_dbg_mut(left, 2 * MAX_TX_SIZE - 1 - i).write(val);
+                        get_unchecked_mut_rel(left, 2 * MAX_TX_SIZE - 1 - i).write(val);
                     }
                 }
             } else {
                 let val = if y != 0 {
-                    *get_dbg(&dst[y - 1], 0)
+                    *get_unchecked_rel(&dst[y - 1], 0)
                 } else {
                     T::from(base + 1).expect("value should fit in Pixel")
                 };
-                for v in get_dbg_mut(left, 2 * MAX_TX_SIZE - tx_size.height()..).iter_mut() {
+                for v in
+                    get_unchecked_mut_rel(left, 2 * MAX_TX_SIZE - tx_size.height()..).iter_mut()
+                {
                     v.write(val);
                 }
             }
@@ -184,33 +187,33 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 tx_size.width()
             };
             if y != 0 {
-                get_dbg_mut(above, ..txw).copy_from_slice(
+                get_unchecked_mut_rel(above, ..txw).copy_from_slice(
                     // SAFETY: &[T] and &[MaybeUninit<T>] have the same layout
                     unsafe {
-                        &*(get_dbg(&dst[y - 1], x..x + txw) as *const [T]
+                        &*(get_unchecked_rel(&dst[y - 1], x..x + txw) as *const [T]
                             as *const [std::mem::MaybeUninit<T>])
                     },
                 );
                 if txw < tx_size.width() {
-                    let val = *get_dbg(&dst[y - 1], x + txw - 1);
-                    for v in get_dbg_mut(above, txw..tx_size.width()) {
+                    let val = *get_unchecked_rel(&dst[y - 1], x + txw - 1);
+                    for v in get_unchecked_mut_rel(above, txw..tx_size.width()) {
                         v.write(val);
                     }
                 }
             } else {
                 let val = if x != 0 {
-                    *get_dbg(&dst[0], x - 1)
+                    *get_unchecked_rel(&dst[0], x - 1)
                 } else {
                     T::from(base - 1).expect("value should fit in Pixel")
                 };
-                for v in get_dbg_mut(above, ..tx_size.width()) {
+                for v in get_unchecked_mut_rel(above, ..tx_size.width()) {
                     v.write(val);
                 }
             }
             init_above += tx_size.width();
         }
 
-        get_dbg_mut(top_left, 0).write(T::from(base).expect("value should fit in Pixel"));
+        get_unchecked_mut_rel(top_left, 0).write(T::from(base).expect("value should fit in Pixel"));
     }
     IntraEdge::new(edge_buf, init_left, init_above)
 }

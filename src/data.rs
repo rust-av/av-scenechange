@@ -26,7 +26,7 @@ pub unsafe fn slice_assume_init_mut<T: Copy>(slice: &'_ mut [MaybeUninit<T>]) ->
     reason = "intended as a thin compile-time-elided wrapper"
 )]
 #[inline(always)]
-pub fn get_dbg<T, I: std::slice::SliceIndex<[T]>>(
+pub fn get_unchecked_rel<T, I: std::slice::SliceIndex<[T]>>(
     arr: &[T],
     index: I,
 ) -> &<I as std::slice::SliceIndex<[T]>>::Output {
@@ -47,7 +47,7 @@ pub fn get_dbg<T, I: std::slice::SliceIndex<[T]>>(
     reason = "intended as a thin compile-time-elided wrapper"
 )]
 #[inline(always)]
-pub fn get_dbg_mut<T, I: std::slice::SliceIndex<[T]>>(
+pub fn get_unchecked_mut_rel<T, I: std::slice::SliceIndex<[T]>>(
     arr: &mut [T],
     index: I,
 ) -> &mut <I as std::slice::SliceIndex<[T]>>::Output {
