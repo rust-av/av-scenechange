@@ -26,7 +26,6 @@ pub unsafe fn slice_assume_init_mut<T: Copy>(slice: &'_ mut [MaybeUninit<T>]) ->
     reason = "intended as a thin compile-time-elided wrapper"
 )]
 #[inline(always)]
-#[cfg(any(not(asm_x86_64), test))]
 pub fn get_dbg<T, I: std::slice::SliceIndex<[T]>>(
     arr: &[T],
     index: I,
@@ -37,7 +36,29 @@ pub fn get_dbg<T, I: std::slice::SliceIndex<[T]>>(
         if #[cfg(debug_assertions)] {
             arr.get(index).expect("array index out of bounds")
         } else {
-            unsafe{ arr.get_unchecked(index) }
+            // SAFETY: verified in debug mode
+            unsafe { arr.get_unchecked(index) }
+        }
+    }
+}
+
+#[allow(
+    clippy::inline_always,
+    reason = "intended as a thin compile-time-elided wrapper"
+)]
+#[inline(always)]
+pub fn get_dbg_mut<T, I: std::slice::SliceIndex<[T]>>(
+    arr: &mut [T],
+    index: I,
+) -> &mut <I as std::slice::SliceIndex<[T]>>::Output {
+    use cfg_if::cfg_if;
+
+    cfg_if! {
+        if #[cfg(debug_assertions)] {
+            arr.get_mut(index).expect("array index out of bounds")
+        } else {
+            // SAFETY: verified in debug mode
+            unsafe { arr.get_unchecked_mut(index) }
         }
     }
 }
