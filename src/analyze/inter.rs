@@ -157,7 +157,9 @@ const SQUARE_REFINE_PATTERN: [MotionVector; 8] = search_pattern!(
 );
 
 #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
-pub(crate) fn estimate_inter_costs<T: Pixel>(
+#[doc(hidden)]
+#[allow(clippy::missing_inline_in_public_items)]
+pub fn estimate_inter_costs<T: Pixel>(
     frame: &Arc<Frame<T>>,
     ref_frame: &Arc<Frame<T>>,
     bit_depth: usize,

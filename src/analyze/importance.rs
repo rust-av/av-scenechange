@@ -17,7 +17,9 @@ pub const IMP_BLOCK_SIZE_IN_MV_UNITS: i64 =
     IMPORTANCE_BLOCK_SIZE as i64 * IMP_BLOCK_MV_UNITS_PER_PIXEL;
 
 #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
-pub(crate) fn estimate_importance_block_difference<T: Pixel>(
+#[doc(hidden)]
+#[allow(clippy::missing_inline_in_public_items, clippy::must_use_candidate)]
+pub fn estimate_importance_block_difference<T: Pixel>(
     frame: &Arc<Frame<T>>,
     ref_frame: &Arc<Frame<T>>,
 ) -> f64 {

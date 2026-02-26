@@ -10,6 +10,22 @@ mod cpu;
 mod data;
 mod math;
 
+/// Hidden re-exports of internal items for benchmarking only.
+/// Not part of the stable public API.
+#[cfg(feature = "bench-internals")]
+#[doc(hidden)]
+pub mod _bench_internals {
+    pub use crate::{
+        analyze::{
+            estimate_importance_block_difference,
+            estimate_inter_costs,
+            estimate_intra_costs,
+        },
+        data::FrameMEStats,
+        math::Fixed,
+    };
+}
+
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::{

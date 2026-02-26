@@ -90,10 +90,13 @@ pub struct MEStats {
     pub normalized_sad: u32,
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct FrameMEStats {
     stats: Box<[MEStats]>,
+    #[doc(hidden)]
     pub cols: usize,
+    #[doc(hidden)]
     pub rows: usize,
 }
 
@@ -103,6 +106,7 @@ pub type RefMEStats = Arc<RwLock<[FrameMEStats; REF_FRAMES]>>;
 pub type ReadGuardMEStats<'a> = RwLockReadGuard<'a, [FrameMEStats; REF_FRAMES]>;
 pub type WriteGuardMEStats<'a> = RwLockWriteGuard<'a, [FrameMEStats; REF_FRAMES]>;
 
+#[allow(clippy::missing_inline_in_public_items, clippy::must_use_candidate)]
 impl FrameMEStats {
     pub fn new(cols: usize, rows: usize) -> Self {
         Self {
@@ -127,6 +131,7 @@ impl FrameMEStats {
     }
 }
 
+#[allow(clippy::missing_inline_in_public_items)]
 impl Index<usize> for FrameMEStats {
     type Output = [MEStats];
 
@@ -135,6 +140,7 @@ impl Index<usize> for FrameMEStats {
     }
 }
 
+#[allow(clippy::missing_inline_in_public_items)]
 impl IndexMut<usize> for FrameMEStats {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.stats[index * self.cols..(index + 1) * self.cols]

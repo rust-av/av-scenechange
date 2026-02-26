@@ -11,6 +11,7 @@ use std::mem::size_of;
 
 use num_traits::PrimInt;
 
+#[doc(hidden)]
 pub trait Fixed {
     fn floor_log2(&self, n: usize) -> usize;
     fn ceil_log2(&self, n: usize) -> usize;

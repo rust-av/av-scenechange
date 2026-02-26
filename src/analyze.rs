@@ -24,6 +24,13 @@ mod inter;
 mod intra;
 mod standard;
 
+#[cfg(feature = "bench-internals")]
+pub use self::{
+    importance::estimate_importance_block_difference,
+    inter::estimate_inter_costs,
+    intra::estimate_intra_costs,
+};
+
 /// Experiments have determined this to be an optimal threshold
 const IMP_BLOCK_DIFF_THRESHOLD: f64 = 7.0;
 

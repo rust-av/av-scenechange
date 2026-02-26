@@ -12,6 +12,9 @@ pub(crate) mod satd;
 pub(crate) mod superblock;
 pub(crate) mod tile;
 
+#[cfg(feature = "bench-internals")]
+pub use self::motion::FrameMEStats;
+
 /// Assume all the elements are initialized.
 pub unsafe fn slice_assume_init_mut<T: Copy>(slice: &'_ mut [MaybeUninit<T>]) -> &'_ mut [T] {
     // SAFETY: caller must assume elements are initialized
