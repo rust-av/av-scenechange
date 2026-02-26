@@ -26,17 +26,23 @@ fn y4m_8bit(c: &mut Criterion) {
     c.bench_function("y4m detect 8-bit", |b| {
         b.iter_batched(
             || {
-                let file = black_box(File::open(TEST_FILE).unwrap());
-                let reader = black_box(BufReader::new(file));
-                let decoder = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Y4m(black_box(
+                let file = File::open(TEST_FILE).unwrap();
+                let reader = BufReader::new(file);
+                let decoder = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Y4m(
                     Y4mDecoder::new(Box::new(reader) as Box<dyn Read>).unwrap(),
-                )))
+                ))
                 .unwrap();
 
                 (decoder, DEFAULT_OPTIONS)
             },
             |(mut decoder, options)| {
-                detect_scene_changes::<u8>(&mut decoder, options, None, None).ok();
+                detect_scene_changes::<u8>(
+                    black_box(&mut decoder),
+                    black_box(options),
+                    black_box(None),
+                    black_box(None),
+                )
+                .ok();
             },
             criterion::BatchSize::LargeInput,
         );
@@ -47,17 +53,23 @@ fn y4m_10bit(c: &mut Criterion) {
     c.bench_function("y4m detect 10-bit", |b| {
         b.iter_batched(
             || {
-                let file = black_box(File::open(HBD_TEST_FILE).unwrap());
-                let reader = black_box(BufReader::new(file));
-                let decoder = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Y4m(black_box(
+                let file = File::open(HBD_TEST_FILE).unwrap();
+                let reader = BufReader::new(file);
+                let decoder = Decoder::from_decoder_impl(av_decoders::DecoderImpl::Y4m(
                     Y4mDecoder::new(Box::new(reader) as Box<dyn Read>).unwrap(),
-                )))
+                ))
                 .unwrap();
 
                 (decoder, DEFAULT_OPTIONS)
             },
             |(mut decoder, options)| {
-                detect_scene_changes::<u16>(&mut decoder, options, None, None).ok()
+                detect_scene_changes::<u16>(
+                    black_box(&mut decoder),
+                    black_box(options),
+                    black_box(None),
+                    black_box(None),
+                )
+                .ok()
             },
             criterion::BatchSize::LargeInput,
         );
