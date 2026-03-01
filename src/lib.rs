@@ -242,6 +242,10 @@ pub fn detect_scene_changes<T: Pixel>(
 
     let mut produced = 0usize;
     while frame_limit.map_or_else(|| true, |limit| produced < limit) {
+        #[cfg(feature = "tracing")]
+        let span = tracing::span!(tracing::Level::INFO, "read_video_frame");
+         #[cfg(feature = "tracing")]
+        let enter = span.enter();
         match dec.read_video_frame() {
             Ok(frame) => {
                 produced += 1;
@@ -254,6 +258,10 @@ pub fn detect_scene_changes<T: Pixel>(
                 return Err(e.into());
             }
         }
+        #[cfg(feature = "tracing")]
+        drop(enter);
+        #[cfg(feature = "tracing")]
+        drop(span);
 
         if let (Some(progress_rx), Some(progress_fn)) = (&progress_rx, progress_callback) {
             while let Ok((frames, keyframe_count)) = progress_rx.try_recv() {
