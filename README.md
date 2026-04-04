@@ -106,7 +106,7 @@ cd av-scenechange
 cargo build --release
 
 # Build without assembly optimizations (no NASM required)
-cargo build --release --no-default-features --features binary
+cargo build --release --no-default-features --features binary,threading
 
 # Build with additional features
 cargo build --release --features ffmpeg  # FFmpeg input support
