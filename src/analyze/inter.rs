@@ -6,7 +6,9 @@ use std::{
 use aligned::{A64, Aligned};
 use arrayvec::ArrayVec;
 use num_rational::Rational32;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rayon::iter::IntoParallelIterator;
+#[cfg(feature = "threading")]
+use rayon::iter::ParallelIterator;
 use v_frame::{
     chroma::ChromaSubsampling,
     frame::Frame,
