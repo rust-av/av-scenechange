@@ -34,7 +34,7 @@ required-features = ["bench-internals"]
 aligned = "0.4.2"
 anyhow = "1.0.100"
 arrayvec = "0.7.6"
-av-decoders = "0.9.0"
+av-decoders = "0.10.0"
 cfg-if = "1.0.4"
 clap = { version = "4.5.53", features = ["derive"], optional = true }
 console = { version = "0.16.1", optional = true }
