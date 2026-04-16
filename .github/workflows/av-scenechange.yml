@@ -34,7 +34,9 @@ jobs:
       - uses: ilammy/setup-nasm@v1
 
       - name: Install Rust stable
-        run: rustup toolchain install --no-self-update --override stable
+        run: |
+          rustup toolchain install --no-self-update stable
+          rustup override set stable
       - uses: Swatinem/rust-cache@v2
 
       - name: Set MSVC x86_64 linker path
