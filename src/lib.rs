@@ -244,7 +244,7 @@ pub fn detect_scene_changes<T: Pixel>(
     while frame_limit.map_or_else(|| true, |limit| produced < limit) {
         #[cfg(feature = "tracing")]
         let span = tracing::span!(tracing::Level::INFO, "read_video_frame");
-         #[cfg(feature = "tracing")]
+        #[cfg(feature = "tracing")]
         let enter = span.enter();
         match dec.read_video_frame() {
             Ok(frame) => {
