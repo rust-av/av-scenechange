@@ -166,7 +166,6 @@ dependencies = [
  "nasm-rs",
  "num-rational",
  "num-traits",
- "pastey",
  "serde",
  "serde_json",
  "tracing",
@@ -812,12 +811,6 @@ dependencies = [
  "libc",
  "winapi",
 ]
-
-[[package]]
-name = "pastey"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b867cad97c0791bbd3aaa6472142568c6c9e8f71937e98379f584cfb0cf35bec"
 
 [[package]]
 name = "pin-project-lite"

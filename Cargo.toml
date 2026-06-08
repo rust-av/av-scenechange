@@ -43,7 +43,6 @@ libc = { version = "0.2.177", optional = true }
 log = { version = "0.4.28" }
 num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
-pastey = "0.2.1"
 rayon = { package = "maybe-rayon", version = "0.1", default-features = false }
 serde = { version = "1.0.228", features = ["derive"], optional = true }
 serde_json = { version = "1.0.145", optional = true }
