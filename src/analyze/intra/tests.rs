@@ -103,7 +103,7 @@ struct DcIntraCase<T> {
     expected: T,
 }
 
-fn assert_dc_intra_case<T: Pixel + std::fmt::Debug>(case: DcIntraCase<T>) {
+fn assert_dc_intra_case<T: Pixel + std::fmt::Debug>(case: &DcIntraCase<T>) {
     let width = case.tx_size.width();
     let height = case.tx_size.height();
 
@@ -314,7 +314,7 @@ fn predict_dc_intra_u8_cases() {
     ];
 
     for case in cases {
-        assert_dc_intra_case(case);
+        assert_dc_intra_case(&case);
     }
 }
 
@@ -360,6 +360,6 @@ fn predict_dc_intra_u16_cases() {
     ];
 
     for case in cases {
-        assert_dc_intra_case(case);
+        assert_dc_intra_case(&case);
     }
 }
