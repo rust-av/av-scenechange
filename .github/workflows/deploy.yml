@@ -1,5 +1,8 @@
 name: deploy
 
+permissions:
+  contents: write # required to make a release
+
 on:
   push:
     tags:
@@ -10,7 +13,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install nasm
         run: |
@@ -21,42 +24,36 @@ jobs:
           echo "C:\nasm" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable-x86_64-pc-windows-gnu
-          override: true
+        run: |
+          rustup install --profile minimal stable
+          rustup override set stable
 
       - name: Build
-        run: |
-          cargo build --release
+        run: cargo build --release
 
       - name: Create zip
         run: |
           $METRICS_PATH="$Env:GITHUB_WORKSPACE\target\release"
-          7z a av-scenechange.zip `
-              "$METRICS_PATH\av-scenechange.exe"
+          7z a av-scenechange.zip "$METRICS_PATH\av-scenechange.exe"
 
       - name: Upload binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: av-scenechange-bins
           path: av-scenechange.zip
 
   deploy:
     needs: create-binaries
-
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Download the zip
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
 
       - name: Unzip av-scenechange Windows binaries
-        run: |
-          unzip av-scenechange-bins/av-scenechange.zip -d av-scenechange-bins
+        run: unzip av-scenechange-bins/av-scenechange.zip -d av-scenechange-bins
 
       - name: Handle release data and files
         id: data
@@ -69,11 +66,10 @@ jobs:
           mv av-scenechange.exe ..
 
       - name: Create a release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Version ${{ steps.data.outputs.version }}
           body_path: CHANGELOG.txt
-          files: |
-            av-scenechange.exe
+          files: av-scenechange.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
