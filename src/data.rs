@@ -6,7 +6,6 @@ use v_frame::pixel::Pixel;
 pub(crate) mod block;
 pub(crate) mod frame;
 pub(crate) mod hadamard;
-pub(crate) mod mc;
 pub(crate) mod motion;
 pub(crate) mod plane;
 pub(crate) mod prediction;

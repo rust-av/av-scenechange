@@ -64,15 +64,6 @@ pub struct TileRect {
     pub height: usize,
 }
 
-impl TileRect {
-    pub const fn to_frame_plane_offset(self, tile_po: PlaneOffset) -> PlaneOffset {
-        PlaneOffset {
-            x: self.x as isize + tile_po.x,
-            y: self.y as isize + tile_po.y,
-        }
-    }
-}
-
 impl From<TileRect> for Rect {
     fn from(tile_rect: TileRect) -> Rect {
         Rect {

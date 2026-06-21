@@ -2,7 +2,7 @@ use std::{
     iter::FusedIterator,
     marker::PhantomData,
     num::NonZeroU8,
-    ops::{Index, IndexMut, Range},
+    ops::{Index, IndexMut},
     slice,
 };
 
@@ -258,6 +258,7 @@ impl<'a, T: Pixel> PlaneRegionMut<'a, T> {
         Self::from_slice(plane.data_mut(), geometry, rect)
     }
 
+    #[cfg(asm_x86_64)]
     #[expect(clippy::needless_pass_by_ref_mut)]
     pub fn data_ptr_mut(&mut self) -> *mut T {
         self.data
@@ -270,15 +271,6 @@ impl<'a, T: Pixel> PlaneRegionMut<'a, T> {
             stride: self.plane_cfg.stride(),
             width: self.rect.width,
             remaining: self.rect.height,
-            phantom: PhantomData,
-        }
-    }
-
-    pub fn as_const(&self) -> PlaneRegion<'_, T> {
-        PlaneRegion {
-            data: self.data,
-            plane_cfg: self.plane_cfg,
-            rect: self.rect,
             phantom: PhantomData,
         }
     }
@@ -557,112 +549,6 @@ impl PlaneBlockOffset {
     pub const fn to_luma_plane_offset(self) -> PlaneOffset {
         self.0.to_luma_plane_offset()
     }
-}
-
-// A Plane, PlaneSlice, or PlaneRegion is assumed to include or be able to
-// include padding on the edge of the frame
-#[derive(Clone, Copy)]
-pub struct PlaneSlice<'a, T: Pixel> {
-    pub plane: &'a Plane<T>,
-    pub x: isize,
-    pub y: isize,
-}
-
-impl<'a, T: Pixel> PlaneSlice<'a, T> {
-    pub fn as_ptr(&self) -> *const T {
-        self[0].as_ptr()
-    }
-
-    pub fn clamp(&self) -> PlaneSlice<'a, T> {
-        PlaneSlice {
-            plane: self.plane,
-            x: self.x.clamp(
-                -(self.plane.geometry().pad_left() as isize),
-                self.plane.geometry().width() as isize,
-            ),
-            y: self.y.clamp(
-                -(self.plane.geometry().pad_top() as isize),
-                self.plane.geometry().height() as isize,
-            ),
-        }
-    }
-
-    pub fn subslice(&self, xo: usize, yo: usize) -> PlaneSlice<'a, T> {
-        PlaneSlice {
-            plane: self.plane,
-            x: self.x + xo as isize,
-            y: self.y + yo as isize,
-        }
-    }
-
-    /// A slice starting i pixels above the current one.
-    #[allow(dead_code)]
-    pub fn go_up(&self, i: usize) -> PlaneSlice<'a, T> {
-        PlaneSlice {
-            plane: self.plane,
-            x: self.x,
-            y: self.y - i as isize,
-        }
-    }
-
-    /// A slice starting i pixels to the left of the current one.
-    #[allow(dead_code)]
-    pub fn go_left(&self, i: usize) -> PlaneSlice<'a, T> {
-        PlaneSlice {
-            plane: self.plane,
-            x: self.x - i as isize,
-            y: self.y,
-        }
-    }
-
-    /// Checks if `add_y` and `add_x` lies in the allocated bounds of the
-    /// underlying plane.
-    pub fn accessible(&self, add_x: usize, add_y: usize) -> bool {
-        let y = (self.y + add_y as isize + self.plane.geometry().pad_top() as isize) as usize;
-        let x = (self.x + add_x as isize + self.plane.geometry().pad_left() as isize) as usize;
-        y < self.plane.geometry().alloc_height() && x < self.plane.geometry().stride()
-    }
-
-    /// Checks if -`sub_x` and -`sub_y` lies in the allocated bounds of the
-    /// underlying plane.
-    pub fn accessible_neg(&self, sub_x: usize, sub_y: usize) -> bool {
-        let y = self.y - sub_y as isize + self.plane.geometry().pad_top() as isize;
-        let x = self.x - sub_x as isize + self.plane.geometry().pad_left() as isize;
-        y >= 0 && x >= 0
-    }
-}
-
-impl<T: Pixel> Index<usize> for PlaneSlice<'_, T> {
-    type Output = [T];
-
-    fn index(&self, index: usize) -> &Self::Output {
-        let range = row_range(self.plane.geometry(), self.x, self.y + index as isize);
-        &self.plane.data()[range]
-    }
-}
-
-pub(crate) fn plane_to_plane_slice<T: Pixel>(
-    plane: &Plane<T>,
-    po: PlaneOffset,
-) -> PlaneSlice<'_, T> {
-    PlaneSlice {
-        plane,
-        x: po.x,
-        y: po.y,
-    }
-}
-
-/// This version of the function includes the padding on the right side of the
-/// image
-fn row_range(geometry: PlaneGeometry, x: isize, y: isize) -> Range<usize> {
-    debug_assert!(geometry.pad_top() as isize + y >= 0);
-    debug_assert!(geometry.pad_left() as isize + x >= 0);
-
-    let base_y = (geometry.pad_top() as isize + y) as usize;
-    let base_x = (geometry.pad_left() as isize + x) as usize;
-    let base = base_y * geometry.stride() + base_x;
-    let width = geometry.stride() - base_x;
-    base..base + width
 }
 
 /// Returns a plane downscaled from the source plane by a factor of `scale` (not

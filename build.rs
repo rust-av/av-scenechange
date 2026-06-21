@@ -2,11 +2,14 @@
 
 #![allow(clippy::unwrap_used, reason = "build script")]
 
+use std::env;
+#[cfg(feature = "asm")]
 use std::{
-    env, fs,
+    fs,
     path::{Path, PathBuf},
 };
 
+#[cfg(feature = "asm")]
 fn rerun_dir<P: AsRef<Path>>(dir: P) {
     for entry in fs::read_dir(dir).unwrap() {
         let entry = entry.unwrap();
@@ -19,6 +22,7 @@ fn rerun_dir<P: AsRef<Path>>(dir: P) {
     }
 }
 
+#[cfg(feature = "asm")]
 fn hash_changed(files: &[&str], out_dir: &str, config: &Path) -> Option<([u8; 8], PathBuf)> {
     use std::{collections::hash_map::DefaultHasher, hash::Hasher};
 
@@ -103,12 +107,6 @@ fn build_nasm_files() {
         // "src/asm/x86/looprestoration16_avx2.asm",
         // "src/asm/x86/looprestoration16_avx512.asm",
         // "src/asm/x86/looprestoration16_sse.asm",
-        "src/asm/x86/mc_avx2.asm",
-        "src/asm/x86/mc_avx512.asm",
-        "src/asm/x86/mc_sse.asm",
-        "src/asm/x86/mc16_avx2.asm",
-        "src/asm/x86/mc16_avx512.asm",
-        "src/asm/x86/mc16_sse.asm",
         // "src/asm/x86/me.asm",
         "src/asm/x86/sad_plane.asm",
         "src/asm/x86/satd.asm",
@@ -155,6 +153,7 @@ fn build_nasm_files() {
     rerun_dir("src/asm/x86");
 }
 
+#[cfg(feature = "asm")]
 fn strip_command() -> Option<String> {
     let target = env::var("TARGET").expect("TARGET");
     // follows Cargo's naming convention for the linker setting
@@ -197,8 +196,6 @@ fn build_neon_asm_files() {
         // "src/asm/arm/64/cdef.S",
         // "src/asm/arm/64/cdef16.S",
         // "src/asm/arm/64/cdef_dist.S",
-        "src/asm/arm/64/mc.S",
-        "src/asm/arm/64/mc16.S",
         // "src/asm/arm/64/itx.S",
         // "src/asm/arm/64/itx16.S",
         "src/asm/arm/64/ipred.S",
