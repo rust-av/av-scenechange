@@ -4,60 +4,7 @@
 
 use std::env;
 #[cfg(feature = "asm")]
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
-
-#[cfg(feature = "asm")]
-fn rerun_dir<P: AsRef<Path>>(dir: P) {
-    for entry in fs::read_dir(dir).unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
-        println!("cargo:rerun-if-changed={}", path.to_string_lossy());
-
-        if path.is_dir() {
-            rerun_dir(path);
-        }
-    }
-}
-
-#[cfg(feature = "asm")]
-fn hash_changed(files: &[&str], out_dir: &str, config: &Path) -> Option<([u8; 8], PathBuf)> {
-    use std::{collections::hash_map::DefaultHasher, hash::Hasher};
-
-    let mut hasher = DefaultHasher::new();
-
-    let paths = files
-        .iter()
-        .map(Path::new)
-        .chain(std::iter::once(config))
-        .chain(std::iter::once(Path::new("build.rs")));
-
-    for path in paths {
-        if let Ok(buf) = std::fs::read(path) {
-            hasher.write(&buf);
-        } else {
-            panic!("Cannot open {}", path.display());
-        }
-    }
-
-    if let Some(cmd) = strip_command() {
-        hasher.write(cmd.as_bytes());
-    }
-
-    let hash = hasher.finish().to_be_bytes();
-
-    let hash_path = Path::new(&out_dir).join("asm.hash");
-
-    if let Ok(old_hash) = std::fs::read(&hash_path)
-        && old_hash == hash
-    {
-        return None;
-    }
-
-    Some((hash, hash_path))
-}
+use std::path::Path;
 
 #[cfg(feature = "asm")]
 fn build_nasm_files() {
@@ -115,63 +62,26 @@ fn build_nasm_files() {
         "src/asm/x86/tables.asm",
     ];
 
-    if let Some((hash, hash_path)) = hash_changed(asm_files, &out_dir, &dest_path) {
-        let obj = nasm_rs::Build::new()
-      .min_version(2, 15, 0)
-      .include(&out_dir)
-      .include("src")
-      .files(asm_files)
-      .compile_objects()
-      .unwrap_or_else(|e| {
-        panic!("NASM build failed. Make sure you have nasm installed or disable the \"asm\" feature.\n\
-                You can get NASM from https://nasm.us or your system's package manager.\n\
-                \n\
-                error: {e}");
-    });
+    println!("cargo:rerun-if-changed=src/asm/x86");
 
-        // cc is better at finding the correct archiver
-        let mut cc = cc::Build::new();
-        for o in obj {
-            cc.object(o);
-        }
-        cc.compile("avscasm");
+    let obj = nasm_rs::Build::new()
+        .min_version(2, 15, 0)
+        .include(&out_dir)
+        .include("src")
+        .files(asm_files)
+        .compile_objects()
+        .unwrap_or_else(|e| {
+            panic!("NASM build failed. Make sure you have nasm installed or disable the \"asm\" feature.\n\
+                    You can get NASM from https://nasm.us or your system's package manager.\n\
+                    \n\
+                    error: {e}");
+        });
 
-        // Strip local symbols from the asm library since they
-        // confuse the debugger.
-        if let Some(strip) = strip_command() {
-            let _ = std::process::Command::new(strip)
-                .arg("-x")
-                .arg(Path::new(&out_dir).join("libavscasm.a"))
-                .status();
-        }
-
-        std::fs::write(hash_path, &hash[..]).unwrap();
-    } else {
-        println!("cargo:rustc-link-search={out_dir}");
+    let mut cc = cc::Build::new();
+    for o in obj {
+        cc.object(o);
     }
-    println!("cargo:rustc-link-lib=static=avscasm");
-    rerun_dir("src/asm/x86");
-}
-
-#[cfg(feature = "asm")]
-fn strip_command() -> Option<String> {
-    let target = env::var("TARGET").expect("TARGET");
-    // follows Cargo's naming convention for the linker setting
-    let normalized_target = target.replace('-', "_").to_uppercase();
-    let explicit_strip = env::var(format!("CARGO_TARGET_{normalized_target}_STRIP"))
-        .ok()
-        .or_else(|| env::var("STRIP").ok());
-    if explicit_strip.is_some() {
-        return explicit_strip;
-    }
-
-    // strip command is target-specific, e.g. macOS's strip breaks MUSL's archives
-    let host = env::var("HOST").expect("HOST");
-    if host != target {
-        return None;
-    }
-
-    Some("strip".into())
+    cc.compile("avscasm");
 }
 
 #[cfg(feature = "asm")]
@@ -206,19 +116,13 @@ fn build_neon_asm_files() {
         "src/asm/arm/tables.S",
     ];
 
-    if let Some((hash, hash_path)) = hash_changed(asm_files, &out_dir, &dest_path) {
-        cc::Build::new()
-            .files(asm_files)
-            .include(".")
-            .include(&out_dir)
-            .compile("avsc-aarch64");
+    println!("cargo:rerun-if-changed=src/asm/arm");
 
-        std::fs::write(hash_path, &hash[..]).unwrap();
-    } else {
-        println!("cargo:rustc-link-search={out_dir}");
-        println!("cargo:rustc-link-lib=static=avsc-aarch64");
-    }
-    rerun_dir("src/asm/arm");
+    cc::Build::new()
+        .files(asm_files)
+        .include(".")
+        .include(&out_dir)
+        .compile("avsc-aarch64");
 }
 
 #[allow(unused_variables)]
