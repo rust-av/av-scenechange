@@ -33,9 +33,9 @@ pub fn put_8tap_internal<T: Pixel>(
         match size_of::<T>() {
             1 => avsc_put_8tap_regular_8bpc_avx512icl(
                 dst.data_ptr_mut() as *mut _,
-                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * dst.plane_cfg.stride()) as isize,
                 src.as_ptr() as *const _,
-                (size_of::<T>() * src.plane.geometry().stride.get()) as isize,
+                (size_of::<T>() * src.plane.geometry().stride()) as isize,
                 width as i32,
                 height as i32,
                 col_frac,

@@ -12,20 +12,26 @@ unsafe extern "C" {
 
 #[target_feature(enable = "sse2")]
 pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
-    assert_eq!(src.geometry().width, dst.geometry().width);
-    assert_eq!(src.geometry().stride, dst.geometry().stride);
-    assert_eq!(src.geometry().height, dst.geometry().height);
-    assert!(src.geometry().width <= src.geometry().stride);
+    assert_eq!(src.geometry().width(), dst.geometry().width());
+    assert_eq!(src.geometry().stride(), dst.geometry().stride());
+    assert_eq!(src.geometry().height(), dst.geometry().height());
+    assert!(src.geometry().width() <= src.geometry().stride());
 
     match size_of::<T>() {
         // SAFETY: call to SIMD function
         1 => unsafe {
             avsc_sad_plane_8bpc_sse2(
-                src.data().as_ptr().add(src.data_origin()).cast::<u8>(),
-                dst.data().as_ptr().add(dst.data_origin()).cast::<u8>(),
-                (size_of::<T>() * src.geometry().stride.get()) as libc::size_t,
-                src.width().get(),
-                src.height().get(),
+                src.data()
+                    .as_ptr()
+                    .add(src.geometry().data_origin())
+                    .cast::<u8>(),
+                dst.data()
+                    .as_ptr()
+                    .add(dst.geometry().data_origin())
+                    .cast::<u8>(),
+                (size_of::<T>() * src.geometry().stride()) as libc::size_t,
+                src.width(),
+                src.height(),
             )
         },
         2 => super::rust::sad_plane_internal(src, dst),

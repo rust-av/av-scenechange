@@ -18,7 +18,7 @@ use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 use super::importance::IMPORTANCE_BLOCK_SIZE;
 use crate::data::{
     block::{BlockSize, MAX_TX_SIZE, TxSize},
-    get_unchecked_mut_rel, get_unchecked_rel,
+    get_unchecked_mut_rel, get_unchecked_rel, pixel_from_u16,
     plane::{Area, AsRegion, PlaneOffset, PlaneRegion, PlaneRegionMut, Rect},
     prediction::PredictionVariant,
     satd::get_satd,
@@ -43,8 +43,8 @@ pub fn estimate_intra_costs<T: Pixel>(
     let bsize = BlockSize::from_width_and_height(IMPORTANCE_BLOCK_SIZE, IMPORTANCE_BLOCK_SIZE);
     let tx_size = bsize.tx_size();
 
-    let h_in_imp_b = plane.height().get() / IMPORTANCE_BLOCK_SIZE;
-    let w_in_imp_b = plane.width().get() / IMPORTANCE_BLOCK_SIZE;
+    let h_in_imp_b = plane.height() / IMPORTANCE_BLOCK_SIZE;
+    let w_in_imp_b = plane.width() / IMPORTANCE_BLOCK_SIZE;
     let mut intra_costs = Vec::with_capacity(h_in_imp_b * w_in_imp_b);
 
     for y in 0..h_in_imp_b {
@@ -138,11 +138,11 @@ pub fn get_intra_edges<'a, T: Pixel>(
         let rect_w = dst
             .rect()
             .width
-            .min(dst.plane_cfg.width.get() - dst.rect().x as usize);
+            .min(dst.plane_cfg.width() - dst.rect().x as usize);
         let rect_h = dst
             .rect()
             .height
-            .min(dst.plane_cfg.height.get() - dst.rect().y as usize);
+            .min(dst.plane_cfg.height() - dst.rect().y as usize);
 
         // Needs left
         if needs_left {
@@ -167,7 +167,7 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 let val = if y != 0 {
                     *get_unchecked_rel(&dst[y - 1], 0)
                 } else {
-                    T::from(base + 1).expect("value should fit in Pixel")
+                    pixel_from_u16(base + 1)
                 };
                 for v in
                     get_unchecked_mut_rel(left, 2 * MAX_TX_SIZE - tx_size.height()..).iter_mut()
@@ -203,7 +203,7 @@ pub fn get_intra_edges<'a, T: Pixel>(
                 let val = if x != 0 {
                     *get_unchecked_rel(&dst[0], x - 1)
                 } else {
-                    T::from(base - 1).expect("value should fit in Pixel")
+                    pixel_from_u16(base - 1)
                 };
                 for v in get_unchecked_mut_rel(above, ..tx_size.width()) {
                     v.write(val);
@@ -212,7 +212,7 @@ pub fn get_intra_edges<'a, T: Pixel>(
             init_above += tx_size.width();
         }
 
-        get_unchecked_mut_rel(top_left, 0).write(T::from(base).expect("value should fit in Pixel"));
+        get_unchecked_mut_rel(top_left, 0).write(pixel_from_u16(base));
     }
     IntraEdge::new(edge_buf, init_left, init_above)
 }
@@ -240,7 +240,7 @@ pub fn predict_dc_intra<T: Pixel>(
         if #[cfg(asm_x86_64)] {
             // There is currently a crash in the HBD ASM when the `dst` width is not mod 8.
             // Fallback to Rust code for that case.
-            if size_of::<T>() != 2 || dst.plane_cfg.width.get().is_multiple_of(8) {
+            if size_of::<T>() != 2 || dst.plane_cfg.width().is_multiple_of(8) {
                 if crate::cpu::has_avx512icl() {
                     // SAFETY: call to SIMD function
                     unsafe { avx512icl::predict_dc_intra_internal(variant, dst, tx_size, bit_depth, edge_buf); }

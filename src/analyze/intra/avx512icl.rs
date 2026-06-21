@@ -38,7 +38,7 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
 ) {
     // SAFETY: Calls Assembly code.
     unsafe {
-        let stride = (size_of::<T>() * dst.plane_cfg.stride.get()) as libc::ptrdiff_t;
+        let stride = (size_of::<T>() * dst.plane_cfg.stride()) as libc::ptrdiff_t;
         let w = tx_size.width() as libc::c_int;
         let h = tx_size.height() as libc::c_int;
 

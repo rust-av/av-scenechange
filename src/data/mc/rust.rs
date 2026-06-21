@@ -1,9 +1,9 @@
-use num_traits::ToPrimitive;
 use v_frame::pixel::Pixel;
 
 use crate::{
     data::{
         mc::FilterMode,
+        pixel_as_i32, pixel_from_u16,
         plane::{PlaneRegionMut, PlaneSlice},
     },
     math::round_shift,
@@ -140,7 +140,7 @@ pub fn put_8tap_internal<T: Pixel>(
     assert_eq!(height & 1, 0);
     assert!(width.is_power_of_two() && (2..=128).contains(&width));
 
-    let ref_stride = src.plane.geometry().stride.get();
+    let ref_stride = src.plane.geometry().stride();
     let y_filter = get_filter(row_frac, height);
     let x_filter = get_filter(col_frac, width);
     let max_sample_val = (1 << bit_depth) - 1;
@@ -159,16 +159,15 @@ pub fn put_8tap_internal<T: Pixel>(
                 let src_slice = &offset_slice[r];
                 let dst_slice = &mut dst[r];
                 for c in 0..width {
-                    dst_slice[c] = T::from(
+                    dst_slice[c] = pixel_from_u16(
                         round_shift(
                             // SAFETY: We pass this a raw pointer, but it's created from a
                             // checked slice, so we are safe.
                             unsafe { run_filter(src_slice[c..].as_ptr(), ref_stride, y_filter) },
                             7,
                         )
-                        .clamp(0, max_sample_val),
-                    )
-                    .expect("value should fit in Pixel");
+                        .clamp(0, max_sample_val) as u16,
+                    );
                 }
             }
         }
@@ -178,7 +177,7 @@ pub fn put_8tap_internal<T: Pixel>(
                 let src_slice = &offset_slice[r];
                 let dst_slice = &mut dst[r];
                 for c in 0..width {
-                    dst_slice[c] = T::from(
+                    dst_slice[c] = pixel_from_u16(
                         round_shift(
                             round_shift(
                                 // SAFETY: We pass this a raw pointer, but it's created from a
@@ -188,9 +187,8 @@ pub fn put_8tap_internal<T: Pixel>(
                             ),
                             intermediate_bits,
                         )
-                        .clamp(0, max_sample_val),
-                    )
-                    .expect("value should fit in Pixel");
+                        .clamp(0, max_sample_val) as u16,
+                    );
                 }
             }
         }
@@ -214,18 +212,21 @@ pub fn put_8tap_internal<T: Pixel>(
                 for r in 0..height {
                     let dst_slice = &mut dst[r];
                     for c in cg..(cg + 8).min(width) {
-                        dst_slice[c] = T::from(
+                        dst_slice[c] = pixel_from_u16(
                             round_shift(
                                 // SAFETY: We pass this a raw pointer, but it's created from a
                                 // checked slice, so we are safe.
                                 unsafe {
-                                    run_filter(intermediate[8 * r + c - cg..].as_ptr(), 8, y_filter)
+                                    run_filter_i16(
+                                        intermediate[8 * r + c - cg..].as_ptr(),
+                                        8,
+                                        y_filter,
+                                    )
                                 },
                                 7 + intermediate_bits,
                             )
-                            .clamp(0, max_sample_val),
-                        )
-                        .expect("value should fit in Pixel");
+                            .clamp(0, max_sample_val) as u16,
+                        );
                     }
                 }
             }
@@ -245,7 +246,7 @@ fn get_filter(frac: i32, length: usize) -> [i32; SUBPEL_FILTER_SIZE] {
 }
 
 /// SAFETY: caller must validate that `stride * filter.len() <= src.len()`
-unsafe fn run_filter<T: ToPrimitive>(src: *const T, stride: usize, filter: [i32; 8]) -> i32 {
+unsafe fn run_filter<T: Pixel>(src: *const T, stride: usize, filter: [i32; 8]) -> i32 {
     filter
         .iter()
         .enumerate()
@@ -253,7 +254,22 @@ unsafe fn run_filter<T: ToPrimitive>(src: *const T, stride: usize, filter: [i32;
             // SAFETY: caller must validate that `stride * filter.len() <= src.len()`
             unsafe {
                 let p = src.add(i * stride);
-                f * (*p).to_i32().expect("value should fit in i32")
+                f * pixel_as_i32(*p)
+            }
+        })
+        .sum::<i32>()
+}
+
+/// SAFETY: caller must validate that `stride * filter.len() <= src.len()`
+unsafe fn run_filter_i16(src: *const i16, stride: usize, filter: [i32; 8]) -> i32 {
+    filter
+        .iter()
+        .enumerate()
+        .map(|(i, f)| {
+            // SAFETY: caller must validate that `stride * filter.len() <= src.len()`
+            unsafe {
+                let p = src.add(i * stride);
+                f * i32::from(*p)
             }
         })
         .sum::<i32>()

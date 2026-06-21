@@ -1,7 +1,4 @@
-use std::{
-    mem::MaybeUninit,
-    num::{NonZeroU8, NonZeroUsize},
-};
+use std::mem::MaybeUninit;
 
 use aligned::Aligned;
 use cfg_if::cfg_if;
@@ -55,30 +52,18 @@ fn predict_dc_intra_internal_verify_asm<T: Pixel + std::fmt::Debug>(
 fn create_test_plane<T: Pixel>(width: usize, height: usize, stride: usize) -> Plane<T> {
     assert!(stride >= width, "stride must be >= width");
 
-    let width_nz = NonZeroUsize::new(width).expect("width must be non-zero");
-    let height_nz = NonZeroUsize::new(height).expect("height must be non-zero");
-
     // Determine bit depth based on pixel type
     // For u8, use 8-bit; for u16, use 10-bit as a reasonable default
-    let bit_depth = if std::mem::size_of::<T>() == 1 {
-        NonZeroU8::new(8).expect("8 is non-zero")
-    } else {
-        NonZeroU8::new(10).expect("10 is non-zero")
-    };
+    let bit_depth = if std::mem::size_of::<T>() == 1 { 8 } else { 10 };
 
     // Calculate padding needed to achieve the desired stride
     let padding_right = stride - width;
 
     // Create a monochrome frame and extract the y_plane
-    let frame = FrameBuilder::new(
-        width_nz,
-        height_nz,
-        ChromaSubsampling::Monochrome,
-        bit_depth,
-    )
-    .luma_padding_right(padding_right)
-    .build::<T>()
-    .expect("Failed to build frame");
+    let frame = FrameBuilder::new(width, height, ChromaSubsampling::Monochrome, bit_depth)
+        .luma_padding_right(padding_right)
+        .build::<T>()
+        .expect("Failed to build frame");
 
     frame.y_plane
 }

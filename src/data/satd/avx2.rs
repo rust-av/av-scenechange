@@ -100,9 +100,9 @@ pub(super) fn get_satd_internal<T: Pixel>(
                 BlockSize::BLOCK_128X128 => avsc_satd_128x128_avx2,
             })(
                 src.data_ptr() as *const _,
-                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * src.plane_cfg.stride()) as isize,
                 dst.data_ptr() as *const _,
-                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * dst.plane_cfg.stride()) as isize,
             )
         },
         // SAFETY: call to SIMD function
@@ -132,9 +132,9 @@ pub(super) fn get_satd_internal<T: Pixel>(
                 BlockSize::BLOCK_128X128 => avsc_satd_128x128_hbd_avx2,
             })(
                 src.data_ptr() as *const _,
-                (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * src.plane_cfg.stride()) as isize,
                 dst.data_ptr() as *const _,
-                (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
+                (size_of::<T>() * dst.plane_cfg.stride()) as isize,
             )
         },
         _ => unreachable!(),

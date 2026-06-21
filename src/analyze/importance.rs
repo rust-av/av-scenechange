@@ -25,8 +25,8 @@ pub fn estimate_importance_block_difference<T: Pixel>(
 ) -> f64 {
     let plane_org = &frame.y_plane;
     let plane_ref = &ref_frame.y_plane;
-    let h_in_imp_b = plane_org.height().get() / IMPORTANCE_BLOCK_SIZE;
-    let w_in_imp_b = plane_org.width().get() / IMPORTANCE_BLOCK_SIZE;
+    let h_in_imp_b = plane_org.height() / IMPORTANCE_BLOCK_SIZE;
+    let w_in_imp_b = plane_org.width() / IMPORTANCE_BLOCK_SIZE;
 
     let mut imp_block_costs = 0;
 
@@ -63,14 +63,14 @@ fn sum_8x8_block<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
 
 #[cfg(any(not(asm_x86_64), test))]
 fn sum_8x8_block_rust<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
-    use crate::data::get_unchecked_rel;
+    use crate::data::{get_unchecked_rel, pixel_as_u32};
 
     // Coordinates of the top-left corner of the reference block, in MV units.
     let x = x * IMPORTANCE_BLOCK_SIZE;
     let y = y * IMPORTANCE_BLOCK_SIZE;
 
-    let data = get_unchecked_rel(plane.data(), plane.data_origin()..);
-    let stride = plane.geometry().stride.get();
+    let data = get_unchecked_rel(plane.data(), plane.geometry().data_origin()..);
+    let stride = plane.geometry().stride();
     (y..(y + 8)).fold(0, |acc, row_idx| {
         let row = get_unchecked_rel(
             get_unchecked_rel(data, (x + row_idx * stride)..),
@@ -79,10 +79,7 @@ fn sum_8x8_block_rust<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
         // 16-bit precision is sufficient for an 8 px row,
         // as `IMPORTANCE_BLOCK_SIZE * (2^12 - 1) < 2^16 - 1`,
         // so overflow is not possible
-        acc + row
-            .iter()
-            .map(|pixel| pixel.to_u16().expect("value should fit in u16"))
-            .sum::<u16>() as i64
+        acc + row.iter().map(|&pixel| pixel_as_u32(pixel)).sum::<u32>() as i64
     })
 }
 
@@ -93,8 +90,8 @@ unsafe fn sum_8x8_block_sse2<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> 
 
     let bx = x * IMPORTANCE_BLOCK_SIZE;
     let by = y * IMPORTANCE_BLOCK_SIZE;
-    let stride = plane.geometry().stride.get();
-    let origin = plane.data_origin();
+    let stride = plane.geometry().stride();
+    let origin = plane.geometry().data_origin();
 
     // SAFETY: All pointer arithmetic below stays within the plane's allocated
     // data buffer. The caller guarantees valid block coordinates (x, y), and

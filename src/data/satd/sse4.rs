@@ -33,9 +33,9 @@ pub(super) fn get_satd_internal<T: Pixel>(
             match bsize {
                 BlockSize::BLOCK_4X4 => avsc_satd_4x4_sse4(
                     src.data_ptr() as *const _,
-                    (size_of::<T>() * src.plane_cfg.stride.get()) as isize,
+                    (size_of::<T>() * src.plane_cfg.stride()) as isize,
                     dst.data_ptr() as *const _,
-                    (size_of::<T>() * dst.plane_cfg.stride.get()) as isize,
+                    (size_of::<T>() * dst.plane_cfg.stride()) as isize,
                 ),
                 _ => super::ssse3::get_satd_internal(src, dst, w, h, bit_depth),
             }

@@ -1,6 +1,9 @@
 use v_frame::{pixel::Pixel, plane::Plane};
 
-use crate::data::plane::{Area, PlaneRegion, Rect};
+use crate::data::{
+    pixel_as_i32,
+    plane::{Area, PlaneRegion, Rect},
+};
 
 pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
     assert_eq!(src.width(), dst.width());
@@ -12,8 +15,8 @@ pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u6
             src.iter()
                 .zip(dst.iter())
                 .map(|(&p1, &p2)| {
-                    let p1 = p1.to_i32().expect("value should fit in i32");
-                    let p2 = p2.to_i32().expect("value should fit in i32");
+                    let p1 = pixel_as_i32(p1);
+                    let p2 = pixel_as_i32(p2);
                     p1.abs_diff(p2)
                 })
                 .sum::<u32>() as u64
@@ -49,8 +52,8 @@ pub(super) fn get_sad_internal<T: Pixel>(
             src.iter()
                 .zip(dst)
                 .map(|(&p1, &p2)| {
-                    let p1 = p1.to_i32().expect("value should fit in i32");
-                    let p2 = p2.to_i32().expect("value should fit in i32");
+                    let p1 = pixel_as_i32(p1);
+                    let p2 = pixel_as_i32(p2);
                     p1.abs_diff(p2)
                 })
                 .sum::<u32>()

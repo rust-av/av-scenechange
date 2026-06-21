@@ -1,7 +1,4 @@
-use std::{
-    num::{NonZeroU8, NonZeroUsize},
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use aligned::{A64, Aligned};
 use arrayvec::ArrayVec;
@@ -156,16 +153,15 @@ pub fn estimate_inter_costs<T: Pixel>(
     chroma_sampling: ChromaSubsampling,
     buffer: RefMEStats,
 ) -> f64 {
-    let last_fi =
-        FrameInvariants::new_key_frame(frame.y_plane.width().get(), frame.y_plane.height().get());
+    let last_fi = FrameInvariants::new_key_frame(frame.y_plane.width(), frame.y_plane.height());
     #[expect(clippy::unwrap_used)]
     let fi = FrameInvariants::new_inter_frame(&last_fi, 1).unwrap();
 
     // Compute the motion vectors.
     let mut fs = FrameState::new_with_frame_and_me_stats_and_rec(Arc::clone(frame), buffer);
     let mut tiling = TilingInfo::from_target_tiles(
-        frame.y_plane.width().get(),
-        frame.y_plane.height().get(),
+        frame.y_plane.width(),
+        frame.y_plane.height(),
         *frame_rate.numer() as f64 / *frame_rate.denom() as f64,
         TilingInfo::tile_log2(1, 0).expect("invalid tile_log2 count"),
         TilingInfo::tile_log2(1, 0).expect("invalid tile_log2 count"),
@@ -176,8 +172,8 @@ pub fn estimate_inter_costs<T: Pixel>(
     // Estimate inter costs
     let plane_org = &frame.y_plane;
     let plane_ref = &ref_frame.y_plane;
-    let h_in_imp_b = plane_org.height().get() / IMPORTANCE_BLOCK_SIZE;
-    let w_in_imp_b = plane_org.width().get() / IMPORTANCE_BLOCK_SIZE;
+    let h_in_imp_b = plane_org.height() / IMPORTANCE_BLOCK_SIZE;
+    let w_in_imp_b = plane_org.width() / IMPORTANCE_BLOCK_SIZE;
     let stats = &fs.frame_me_stats.read().expect("poisoned lock")[0];
     let bsize = BlockSize::from_width_and_height(IMPORTANCE_BLOCK_SIZE, IMPORTANCE_BLOCK_SIZE);
 
@@ -964,28 +960,18 @@ fn subpel_diamond_search<T: Pixel>(
     let mc_h = (h + 1) & !1;
 
     // Metadata for subpel scratch pad.
-    let cfg = PlaneGeometry {
-        width: NonZeroUsize::new(mc_w).expect("width must not be zero"),
-        height: NonZeroUsize::new(mc_h).expect("height must not be zero"),
-        stride: NonZeroUsize::new(mc_w).expect("stride must not be zero"),
-        pad_left: 0,
-        pad_right: 0,
-        pad_top: 0,
-        pad_bottom: 0,
-        subsampling_x: NonZeroU8::new(1).expect("non-zero const"),
-        subsampling_y: NonZeroU8::new(1).expect("non-zero const"),
-    };
+    let cfg = PlaneGeometry::unpadded(mc_w, mc_h, 1, 1).expect("valid scratch geometry");
     // Stack allocation for subpel scratch pad.
     // SAFETY: We write to the array below before reading from it.
-    let mut buf: Aligned<A64, [T; 128 * 128]> = Aligned([T::zero(); 128 * 128]);
+    let mut buf: Aligned<A64, [T; 128 * 128]> = Aligned([T::default(); 128 * 128]);
     let mut tmp_region = PlaneRegionMut::from_slice(
         buf.as_mut(),
         cfg,
         Rect {
             x: 0,
             y: 0,
-            width: cfg.width.get(),
-            height: cfg.height.get(),
+            width: cfg.width(),
+            height: cfg.height(),
         },
     );
 

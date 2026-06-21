@@ -1,7 +1,4 @@
-use v_frame::{
-    pixel::Pixel,
-    plane::{Plane, PlaneGeometry},
-};
+use v_frame::{pixel::Pixel, plane::Plane};
 
 use crate::data::{
     frame::{FrameInvariants, RefType},
@@ -110,13 +107,9 @@ impl PredictionMode {
         po: PlaneOffset,
         mv: MotionVector,
     ) -> (i32, i32, PlaneSlice<'_, T>) {
-        let PlaneGeometry {
-            subsampling_x,
-            subsampling_y,
-            ..
-        } = rec_plane.geometry();
-        let ss_x = subsampling_x.get() >> 1;
-        let ss_y = subsampling_y.get() >> 1;
+        let geometry = rec_plane.geometry();
+        let ss_x = geometry.subsampling_x() >> 1;
+        let ss_y = geometry.subsampling_y() >> 1;
         let row_offset = mv.row as i32 >> (3 + ss_y);
         let col_offset = mv.col as i32 >> (3 + ss_x);
         let row_frac = ((mv.row as i32) << (1 - ss_y)) & 0xf;
