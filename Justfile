@@ -7,10 +7,8 @@ codecov-upload:
     codecov --token "$AVSC_CODECOV_TOKEN" --file lcov.info --required
 
 precommit:
-    cargo fmt
+    cargo fmt --all
     cargo clippy -- -D warnings
-    cargo clippy --release -- -D warnings
-    cargo clippy --features ffmpeg -- -D warnings
-    cargo clippy --features vapoursynth -- -D warnings
-    cargo clippy --features ffms2 -- -D warnings
-    just lcov
+    cargo clippy --features ffmpeg,vapoursynth,ffms2 -- -D warnings
+    cargo test
+    cargo test --features ffmpeg,vapoursynth,ffms2
