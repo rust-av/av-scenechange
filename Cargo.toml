@@ -1,6 +1,6 @@
 [package]
 name = "av-scenechange"
-version = "0.23.0"
+version = "0.24.0"
 edition = "2024"
 rust-version = "1.95"
 description = "Estimates frames in a video where a scenecut would be ideal"
