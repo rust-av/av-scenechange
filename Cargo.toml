@@ -44,7 +44,6 @@ log = { version = "0.4.28" }
 num-rational = { version = "0.4.2", default-features = false }
 num-traits = "0.2.19"
 rayon = { package = "maybe-rayon", version = "0.1", default-features = false }
-semisafe = "1.2.0"
 serde = { version = "1.0.228", features = ["derive"], optional = true }
 serde_json = { version = "1.0.145", optional = true }
 tracing = { version = "0.1.41", optional = true }
@@ -191,7 +190,6 @@ transmute_ptr_to_ptr = "warn"
 transmute_undefined_repr = "warn"
 trivial_regex = "warn"
 trivially_copy_pass_by_ref = "warn"
-undocumented_unsafe_blocks = "warn"
 # Annoyances
 uninlined_format_args = "allow"
 unnecessary_box_returns = "warn"

@@ -157,7 +157,6 @@ dependencies = [
  "nasm-rs",
  "num-rational",
  "num-traits",
- "semisafe",
  "serde",
  "serde_json",
  "tracing",
@@ -1012,12 +1011,6 @@ checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
 ]
-
-[[package]]
-name = "semisafe"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acbd946a24ad67c88e0488bbf4d2d292425cda023b26c15dc21be1c89e13daf1"
 
 [[package]]
 name = "serde"

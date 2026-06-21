@@ -1,4 +1,3 @@
-use semisafe::slice::{get, get_mut};
 use v_frame::pixel::Pixel;
 
 use super::IntraEdge;
@@ -21,7 +20,7 @@ pub(super) fn predict_dc_intra_internal<T: Pixel>(
     let (left, _top_left, above) = edge_buf.as_slices();
 
     let above_slice = above;
-    let left_slice = get(left, left.len().saturating_sub(height)..);
+    let left_slice = unsafe { left.get_unchecked(left.len().saturating_sub(height)..) };
 
     (match variant {
         PredictionVariant::NONE => pred_dc_128,
@@ -39,13 +38,18 @@ fn pred_dc<T: Pixel>(
     height: usize,
     _bit_depth: usize,
 ) {
-    let edges = get(left, ..height).iter().chain(get(above, ..width).iter());
-    let len = (width + height) as u32;
-    let avg = (edges.fold(0u32, |acc, &v| pixel_as_u32(v) + acc) + (len >> 1)) / len;
-    let avg = pixel_from_u16(avg as u16);
+    unsafe {
+        let edges = left
+            .get_unchecked(..height)
+            .iter()
+            .chain(above.get_unchecked(..width).iter());
+        let len = (width + height) as u32;
+        let avg = (edges.fold(0u32, |acc, &v| pixel_as_u32(v) + acc) + (len >> 1)) / len;
+        let avg = pixel_from_u16(avg as u16);
 
-    for line in output.rows_iter_mut().take(height) {
-        get_mut(line, ..width).fill(avg);
+        for line in output.rows_iter_mut().take(height) {
+            line.get_unchecked_mut(..width).fill(avg);
+        }
     }
 }
 
@@ -59,7 +63,9 @@ fn pred_dc_128<T: Pixel>(
 ) {
     let v = pixel_from_u16((128u32 << (bit_depth - 8)) as u16);
     for line in output.rows_iter_mut().take(height) {
-        get_mut(line, ..width).fill(v);
+        unsafe {
+            line.get_unchecked_mut(..width).fill(v);
+        }
     }
 }
 
@@ -74,7 +80,9 @@ fn pred_dc_left<T: Pixel>(
     let sum = left.iter().fold(0u32, |acc, &v| pixel_as_u32(v) + acc);
     let avg = pixel_from_u16(((sum + (height >> 1) as u32) / height as u32) as u16);
     for line in output.rows_iter_mut().take(height) {
-        get_mut(line, ..width).fill(avg);
+        unsafe {
+            line.get_unchecked_mut(..width).fill(avg);
+        }
     }
 }
 
@@ -86,11 +94,13 @@ fn pred_dc_top<T: Pixel>(
     height: usize,
     _bit_depth: usize,
 ) {
-    let sum = get(above, ..width)
+    let sum = unsafe { above.get_unchecked(..width) }
         .iter()
         .fold(0u32, |acc, &v| pixel_as_u32(v) + acc);
     let avg = pixel_from_u16(((sum + (width >> 1) as u32) / width as u32) as u16);
     for line in output.rows_iter_mut().take(height) {
-        get_mut(line, ..width).fill(avg);
+        unsafe {
+            line.get_unchecked_mut(..width).fill(avg);
+        }
     }
 }

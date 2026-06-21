@@ -1,6 +1,5 @@
 use std::mem::MaybeUninit;
 
-use semisafe::result::unwrap as res_unwrap;
 use v_frame::pixel::Pixel;
 
 pub(crate) mod block;
@@ -35,5 +34,5 @@ pub(crate) fn pixel_as_u32<T: Pixel>(pixel: T) -> u32 {
 
 #[inline]
 pub(crate) fn pixel_from_u16<T: Pixel>(value: u16) -> T {
-    res_unwrap(T::try_from(value))
+    unsafe { T::try_from(value).unwrap_unchecked() }
 }

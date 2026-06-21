@@ -26,7 +26,6 @@ use crate::data::{
     superblock::MI_SIZE_LOG2,
     tile::TileRect,
 };
-use semisafe::slice::{get, get_mut};
 
 pub const BLOCK_TO_PLANE_SHIFT: usize = MI_SIZE_LOG2;
 
@@ -152,25 +151,32 @@ pub fn get_intra_edges<'a, T: Pixel>(
             } else {
                 tx_size.height()
             };
-            if x != 0 {
-                for i in 0..txh {
-                    debug_assert!(y + i < rect_h);
-                    get_mut(left, 2 * MAX_TX_SIZE - 1 - i).write(*get(&dst[y + i], x - 1));
-                }
-                if txh < tx_size.height() {
-                    let val = *get(&dst[y + txh - 1], x - 1);
-                    for i in txh..tx_size.height() {
-                        get_mut(left, 2 * MAX_TX_SIZE - 1 - i).write(val);
+            unsafe {
+                if x != 0 {
+                    for i in 0..txh {
+                        debug_assert!(y + i < rect_h);
+
+                        left.get_unchecked_mut(2 * MAX_TX_SIZE - 1 - i)
+                            .write(*dst[y + i].get_unchecked(x - 1));
                     }
-                }
-            } else {
-                let val = if y != 0 {
-                    *get(&dst[y - 1], 0)
+                    if txh < tx_size.height() {
+                        let val = *dst[y + txh - 1].get_unchecked(x - 1);
+                        for i in txh..tx_size.height() {
+                            left.get_unchecked_mut(2 * MAX_TX_SIZE - 1 - i).write(val);
+                        }
+                    }
                 } else {
-                    pixel_from_u16(base + 1)
-                };
-                for v in get_mut(left, 2 * MAX_TX_SIZE - tx_size.height()..).iter_mut() {
-                    v.write(val);
+                    let val = if y != 0 {
+                        *dst[y - 1].get_unchecked(0)
+                    } else {
+                        pixel_from_u16(base + 1)
+                    };
+                    for v in left
+                        .get_unchecked_mut(2 * MAX_TX_SIZE - tx_size.height()..)
+                        .iter_mut()
+                    {
+                        v.write(val);
+                    }
                 }
             }
             init_left += tx_size.height();
@@ -183,34 +189,36 @@ pub fn get_intra_edges<'a, T: Pixel>(
             } else {
                 tx_size.width()
             };
-            if y != 0 {
-                get_mut(above, ..txw).copy_from_slice(
-                    // SAFETY: &[T] and &[MaybeUninit<T>] have the same layout
-                    unsafe {
-                        &*(get(&dst[y - 1], x..x + txw) as *const [T]
-                            as *const [std::mem::MaybeUninit<T>])
-                    },
-                );
-                if txw < tx_size.width() {
-                    let val = *get(&dst[y - 1], x + txw - 1);
-                    for v in get_mut(above, txw..tx_size.width()) {
+            unsafe {
+                if y != 0 {
+                    above.get_unchecked_mut(..txw).copy_from_slice(
+                        // SAFETY: &[T] and &[MaybeUninit<T>] have the same layout
+                        &*(dst[y - 1].get_unchecked(x..x + txw) as *const [T]
+                            as *const [std::mem::MaybeUninit<T>]),
+                    );
+                    if txw < tx_size.width() {
+                        let val = *dst[y - 1].get_unchecked(x + txw - 1);
+                        for v in above.get_unchecked_mut(txw..tx_size.width()) {
+                            v.write(val);
+                        }
+                    }
+                } else {
+                    let val = if x != 0 {
+                        *dst[0].get_unchecked(x - 1)
+                    } else {
+                        pixel_from_u16(base - 1)
+                    };
+                    for v in above.get_unchecked_mut(..tx_size.width()) {
                         v.write(val);
                     }
-                }
-            } else {
-                let val = if x != 0 {
-                    *get(&dst[0], x - 1)
-                } else {
-                    pixel_from_u16(base - 1)
-                };
-                for v in get_mut(above, ..tx_size.width()) {
-                    v.write(val);
                 }
             }
             init_above += tx_size.width();
         }
 
-        get_mut(top_left, 0).write(pixel_from_u16(base));
+        unsafe {
+            top_left.get_unchecked_mut(0).write(pixel_from_u16(base));
+        }
     }
     IntraEdge::new(edge_buf, init_left, init_above)
 }

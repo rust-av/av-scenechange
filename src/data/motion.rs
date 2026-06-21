@@ -9,8 +9,6 @@ use std::{
 use arrayvec::ArrayVec;
 use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 
-use semisafe::slice::{get, get_mut};
-
 const MV_IN_USE_BITS: usize = 14;
 pub const MV_UPP: i32 = 1 << MV_IN_USE_BITS;
 pub const MV_LOW: i32 = -(1 << MV_IN_USE_BITS);
@@ -138,14 +136,20 @@ impl Index<usize> for FrameMEStats {
     type Output = [MEStats];
 
     fn index(&self, index: usize) -> &Self::Output {
-        get(&self.stats, index * self.cols..(index + 1) * self.cols)
+        unsafe {
+            self.stats
+                .get_unchecked(index * self.cols..(index + 1) * self.cols)
+        }
     }
 }
 
 #[allow(clippy::missing_inline_in_public_items)]
 impl IndexMut<usize> for FrameMEStats {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        get_mut(&mut self.stats, index * self.cols..(index + 1) * self.cols)
+        unsafe {
+            self.stats
+                .get_unchecked_mut(index * self.cols..(index + 1) * self.cols)
+        }
     }
 }
 

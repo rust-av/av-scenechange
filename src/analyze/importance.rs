@@ -64,16 +64,18 @@ fn sum_8x8_block<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
 #[cfg(any(not(asm_x86_64), test))]
 fn sum_8x8_block_rust<T: Pixel>(plane: &Plane<T>, x: usize, y: usize) -> i64 {
     use crate::data::pixel_as_u32;
-    use semisafe::slice::get;
 
     // Coordinates of the top-left corner of the reference block, in MV units.
     let x = x * IMPORTANCE_BLOCK_SIZE;
     let y = y * IMPORTANCE_BLOCK_SIZE;
 
-    let data = get(plane.data(), plane.geometry().data_origin()..);
+    let data = unsafe { plane.data().get_unchecked(plane.geometry().data_origin()..) };
     let stride = plane.geometry().stride();
     (y..(y + 8)).fold(0, |acc, row_idx| {
-        let row = get(get(data, (x + row_idx * stride)..), ..IMPORTANCE_BLOCK_SIZE);
+        let row = unsafe {
+            data.get_unchecked((x + row_idx * stride)..)
+                .get_unchecked(..IMPORTANCE_BLOCK_SIZE)
+        };
         // 16-bit precision is sufficient for an 8 px row,
         // as `IMPORTANCE_BLOCK_SIZE * (2^12 - 1) < 2^16 - 1`,
         // so overflow is not possible
