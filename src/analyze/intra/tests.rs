@@ -12,7 +12,7 @@ use crate::data::{
     prediction::PredictionVariant,
 };
 
-fn predict_dc_intra_internal_verify_asm<T: Pixel + std::fmt::Debug>(
+fn predict_dc_intra_internal_verify_asm<T: Pixel>(
     variant: PredictionVariant,
     dst: &mut PlaneRegionMut<'_, T>,
     tx_size: TxSize,
@@ -103,7 +103,7 @@ struct DcIntraCase<T> {
     expected: T,
 }
 
-fn assert_dc_intra_case<T: Pixel + std::fmt::Debug>(case: &DcIntraCase<T>) {
+fn assert_dc_intra_case<T: Pixel>(case: &DcIntraCase<T>) {
     let width = case.tx_size.width();
     let height = case.tx_size.height();
 
