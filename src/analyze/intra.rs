@@ -18,8 +18,7 @@ use v_frame::{frame::Frame, pixel::Pixel, plane::Plane};
 use super::importance::IMPORTANCE_BLOCK_SIZE;
 use crate::data::{
     block::{BlockSize, MAX_TX_SIZE, TxSize},
-    get_unchecked_mut_rel,
-    get_unchecked_rel,
+    get_unchecked_mut_rel, get_unchecked_rel,
     plane::{Area, AsRegion, PlaneOffset, PlaneRegion, PlaneRegionMut, Rect},
     prediction::PredictionVariant,
     satd::get_satd,

@@ -11,10 +11,7 @@ use std::{
 use av_decoders::{Decoder, Y4mDecoder};
 use av_scenechange::{
     _bench_internals::{
-        Fixed,
-        FrameMEStats,
-        estimate_importance_block_difference,
-        estimate_inter_costs,
+        Fixed, FrameMEStats, estimate_importance_block_difference, estimate_inter_costs,
         estimate_intra_costs,
     },
     Rational32,

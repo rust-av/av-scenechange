@@ -9,11 +9,7 @@ use crate::{
         motion::{FrameMEStats, TileMEStatsMut, WriteGuardMEStats},
         plane::{PlaneBlockOffset, PlaneOffset, PlaneRegion, Rect},
         superblock::{
-            MI_SIZE,
-            MI_SIZE_LOG2,
-            PlaneSuperBlockOffset,
-            SB_SIZE_LOG2,
-            SuperBlockOffset,
+            MI_SIZE, MI_SIZE_LOG2, PlaneSuperBlockOffset, SB_SIZE_LOG2, SuperBlockOffset,
         },
     },
     math::Fixed,
@@ -393,10 +389,8 @@ impl<'a, T: Pixel> Iterator for TileContextIterMut<'a, T> {
     }
 }
 
-impl<T: Pixel> ExactSizeIterator for TileContextIterMut<'_, T> {
-}
-impl<T: Pixel> FusedIterator for TileContextIterMut<'_, T> {
-}
+impl<T: Pixel> ExactSizeIterator for TileContextIterMut<'_, T> {}
+impl<T: Pixel> FusedIterator for TileContextIterMut<'_, T> {}
 
 /// Container for all tiled views
 pub struct TileContextMut<'a, T: Pixel> {

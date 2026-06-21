@@ -17,9 +17,7 @@ mod math;
 pub mod _bench_internals {
     pub use crate::{
         analyze::{
-            estimate_importance_block_difference,
-            estimate_inter_costs,
-            estimate_intra_costs,
+            estimate_importance_block_difference, estimate_inter_costs, estimate_intra_costs,
         },
         data::FrameMEStats,
         math::Fixed,

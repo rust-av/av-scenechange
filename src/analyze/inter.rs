@@ -17,35 +17,22 @@ use v_frame::{
 };
 
 use super::importance::{
-    IMP_BLOCK_MV_UNITS_PER_PIXEL,
-    IMP_BLOCK_SIZE_IN_MV_UNITS,
-    IMPORTANCE_BLOCK_SIZE,
+    IMP_BLOCK_MV_UNITS_PER_PIXEL, IMP_BLOCK_SIZE_IN_MV_UNITS, IMPORTANCE_BLOCK_SIZE,
 };
 use crate::{
     data::{
         block::{BlockOffset, BlockSize, MIB_SIZE_LOG2},
         frame::{ALLOWED_REF_FRAMES, FrameInvariants, FrameState, RefType},
         motion::{
-            MEStats,
-            MV_LOW,
-            MV_UPP,
-            MVSamplingMode,
-            MotionEstimationSubsets,
-            MotionVector,
-            ReadGuardMEStats,
-            RefMEStats,
-            TileMEStats,
+            MEStats, MV_LOW, MV_UPP, MVSamplingMode, MotionEstimationSubsets, MotionVector,
+            ReadGuardMEStats, RefMEStats, TileMEStats,
         },
         plane::{Area, AsRegion, PlaneBlockOffset, PlaneOffset, PlaneRegion, PlaneRegionMut, Rect},
         prediction::PredictionMode,
         sad::get_sad,
         satd::get_satd,
         superblock::{
-            MAX_SB_SIZE_LOG2,
-            MI_SIZE,
-            MI_SIZE_LOG2,
-            SB_SIZE,
-            SuperBlockOffset,
+            MAX_SB_SIZE_LOG2, MI_SIZE, MI_SIZE_LOG2, SB_SIZE, SuperBlockOffset,
             TileSuperBlockOffset,
         },
         tile::{TileBlockOffset, TileRect, TileStateMut, TilingInfo},
@@ -350,10 +337,16 @@ fn refine_subsampled_sb_motion<T: Pixel>(
                 // normalize sad to 128x128 block
                 let sad =
                     (((results.rd.sad as u64) << (MAX_SB_SIZE_LOG2 * 2)) / (w * h) as u64) as u32;
-                save_me_stats(ts, mv_size_in_b_log2, sub_bo, ref_frame, MEStats {
-                    mv: results.mv,
-                    normalized_sad: sad,
-                });
+                save_me_stats(
+                    ts,
+                    mv_size_in_b_log2,
+                    sub_bo,
+                    ref_frame,
+                    MEStats {
+                        mv: results.mv,
+                        normalized_sad: sad,
+                    },
+                );
             }
         }
     }
@@ -689,10 +682,16 @@ fn estimate_sb_motion<T: Pixel>(
                 // normalize sad to 128x128 block
                 let sad =
                     (((results.rd.sad as u64) << (MAX_SB_SIZE_LOG2 * 2)) / (w * h) as u64) as u32;
-                save_me_stats(ts, mv_size_in_b_log2, sub_bo, ref_frame, MEStats {
-                    mv: results.mv,
-                    normalized_sad: sad,
-                });
+                save_me_stats(
+                    ts,
+                    mv_size_in_b_log2,
+                    sub_bo,
+                    ref_frame,
+                    MEStats {
+                        mv: results.mv,
+                        normalized_sad: sad,
+                    },
+                );
             }
         }
     }
@@ -979,12 +978,16 @@ fn subpel_diamond_search<T: Pixel>(
     // Stack allocation for subpel scratch pad.
     // SAFETY: We write to the array below before reading from it.
     let mut buf: Aligned<A64, [T; 128 * 128]> = Aligned([T::zero(); 128 * 128]);
-    let mut tmp_region = PlaneRegionMut::from_slice(buf.as_mut(), cfg, Rect {
-        x: 0,
-        y: 0,
-        width: cfg.width.get(),
-        height: cfg.height.get(),
-    });
+    let mut tmp_region = PlaneRegionMut::from_slice(
+        buf.as_mut(),
+        cfg,
+        Rect {
+            x: 0,
+            y: 0,
+            width: cfg.width.get(),
+            height: cfg.height.get(),
+        },
+    );
 
     // start at 1/2 pel and end at 1/4 or 1/8 pel
     let (mut diamond_radius_log2, diamond_radius_end_log2) = (2u8, 1u8);

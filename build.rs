@@ -3,8 +3,7 @@
 #![allow(clippy::unwrap_used, reason = "build script")]
 
 use std::{
-    env,
-    fs,
+    env, fs,
     path::{Path, PathBuf},
 };
 

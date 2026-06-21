@@ -352,14 +352,10 @@ impl<'a, T: Pixel> Iterator for PlaneRegionRowsIterMut<'a, T> {
     }
 }
 
-impl<T: Pixel> ExactSizeIterator for PlaneRegionRowsIter<'_, T> {
-}
-impl<T: Pixel> FusedIterator for PlaneRegionRowsIter<'_, T> {
-}
-impl<T: Pixel> ExactSizeIterator for PlaneRegionRowsIterMut<'_, T> {
-}
-impl<T: Pixel> FusedIterator for PlaneRegionRowsIterMut<'_, T> {
-}
+impl<T: Pixel> ExactSizeIterator for PlaneRegionRowsIter<'_, T> {}
+impl<T: Pixel> FusedIterator for PlaneRegionRowsIter<'_, T> {}
+impl<T: Pixel> ExactSizeIterator for PlaneRegionRowsIterMut<'_, T> {}
+impl<T: Pixel> FusedIterator for PlaneRegionRowsIterMut<'_, T> {}
 
 pub struct VertWindows<'a, T: Pixel> {
     data: *const T,
@@ -439,14 +435,10 @@ impl<'a, T: Pixel> Iterator for HorzWindows<'a, T> {
     }
 }
 
-impl<T: Pixel> ExactSizeIterator for VertWindows<'_, T> {
-}
-impl<T: Pixel> FusedIterator for VertWindows<'_, T> {
-}
-impl<T: Pixel> ExactSizeIterator for HorzWindows<'_, T> {
-}
-impl<T: Pixel> FusedIterator for HorzWindows<'_, T> {
-}
+impl<T: Pixel> ExactSizeIterator for VertWindows<'_, T> {}
+impl<T: Pixel> FusedIterator for VertWindows<'_, T> {}
+impl<T: Pixel> ExactSizeIterator for HorzWindows<'_, T> {}
+impl<T: Pixel> FusedIterator for HorzWindows<'_, T> {}
 
 /// Rectangle of a plane region, in pixels
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

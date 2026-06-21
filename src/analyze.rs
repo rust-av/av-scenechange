@@ -26,8 +26,7 @@ mod standard;
 
 #[cfg(feature = "bench-internals")]
 pub use self::{
-    importance::estimate_importance_block_difference,
-    inter::estimate_inter_costs,
+    importance::estimate_importance_block_difference, inter::estimate_inter_costs,
     intra::estimate_intra_costs,
 };
 

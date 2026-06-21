@@ -5,8 +5,7 @@ use v_frame::{frame::Frame, pixel::Pixel};
 use super::{SceneChangeDetector, ScenecutResult};
 use crate::{
     analyze::{
-        importance::estimate_importance_block_difference,
-        inter::estimate_inter_costs,
+        importance::estimate_importance_block_difference, inter::estimate_inter_costs,
         intra::estimate_intra_costs,
     },
     data::motion::FrameMEStats,

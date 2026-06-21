@@ -48,28 +48,10 @@ impl BlockSize {
     ///   valid block size.
     pub fn from_width_and_height_opt(w: usize, h: usize) -> Result<BlockSize, InvalidBlockSize> {
         use crate::data::block::BlockSize::{
-            BLOCK_4X4,
-            BLOCK_4X8,
-            BLOCK_4X16,
-            BLOCK_8X4,
-            BLOCK_8X8,
-            BLOCK_8X16,
-            BLOCK_8X32,
-            BLOCK_16X4,
-            BLOCK_16X8,
-            BLOCK_16X16,
-            BLOCK_16X32,
-            BLOCK_16X64,
-            BLOCK_32X8,
-            BLOCK_32X16,
-            BLOCK_32X32,
-            BLOCK_32X64,
-            BLOCK_64X16,
-            BLOCK_64X32,
-            BLOCK_64X64,
-            BLOCK_64X128,
-            BLOCK_128X64,
-            BLOCK_128X128,
+            BLOCK_4X4, BLOCK_4X8, BLOCK_4X16, BLOCK_8X4, BLOCK_8X8, BLOCK_8X16, BLOCK_8X32,
+            BLOCK_16X4, BLOCK_16X8, BLOCK_16X16, BLOCK_16X32, BLOCK_16X64, BLOCK_32X8, BLOCK_32X16,
+            BLOCK_32X32, BLOCK_32X64, BLOCK_64X16, BLOCK_64X32, BLOCK_64X64, BLOCK_64X128,
+            BLOCK_128X64, BLOCK_128X128,
         };
 
         match (w, h) {
@@ -113,28 +95,10 @@ impl BlockSize {
 
     pub const fn width_log2(self) -> usize {
         use crate::data::block::BlockSize::{
-            BLOCK_4X4,
-            BLOCK_4X8,
-            BLOCK_4X16,
-            BLOCK_8X4,
-            BLOCK_8X8,
-            BLOCK_8X16,
-            BLOCK_8X32,
-            BLOCK_16X4,
-            BLOCK_16X8,
-            BLOCK_16X16,
-            BLOCK_16X32,
-            BLOCK_16X64,
-            BLOCK_32X8,
-            BLOCK_32X16,
-            BLOCK_32X32,
-            BLOCK_32X64,
-            BLOCK_64X16,
-            BLOCK_64X32,
-            BLOCK_64X64,
-            BLOCK_64X128,
-            BLOCK_128X64,
-            BLOCK_128X128,
+            BLOCK_4X4, BLOCK_4X8, BLOCK_4X16, BLOCK_8X4, BLOCK_8X8, BLOCK_8X16, BLOCK_8X32,
+            BLOCK_16X4, BLOCK_16X8, BLOCK_16X16, BLOCK_16X32, BLOCK_16X64, BLOCK_32X8, BLOCK_32X16,
+            BLOCK_32X32, BLOCK_32X64, BLOCK_64X16, BLOCK_64X32, BLOCK_64X64, BLOCK_64X128,
+            BLOCK_128X64, BLOCK_128X128,
         };
 
         match self {
@@ -153,28 +117,10 @@ impl BlockSize {
 
     pub const fn height_log2(self) -> usize {
         use crate::data::block::BlockSize::{
-            BLOCK_4X4,
-            BLOCK_4X8,
-            BLOCK_4X16,
-            BLOCK_8X4,
-            BLOCK_8X8,
-            BLOCK_8X16,
-            BLOCK_8X32,
-            BLOCK_16X4,
-            BLOCK_16X8,
-            BLOCK_16X16,
-            BLOCK_16X32,
-            BLOCK_16X64,
-            BLOCK_32X8,
-            BLOCK_32X16,
-            BLOCK_32X32,
-            BLOCK_32X64,
-            BLOCK_64X16,
-            BLOCK_64X32,
-            BLOCK_64X64,
-            BLOCK_64X128,
-            BLOCK_128X64,
-            BLOCK_128X128,
+            BLOCK_4X4, BLOCK_4X8, BLOCK_4X16, BLOCK_8X4, BLOCK_8X8, BLOCK_8X16, BLOCK_8X32,
+            BLOCK_16X4, BLOCK_16X8, BLOCK_16X16, BLOCK_16X32, BLOCK_16X64, BLOCK_32X8, BLOCK_32X16,
+            BLOCK_32X32, BLOCK_32X64, BLOCK_64X16, BLOCK_64X32, BLOCK_64X64, BLOCK_64X128,
+            BLOCK_128X64, BLOCK_128X128,
         };
 
         match self {
@@ -190,45 +136,14 @@ impl BlockSize {
     pub const fn tx_size(self) -> TxSize {
         use crate::data::block::{
             BlockSize::{
-                BLOCK_4X4,
-                BLOCK_4X8,
-                BLOCK_4X16,
-                BLOCK_8X4,
-                BLOCK_8X8,
-                BLOCK_8X16,
-                BLOCK_8X32,
-                BLOCK_16X4,
-                BLOCK_16X8,
-                BLOCK_16X16,
-                BLOCK_16X32,
-                BLOCK_16X64,
-                BLOCK_32X8,
-                BLOCK_32X16,
-                BLOCK_32X32,
-                BLOCK_32X64,
-                BLOCK_64X16,
-                BLOCK_64X32,
+                BLOCK_4X4, BLOCK_4X8, BLOCK_4X16, BLOCK_8X4, BLOCK_8X8, BLOCK_8X16, BLOCK_8X32,
+                BLOCK_16X4, BLOCK_16X8, BLOCK_16X16, BLOCK_16X32, BLOCK_16X64, BLOCK_32X8,
+                BLOCK_32X16, BLOCK_32X32, BLOCK_32X64, BLOCK_64X16, BLOCK_64X32,
             },
             TxSize::{
-                TX_4X4,
-                TX_4X8,
-                TX_4X16,
-                TX_8X4,
-                TX_8X8,
-                TX_8X16,
-                TX_8X32,
-                TX_16X4,
-                TX_16X8,
-                TX_16X16,
-                TX_16X32,
-                TX_16X64,
-                TX_32X8,
-                TX_32X16,
-                TX_32X32,
-                TX_32X64,
-                TX_64X16,
-                TX_64X32,
-                TX_64X64,
+                TX_4X4, TX_4X8, TX_4X16, TX_8X4, TX_8X8, TX_8X16, TX_8X32, TX_16X4, TX_16X8,
+                TX_16X16, TX_16X32, TX_16X64, TX_32X8, TX_32X16, TX_32X32, TX_32X64, TX_64X16,
+                TX_64X32, TX_64X64,
             },
         };
 
@@ -259,8 +174,7 @@ impl BlockSize {
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct InvalidBlockSize;
 
-impl Error for InvalidBlockSize {
-}
+impl Error for InvalidBlockSize {}
 
 impl Display for InvalidBlockSize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -302,24 +216,8 @@ impl TxSize {
 
     pub const fn width_log2(self) -> usize {
         use crate::data::block::TxSize::{
-            TX_4X4,
-            TX_4X8,
-            TX_4X16,
-            TX_8X4,
-            TX_8X8,
-            TX_8X16,
-            TX_8X32,
-            TX_16X4,
-            TX_16X8,
-            TX_16X16,
-            TX_16X32,
-            TX_16X64,
-            TX_32X8,
-            TX_32X16,
-            TX_32X32,
-            TX_32X64,
-            TX_64X16,
-            TX_64X32,
+            TX_4X4, TX_4X8, TX_4X16, TX_8X4, TX_8X8, TX_8X16, TX_8X32, TX_16X4, TX_16X8, TX_16X16,
+            TX_16X32, TX_16X64, TX_32X8, TX_32X16, TX_32X32, TX_32X64, TX_64X16, TX_64X32,
             TX_64X64,
         };
         match self {
@@ -337,24 +235,8 @@ impl TxSize {
 
     pub const fn height_log2(self) -> usize {
         use crate::data::block::TxSize::{
-            TX_4X4,
-            TX_4X8,
-            TX_4X16,
-            TX_8X4,
-            TX_8X8,
-            TX_8X16,
-            TX_8X32,
-            TX_16X4,
-            TX_16X8,
-            TX_16X16,
-            TX_16X32,
-            TX_16X64,
-            TX_32X8,
-            TX_32X16,
-            TX_32X32,
-            TX_32X64,
-            TX_64X16,
-            TX_64X32,
+            TX_4X4, TX_4X8, TX_4X16, TX_8X4, TX_8X8, TX_8X16, TX_8X32, TX_16X4, TX_16X8, TX_16X16,
+            TX_16X32, TX_16X64, TX_32X8, TX_32X16, TX_32X32, TX_32X64, TX_64X16, TX_64X32,
             TX_64X64,
         };
         match self {

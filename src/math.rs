@@ -62,9 +62,7 @@ pub trait ILog: PrimInt {
     }
 }
 
-impl<T> ILog for T where T: PrimInt
-{
-}
+impl<T> ILog for T where T: PrimInt {}
 
 #[inline]
 pub fn msb(x: i32) -> i32 {
