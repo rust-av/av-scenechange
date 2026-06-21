@@ -1,5 +1,6 @@
 use std::mem::MaybeUninit;
 
+use semisafe::result::unwrap as res_unwrap;
 use v_frame::pixel::Pixel;
 
 pub(crate) mod block;
@@ -35,47 +36,5 @@ pub(crate) fn pixel_as_u32<T: Pixel>(pixel: T) -> u32 {
 
 #[inline]
 pub(crate) fn pixel_from_u16<T: Pixel>(value: u16) -> T {
-    T::try_from(value).expect("value should fit in Pixel")
-}
-
-#[allow(
-    clippy::inline_always,
-    reason = "intended as a thin compile-time-elided wrapper"
-)]
-#[inline(always)]
-pub fn get_unchecked_rel<T, I: std::slice::SliceIndex<[T]>>(
-    arr: &[T],
-    index: I,
-) -> &<I as std::slice::SliceIndex<[T]>>::Output {
-    use cfg_if::cfg_if;
-
-    cfg_if! {
-        if #[cfg(debug_assertions)] {
-            arr.get(index).expect("array index out of bounds")
-        } else {
-            // SAFETY: verified in debug mode
-            unsafe { arr.get_unchecked(index) }
-        }
-    }
-}
-
-#[allow(
-    clippy::inline_always,
-    reason = "intended as a thin compile-time-elided wrapper"
-)]
-#[inline(always)]
-pub fn get_unchecked_mut_rel<T, I: std::slice::SliceIndex<[T]>>(
-    arr: &mut [T],
-    index: I,
-) -> &mut <I as std::slice::SliceIndex<[T]>>::Output {
-    use cfg_if::cfg_if;
-
-    cfg_if! {
-        if #[cfg(debug_assertions)] {
-            arr.get_mut(index).expect("array index out of bounds")
-        } else {
-            // SAFETY: verified in debug mode
-            unsafe { arr.get_unchecked_mut(index) }
-        }
-    }
+    res_unwrap(T::try_from(value))
 }
