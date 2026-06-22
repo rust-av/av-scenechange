@@ -218,7 +218,7 @@ macro_rules! plane_region_common {
       type Output = [T];
 
       fn index(&self, index: usize) -> &Self::Output {
-        assert!(index < self.rect.height);
+        debug_assert!(index < self.rect.height);
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
           let ptr = self.data.add(index * self.plane_cfg.stride());
@@ -278,7 +278,7 @@ impl<'a, T: Pixel> PlaneRegionMut<'a, T> {
 
 impl<T: Pixel> IndexMut<usize> for PlaneRegionMut<'_, T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        assert!(index < self.rect.height);
+        debug_assert!(index < self.rect.height);
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
             let ptr = self.data.add(index * self.plane_cfg.stride());

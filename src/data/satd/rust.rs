@@ -24,9 +24,9 @@ pub(super) fn get_satd_internal<T: Pixel>(
     h: usize,
     bit_depth: usize,
 ) -> u32 {
-    assert!(w <= 128 && h <= 128);
-    assert!(plane_org.rect().width >= w && plane_org.rect().height >= h);
-    assert!(plane_ref.rect().width >= w && plane_ref.rect().height >= h);
+    debug_assert!(w <= 128 && h <= 128);
+    debug_assert!(plane_org.rect().width >= w && plane_org.rect().height >= h);
+    debug_assert!(plane_ref.rect().width >= w && plane_ref.rect().height >= h);
 
     // Size of hadamard transform should be 4x4 or 8x8
     // 4x* and *x4 use 4x4 and all other use 8x8

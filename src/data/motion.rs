@@ -246,7 +246,7 @@ macro_rules! tile_me_stats_common {
       type Output = [MEStats];
 
       fn index(&self, index: usize) -> &Self::Output {
-        assert!(index < self.rows);
+        debug_assert!(index < self.rows);
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
           let ptr = self.data.add(index * self.stride);
@@ -276,7 +276,7 @@ impl TileMEStatsMut<'_> {
 
 impl IndexMut<usize> for TileMEStatsMut<'_> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        assert!(index < self.rows);
+        debug_assert!(index < self.rows);
         // SAFETY: The above assert ensures we do not access OOB data.
         unsafe {
             let ptr = self.data.add(index * self.stride);

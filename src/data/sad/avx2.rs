@@ -12,10 +12,10 @@ unsafe extern "C" {
 
 #[target_feature(enable = "avx2")]
 pub(super) fn sad_plane_internal<T: Pixel>(src: &Plane<T>, dst: &Plane<T>) -> u64 {
-    assert_eq!(src.geometry().width(), dst.geometry().width());
-    assert_eq!(src.geometry().stride(), dst.geometry().stride());
-    assert_eq!(src.geometry().height(), dst.geometry().height());
-    assert!(src.geometry().width() <= src.geometry().stride());
+    debug_assert_eq!(src.geometry().width(), dst.geometry().width());
+    debug_assert_eq!(src.geometry().stride(), dst.geometry().stride());
+    debug_assert_eq!(src.geometry().height(), dst.geometry().height());
+    debug_assert!(src.geometry().width() <= src.geometry().stride());
 
     match size_of::<T>() {
         // SAFETY: call to SIMD function
