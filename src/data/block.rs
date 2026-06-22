@@ -84,9 +84,8 @@ impl BlockSize {
     /// # Panics
     ///
     /// - If the given `w` and `h` do not produce a valid block size.
-    #[expect(clippy::unwrap_used)]
     pub fn from_width_and_height(w: usize, h: usize) -> BlockSize {
-        Self::from_width_and_height_opt(w, h).unwrap()
+        unsafe { Self::from_width_and_height_opt(w, h).unwrap_unchecked() }
     }
 
     pub const fn width(self) -> usize {
