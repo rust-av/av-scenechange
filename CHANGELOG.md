@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.24.1
+
+- perf: change to debug_assert in hot paths
+- perf: optimize away checks for invalid block size
+
 ## Version 0.24.0
 
 - chore!: bump MSRV to 1.95
