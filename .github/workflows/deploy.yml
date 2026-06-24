@@ -17,7 +17,7 @@ jobs:
 
       - name: Install nasm
         run: |
-          $NASM_VERSION="2.15.05"
+          $NASM_VERSION="3.01"
           $LINK="https://www.nasm.us/pub/nasm/releasebuilds/$NASM_VERSION/win64"
           curl -LO "$LINK/nasm-$NASM_VERSION-win64.zip"
           7z e -y "nasm-$NASM_VERSION-win64.zip" -o"C:\nasm"
@@ -29,18 +29,13 @@ jobs:
           rustup override set stable
 
       - name: Build
-        run: cargo build --release
-
-      - name: Create zip
-        run: |
-          $METRICS_PATH="$Env:GITHUB_WORKSPACE\target\release"
-          7z a av-scenechange.zip "$METRICS_PATH\av-scenechange.exe"
+        run: cargo build --release --locked
 
       - name: Upload binaries
         uses: actions/upload-artifact@v7
         with:
           name: av-scenechange-bins
-          path: av-scenechange.zip
+          path: target/release/av-scenechange.exe
 
   deploy:
     needs: create-binaries
@@ -49,11 +44,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Download the zip
-        uses: actions/download-artifact@v7
-
-      - name: Unzip av-scenechange Windows binaries
-        run: unzip av-scenechange-bins/av-scenechange.zip -d av-scenechange-bins
+      - name: Download and decompress the binaries
+        uses: actions/download-artifact@v8
 
       - name: Handle release data and files
         id: data
@@ -61,9 +53,7 @@ jobs:
           VERSION=$(grep -m 1 '^## Version' CHANGELOG.md | sed 's/## Version //')
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           awk 'BEGIN{p=0} /^## Version/{if(p) exit; p=1; next} p{print}' CHANGELOG.md > CHANGELOG.txt
-          cd av-scenechange-bins
           strip av-scenechange.exe
-          mv av-scenechange.exe ..
 
       - name: Create a release
         uses: softprops/action-gh-release@v3
