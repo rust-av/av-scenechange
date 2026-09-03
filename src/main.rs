@@ -98,9 +98,9 @@ fn process_video(
 ) -> Result<av_scenechange::DetectionResults> {
     let bit_depth = dec.get_video_details().bit_depth;
     if bit_depth == 8 {
-        detect_scene_changes::<u8>(dec, opts, None, None)
+        detect_scene_changes::<u8>(dec, opts, None, None, None)
     } else {
-        detect_scene_changes::<u16>(dec, opts, None, None)
+        detect_scene_changes::<u16>(dec, opts, None, None, None)
     }
 }
 

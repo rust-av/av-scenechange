@@ -28,6 +28,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::{
         Arc,
+        atomic::{AtomicBool, Ordering},
         mpsc::{channel, sync_channel},
     },
     thread,
@@ -131,6 +132,8 @@ pub fn new_detector<T: Pixel>(
 ///   is analyzed. Arguments passed in will be, in order, the number of frames
 ///   analyzed, and the number of keyframes detected. This is generally useful
 ///   for displaying progress, etc.
+/// - `cancellation_token`: An optional `AtomicBool` that can be set to `true`
+///   to cancel at any time.
 ///
 /// # Errors
 ///
@@ -149,6 +152,7 @@ pub fn detect_scene_changes<T: Pixel>(
     opts: DetectionOptions,
     frame_limit: Option<usize>,
     progress_callback: Option<&dyn Fn(usize, usize)>,
+    cancellation_token: Option<Arc<AtomicBool>>,
 ) -> anyhow::Result<DetectionResults> {
     assert!(opts.lookahead_distance >= 1);
 
@@ -224,6 +228,11 @@ pub fn detect_scene_changes<T: Pixel>(
                 }
                 if let Some(frame_limit) = frame_limit
                     && frameno == frame_limit
+                {
+                    break;
+                }
+                if let Some(ref cancellation_token) = cancellation_token
+                    && cancellation_token.load(Ordering::Relaxed)
                 {
                     break;
                 }

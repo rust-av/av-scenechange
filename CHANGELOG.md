@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 0.25.0
+
+- feat: add `cancellation_token` to `detect_scene_changes`, to allow exiting scene detection early
+
 ## Version 0.24.1
 
 - perf: change to debug_assert in hot paths

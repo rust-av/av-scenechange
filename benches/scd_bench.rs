@@ -41,6 +41,7 @@ fn y4m_8bit(c: &mut Criterion) {
                     black_box(options),
                     black_box(None),
                     black_box(None),
+                    black_box(None),
                 )
                 .ok();
             },
@@ -66,6 +67,7 @@ fn y4m_10bit(c: &mut Criterion) {
                 detect_scene_changes::<u16>(
                     black_box(&mut decoder),
                     black_box(options),
+                    black_box(None),
                     black_box(None),
                     black_box(None),
                 )
