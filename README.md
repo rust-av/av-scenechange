@@ -62,7 +62,7 @@ let options = DetectionOptions {
     ..DetectionOptions::default()
 };
 
-let results = detect_scene_changes(&mut decoder, options, None, None)?;
+let results = detect_scene_changes(&mut decoder, options, None, None, None)?;
 ```
 
 ## Compiling
