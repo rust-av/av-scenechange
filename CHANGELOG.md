@@ -3,6 +3,7 @@
 ## Version 0.25.0
 
 - feat: add `cancellation_token` to `detect_scene_changes`, to allow exiting scene detection early
+- chore: update dependencies
 
 ## Version 0.24.1
 
